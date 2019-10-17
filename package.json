@@ -1,7 +1,6 @@
 {
 	"name": "typobot",
 	"dependencies": {
-		"discord-akairo": "discord-akairo/discord-akairo",
 		"discord.js": "discordjs/discord.js",
 		"dotenv": "^8.2.0",
 		"sqlite3": "^4.1.0",

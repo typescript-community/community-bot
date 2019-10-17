@@ -2,7 +2,7 @@ import { Client, Message } from 'discord.js';
 
 import { repCommand } from '../commands/rep';
 import { getRepCommand } from '../commands/getRep';
-import { leaderboardCommand } from '../commands/leaderboardCommand';
+import { leaderboardCommand } from '../commands/leaderboard';
 import { removeRepCommand } from '../commands/removeRep';
 
 export class PascalClient extends Client {
