@@ -5,7 +5,7 @@ import { RepCooldownEntity } from '../entities/RepCooldown';
 
 import { database } from '../index';
 
-const calcCooldown = async (member: GuildMember): Promise<boolean | number> => {
+const calcCooldown = async (member: GuildMember): Promise<number> => {
 	const repository = database.getRepository(RepCooldownEntity);
 
 	const found = await repository.findOne({ id: member.id });
@@ -27,7 +27,7 @@ const calcCooldown = async (member: GuildMember): Promise<boolean | number> => {
 		}
 
 		if (found.left <= 0) {
-			return false;
+			return -1;
 		}
 
 		found.left -= 1;
@@ -54,7 +54,7 @@ export const repCommand = async (message: Message) => {
 
 	const cooldown = await calcCooldown(message.member);
 
-	if (typeof cooldown == 'boolean') {
+	if (cooldown == -1) {
 		return message.channel.send(`You have already used your 3 daily reps!`);
 	}
 
