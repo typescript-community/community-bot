@@ -14,8 +14,7 @@ export const command = new Command({
             .orderBy('rep', 'DESC')
             .getMany();
 
-        const topTen = result.slice(0, 10);
-        const messageText = topTen.map(
+        const messageText = topTen.filter(({id, rep)) => message.guild.members.get(id)).map(
             ({ id, rep }, index) => `:white_medium_small_square: \`#${index + 1}\` ${message.guild!.members.get(id)!.user.tag} with **${rep}** reputation\n`,
         );
 
