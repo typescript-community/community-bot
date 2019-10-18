@@ -5,11 +5,20 @@ import { getRepCommand } from '../commands/getRep';
 import { leaderboardCommand } from '../commands/leaderboard';
 import { removeRepCommand } from '../commands/removeRep';
 
+import { reactionAddEvent } from '../events/messageReactionAdd';
+import { reactionRemoveEvent } from '../events/messageReactionRemove';
+
 export class PascalClient extends Client {
 	public constructor(private readonly _token: string) {
-		super({ disabledEvents: ['TYPING_START'], disableEveryone: true });
+		super({
+			disabledEvents: ['TYPING_START'],
+			disableEveryone: true,
+			partials: ['MESSAGE', 'CHANNEL'],
+		});
 
 		this.on('message', this.onMessage);
+		this.on('messageReactionAdd', reactionAddEvent);
+		this.on('messageReactionRemove', reactionRemoveEvent);
 	}
 
 	public async start() {
