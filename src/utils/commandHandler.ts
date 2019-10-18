@@ -10,6 +10,7 @@ import {
 interface commandHandlerOptions {
 	prefix: string;
 	logger: (...message: string[]) => void;
+	guildsAllowed?: string[];
 	helpCommandFn?: (
 		commands: { aliases: string[]; description: string }[],
 		message: Message,
@@ -72,6 +73,11 @@ export class commandHandler {
 		// Rest of the words are message
 		const messageContent = rawMessageContent.join(' ');
 
+		// If not from allowed guilds return
+		if ((this.option.guildsAllowed || []).length > 0) {
+			if (!this.option.guildsAllowed.includes(message.guild.id)) return;
+		}
+
 		// If word doesnt start with prefix return
 		if (!cmd.startsWith(this.option.prefix)) return;
 		else cmd = cmd.slice(this.option.prefix.length);
@@ -92,8 +98,8 @@ export class commandHandler {
 							.reduce((prev, current) => prev && current, true);
 
 						// If allowed run them
-            if (allowed) await command(message, messageContent);
-            else message.channel.send(':x: You do not have the privelages')
+						if (allowed) await command(message, messageContent);
+						else message.channel.send(':x: You do not have the privelages');
 					}
 					// Else run them
 					else await command(message, messageContent);
@@ -137,19 +143,19 @@ export class commandHandler {
 						const commandName = messageContent.split(' ')[0].toLowerCase();
 						const command = commandsList.find(({ aliases }) =>
 							aliases.includes(commandName),
-            );
-            
+						);
+
 						// If command exists
 						if (command) {
 							embed.addField('**Aliases :**', command.aliases.join(', '));
 							embed.addField('**Description :**', command.description);
 							return await message.channel.send(embed);
-            }
-          }
-          
-          // If for all commands
-          commandsList.forEach(({ aliases, description }) =>
-						embed.addField("`" + aliases[0] + "`", description),
+						}
+					}
+
+					// If for all commands
+					commandsList.forEach(({ aliases, description }) =>
+						embed.addField('`' + aliases[0] + '`', description),
 					);
 					return await message.channel.send(embed);
 				},
@@ -168,6 +174,8 @@ interface commandOptions {
 // Command Class
 export class Command {
 	constructor(public options: commandOptions) {
-    this.options.aliases = this.options.aliases.map((alias) => alias.toLowerCase());
-  }
+		this.options.aliases = this.options.aliases.map(alias =>
+			alias.toLowerCase(),
+		);
+	}
 }

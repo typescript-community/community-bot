@@ -19,7 +19,8 @@ export class PascalClient extends Client {
 		// Handle Commands
 		this.ourCommandHandler = new commandHandler(this, {
 			prefix: 'p!',
-			logger: (...message) => console.log('[BOT]', ...message),
+      logger: (...message) => console.log('[BOT]', ...message),
+      guildsAllowed: ['244230771232079873']
 		});
 
 		// Register commands
