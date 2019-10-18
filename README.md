@@ -1,7 +1,5 @@
 <p align="center"><img src="https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png" /></p>
 
-<img src="https://raw.githubusercontent.com/travis-ci/travis-api/master/public/images/result/unknown.png"></a>
-
 # Community Bot - A moderation and analysis bot for discord
 
 ## Roadmap & Contributions
