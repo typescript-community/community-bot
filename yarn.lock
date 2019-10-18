@@ -306,10 +306,6 @@ diff@^4.0.1:
   resolved "https://registry.yarnpkg.com/diff/-/diff-4.0.1.tgz#0c667cb467ebbb5cea7f14f135cc2dba7780a8ff"
   integrity sha512-s2+XdvhPCOF01LRQBC8hf4vhbVmI2CGS5aZnxLJlT5FtdhPCDFq80q++zK2KlrVorVDdL5BOGZ/VfLrVtYNF+Q==
 
-discord-akairo@discord-akairo/discord-akairo:
-  version "8.0.0-beta.8"
-  resolved "https://codeload.github.com/discord-akairo/discord-akairo/tar.gz/563d57b428ab7dfee3cdedf04834f6d3d606481e"
-
 discord.js@discordjs/discord.js:
   version "12.0.0-dev"
   resolved "https://codeload.github.com/discordjs/discord.js/tar.gz/c3228b426370a6cc5d48cb41e28bbe9f731e8473"
