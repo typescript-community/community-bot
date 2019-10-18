@@ -5,7 +5,7 @@ import { database } from '../index';
 import { Command } from '../utils/commandHandler';
 
 export const command = new Command({
-    aliases: ['leaderboard', 'rank'],
+    aliases: ['leaderboard', 'lb', 'top'],
     description: 'Get the leaderboard',
     command: async (message: Message): Promise<void> => {
         const repository = database.getRepository(RepEntity);
