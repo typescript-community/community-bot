@@ -3,11 +3,18 @@ import { commandHandler, Command } from '../utils/commandHandler';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 
+import { reactionAddEvent } from '../events/messageReactionAdd';
+import { reactionRemoveEvent } from '../events/messageReactionRemove';
+
 export class PascalClient extends Client {
 	ourCommandHandler: commandHandler;
 
 	public constructor(private readonly _token: string) {
-		super({ disabledEvents: ['TYPING_START'], disableEveryone: true });
+		super({
+			disabledEvents: ['TYPING_START'],
+			disableEveryone: true,
+			partials: ['MESSAGE', 'CHANNEL'],
+		});
 
 		// Handle Commands
 		this.ourCommandHandler = new commandHandler(this, {
@@ -27,7 +34,11 @@ export class PascalClient extends Client {
 		registeredCommands.catch(err => {
 			console.error('[BOT] Was unable to load commands');
 			console.error(err);
-		});
+    });
+    
+    // Handle other events
+		this.on('messageReactionAdd', reactionAddEvent);
+		this.on('messageReactionRemove', reactionRemoveEvent);
 	}
 
 	public async start() {
