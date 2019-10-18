@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png" width="300" height="300" /></p>
 
 <a href="https://discord.gg/kZVhUNj">
 <img src="https://img.shields.io/discord/508357248330760243?logo=discord" alt="chat on Discord"></a>
