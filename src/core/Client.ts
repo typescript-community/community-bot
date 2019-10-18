@@ -23,11 +23,13 @@ export class PascalClient extends Client {
         });
 
         const registeredCommands = Promise.all(
-            readdirSync(join(__dirname, '../commands')).map(async fileName => {
-                const path = join(__dirname, '../commands', fileName);
-                const file: { command: Command } = await import(path);
-                this.commandHandler.registerCommand(file.command);
-            }),
+            readdirSync(join(__dirname, '../commands'))
+                .filter(fileName => fileName.endsWith('.js'))
+                .map(async fileName => {
+                    const path = join(__dirname, '../commands', fileName);
+                    const file: { command: Command } = await import(path);
+                    this.commandHandler.registerCommand(file.command);
+                }),
         );
 
         registeredCommands.catch(err => {
