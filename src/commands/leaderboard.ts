@@ -16,6 +16,10 @@ export const leaderboardCommand = async (message: Message) => {
 	let out = ``;
 
 	for (let i = 0; i < res.length; i++) {
+		const member = message.guild.members.get(res[i].id);
+
+		if (!member) continue;
+
 		out += `:white_medium_small_square: \`#${i + 1}\` ${
 			message.guild.members.get(res[i].id).user.tag
 		} with **${res[i].rep}** reputation\n`;
