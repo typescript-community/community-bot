@@ -7,7 +7,7 @@ import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
 
 export class PascalClient extends Client {
-	ourCommandHandler: CommandHandler;
+	commandHandler: CommandHandler;
 
 	public constructor(private readonly _token: string) {
 		super({
@@ -17,8 +17,8 @@ export class PascalClient extends Client {
 		});
 
 		// Handle Commands
-		this.ourCommandHandler = new CommandHandler(this, {
-			prefix: 'p!',
+		this.commandHandler = new CommandHandler(this, {
+			prefix: 't!',
       logger: (...message) => console.log('[BOT]', ...message),
       guildsAllowed: ['244230771232079873']
 		});
@@ -28,7 +28,7 @@ export class PascalClient extends Client {
 			readdirSync(join(__dirname, '../commands')).map(async fileName => {
 				const path = join(__dirname, '../commands', fileName);
 				const file: { command: Command } = await import(path);
-				this.ourCommandHandler.registerCommand(file.command);
+				this.commandHandler.registerCommand(file.command);
 			}),
 		);
 
