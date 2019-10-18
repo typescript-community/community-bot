@@ -1,12 +1,12 @@
 ---
 before_install:
-  - "npm update"
-cache: npm
+  - "yarn upgrade"
+cache: yarn
 branches:
   only:
     - master
 install:
-  - "npm install"
+  - "yarn"
 language: node_js
 node_js:
   - node

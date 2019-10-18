@@ -1,6 +1,6 @@
 {
     "name": "@typescript-community/community-bot",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "A Discord moderation bot for the TypeScript Community Discord server.",
     "license": "MIT",
     "main": "build/index.js",
