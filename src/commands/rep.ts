@@ -4,6 +4,7 @@ import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
 
 import { database } from '../index';
+import { Command } from '../utils/commandHandler';
 
 const calcCooldown = async (member: GuildMember): Promise<number> => {
 	const repository = database.getRepository(RepCooldownEntity);
@@ -39,45 +40,50 @@ const calcCooldown = async (member: GuildMember): Promise<number> => {
 	}
 };
 
-export const repCommand = async (message: Message) => {
-	const member = message.mentions.members.first();
+export const command = new Command({
+  aliases: ['rep'],
+  description: 'Give rep points to someone',
+  command:  async (message: Message) => {
+    const member = message.mentions.members.first();
+  
+    if (!member)
+      return message.channel.send(
+        `:x: You must specify a member to give rep to!`,
+      );
+  
+    if (member.id == message.member.id)
+      return message.channel.send(
+        `:x: Nice try! You cannot send rep to yourself`,
+      );
+  
+    if (member.user.bot)
+      return message.channel.send(
+        ':x: You cannot give rep to bots!'
+      );
+  
+    const cooldown = await calcCooldown(message.member);
+  
+    if (cooldown == -1) {
+      return message.channel.send(`You have already used your 3 daily reps!`);
+    }
+  
+    const repository = database.getRepository(RepEntity);
+  
+    const found = await repository.findOne({ id: member.id });
+  
+    if (!found) {
+      await repository.insert({
+        id: member.id,
+        rep: 1,
+      });
+    } else {
+      found.rep += 1;
+      await repository.save(found);
+    }
+  
+    return message.channel.send(
+      `:white_check_mark: Successfully sent rep to ${member.user.username} (${cooldown} remaining today)`,
+    );
+  }
+})
 
-	if (!member)
-		return message.channel.send(
-			`:x: You must specify a member to give rep to!`,
-		);
-
-	if (member.id == message.member.id)
-		return message.channel.send(
-			`:x: Nice try! You cannot send rep to yourself`,
-		);
-
-	if (member.user.bot)
-		return message.channel.send(
-			':x: You cannot give rep to bots!'
-		);
-
-	const cooldown = await calcCooldown(message.member);
-
-	if (cooldown == -1) {
-		return message.channel.send(`You have already used your 3 daily reps!`);
-	}
-
-	const repository = database.getRepository(RepEntity);
-
-	const found = await repository.findOne({ id: member.id });
-
-	if (!found) {
-		await repository.insert({
-			id: member.id,
-			rep: 1,
-		});
-	} else {
-		found.rep += 1;
-		await repository.save(found);
-	}
-
-	return message.channel.send(
-		`:white_check_mark: Successfully sent rep to ${member.user.username} (${cooldown} remaining today)`,
-	);
-};
