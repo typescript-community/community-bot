@@ -1,6 +1,7 @@
 {
 	"name": "typobot",
 	"dependencies": {
+		"abort-controller": "^3.0.0",
 		"discord.js": "discordjs/discord.js",
 		"dotenv": "^8.2.0",
 		"sqlite3": "^4.1.0",
