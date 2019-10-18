@@ -7,7 +7,7 @@ import {
 	EmbedField,
 } from 'discord.js';
 
-interface commandHandlerOptions {
+interface CommandHandlerOptions {
 	prefix: string;
 	logger: (...message: string[]) => void;
 	guildsAllowed?: string[];
@@ -21,11 +21,11 @@ interface commandHandlerOptions {
 }
 
 // Command Handler Class
-export class commandHandler {
+export class CommandHandler {
 	private commands: Command[] = [];
 	private commandNotFoundFn: (message: Message) => Promise<void>;
 
-	constructor(private bot: Client, private option: commandHandlerOptions) {
+	constructor(private bot: Client, private option: CommandHandlerOptions) {
 		// Logger
 		this.option.logger = option.logger || console.log;
 
@@ -164,7 +164,7 @@ export class commandHandler {
 	}
 }
 
-interface commandOptions {
+interface CommandOptions {
 	aliases: string[];
 	description: string;
 	privelagesRequired?: BitFieldResolvable<PermissionString>[];
@@ -173,7 +173,7 @@ interface commandOptions {
 
 // Command Class
 export class Command {
-	constructor(public options: commandOptions) {
+	constructor(public options: CommandOptions) {
 		this.options.aliases = this.options.aliases.map(alias =>
 			alias.toLowerCase(),
 		);

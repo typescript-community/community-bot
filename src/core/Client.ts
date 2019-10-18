@@ -1,5 +1,5 @@
 import { Client } from 'discord.js';
-import { commandHandler, Command } from '../utils/commandHandler';
+import { CommandHandler, Command } from '../utils/commandHandler';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -7,7 +7,7 @@ import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
 
 export class PascalClient extends Client {
-	ourCommandHandler: commandHandler;
+	ourCommandHandler: CommandHandler;
 
 	public constructor(private readonly _token: string) {
 		super({
@@ -17,7 +17,7 @@ export class PascalClient extends Client {
 		});
 
 		// Handle Commands
-		this.ourCommandHandler = new commandHandler(this, {
+		this.ourCommandHandler = new CommandHandler(this, {
 			prefix: 'p!',
       logger: (...message) => console.log('[BOT]', ...message),
       guildsAllowed: ['244230771232079873']
