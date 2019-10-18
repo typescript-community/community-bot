@@ -1,6 +1,6 @@
 import { MessageReaction, User } from 'discord.js';
 
-import { AUTOROLE } from '../constants';
+import { AUTOROLE } from '../utils/constants';
 
 export const reactionRemoveEvent = async (reaction: MessageReaction, user: User): Promise<void> => {
     if (reaction.message.partial) await reaction.message.fetch();

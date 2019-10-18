@@ -1,13 +1,14 @@
-import { Client, Message } from 'discord.js';
+import { Client } from 'discord.js';
+import { readdirSync } from 'fs';
+import { join } from 'path';
 
-import { getRepCommand } from '../commands/getRep';
-import { leaderboardCommand } from '../commands/leaderboard';
-import { removeRepCommand } from '../commands/removeRep';
-import { repCommand } from '../commands/rep';
 import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
+import { Command, CommandHandler } from '../utils/commandHandler';
 
 export class PascalClient extends Client {
+    commandHandler: CommandHandler;
+
     public constructor(private readonly _token: string) {
         super({
             disabledEvents: ['TYPING_START'],
@@ -15,7 +16,26 @@ export class PascalClient extends Client {
             partials: ['MESSAGE', 'CHANNEL'],
         });
 
-        this.on('message', this.onMessage);
+        this.commandHandler = new CommandHandler(this, {
+            prefix: 't!',
+            logger: (...message): void => console.log('[BOT]', ...message),
+            guildsAllowed: ['244230771232079873'],
+        });
+
+        const registeredCommands = Promise.all(
+            readdirSync(join(__dirname, '../commands')).map(async fileName => {
+                const path = join(__dirname, '../commands', fileName);
+                const file: { command: Command } = await import(path);
+                this.commandHandler.registerCommand(file.command);
+            }),
+        );
+
+        registeredCommands.catch(err => {
+            console.error('[BOT] Was unable to load commands');
+            console.error(err);
+        });
+
+        // Handle other events
         this.on('messageReactionAdd', reactionAddEvent);
         this.on('messageReactionRemove', reactionRemoveEvent);
     }
@@ -23,15 +43,5 @@ export class PascalClient extends Client {
     public async start(): Promise<void> {
         await this.login(this._token);
         console.log(`[BOT] Connected`);
-    }
-
-    private async onMessage(message: Message): Promise<void> {
-        if (message.author.bot) return;
-        if (!message.guild) return;
-
-        if (message.content.startsWith('+rep')) repCommand(message);
-        if (message.content.startsWith('t!rep')) getRepCommand(message);
-        if (message.content.startsWith('t!leaderboard') || message.content.startsWith('t!lb')) leaderboardCommand(message);
-        if (message.content.startsWith('t!removerep')) removeRepCommand(message);
     }
 }
