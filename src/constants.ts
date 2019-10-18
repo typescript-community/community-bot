@@ -1,18 +1,18 @@
 export const AUTOROLE = {
-	experienceMessage: '607690519966908426',
-	helperMessage: '607690836238663700',
-	roles: {
-		beginner: '591706203957231642',
-		experienced: '591706107764932637',
-		expert: '591706189654655006',
+    experienceMessage: '607690519966908426',
+    helperMessage: '607690836238663700',
+    roles: {
+        beginner: '591706203957231642',
+        experienced: '591706107764932637',
+        expert: '591706189654655006',
 
-		helper: '591706452440383508',
-	},
-	emojis: {
-		beginner: '🔴',
-		experienced: '🔵',
-		expert: '⚪',
+        helper: '591706452440383508',
+    },
+    emojis: {
+        beginner: '🔴',
+        experienced: '🔵',
+        expert: '⚪',
 
-		helper: '✅',
-	},
+        helper: '✅',
+    },
 };

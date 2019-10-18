@@ -1,31 +1,19 @@
 import { Message, MessageEmbed } from 'discord.js';
 
-import { database } from '../index';
 import { RepEntity } from '../entities/Rep';
+import { database } from '../index';
 
-export const leaderboardCommand = async (message: Message) => {
-	const repository = database.getRepository(RepEntity);
+export const leaderboardCommand = async (message: Message): Promise<void> => {
+    const repository = database.getRepository(RepEntity);
+    const result = await repository
+        .createQueryBuilder()
+        .orderBy('rep', 'DESC')
+        .getMany();
 
-	let res = await repository
-		.createQueryBuilder()
-		.orderBy('rep', 'DESC')
-		.getMany();
+    const topTen = result.slice(0, 10);
+    const messageText = topTen.map(
+        ({ id, rep }, index) => `:white_medium_small_square: \`#${index + 1}\` ${message.guild!.members.get(id)!.user.tag} with **${rep}** reputation\n`,
+    );
 
-	res = res.slice(0, 10);
-
-	let out = ``;
-
-	for (let i = 0; i < res.length; i++) {
-		const member = message.guild.members.get(res[i].id);
-
-		if (!member) continue;
-
-		out += `:white_medium_small_square: \`#${i + 1}\` ${
-			message.guild.members.get(res[i].id).user.tag
-		} with **${res[i].rep}** reputation\n`;
-	}
-
-	return message.channel.send(
-		new MessageEmbed().setDescription(out).setTitle(`Reputation leaderboard`),
-	);
+    message.channel.send(new MessageEmbed().setDescription(messageText).setTitle(`Reputation leaderboard`));
 };

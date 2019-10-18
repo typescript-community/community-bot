@@ -1,0 +1,17 @@
+---
+before_install:
+  - "npm update"
+cache: npm
+branches:
+  only:
+    - master
+install:
+  - "npm install"
+language: node_js
+node_js:
+  - node
+script:
+  - "npm run build"
+  - "npx codechecks"
+  - "npm run coverage"
+sudo: false
