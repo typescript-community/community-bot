@@ -1,10 +1,10 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity('reps')
 export class RepEntity {
-	@PrimaryColumn()
-	id: string; // the user id
+    @PrimaryColumn()
+    id: string; // the user id
 
-	@Column({ default: 0 })
-	rep: number;
+    @Column({ default: 0 })
+    rep: number;
 }
