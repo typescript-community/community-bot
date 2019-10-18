@@ -16,3 +16,7 @@ export const AUTOROLE = {
 		helper: '✅',
 	},
 };
+
+export const WELCOME = {
+	welcomeMessage: 'Welcome {userMention} to TypeScript Community! Head over to <#508364281931366419>.' 
+}

@@ -7,6 +7,7 @@ import { removeRepCommand } from '../commands/removeRep';
 
 import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
+import { guildMemberAddEvent } from '../events/guildMemberAdd';
 
 export class PascalClient extends Client {
 	public constructor(private readonly _token: string) {
@@ -19,6 +20,7 @@ export class PascalClient extends Client {
 		this.on('message', this.onMessage);
 		this.on('messageReactionAdd', reactionAddEvent);
 		this.on('messageReactionRemove', reactionRemoveEvent);
+		this.on('guildMemberAdd', guildMemberAddEvent);
 	}
 
 	public async start() {
