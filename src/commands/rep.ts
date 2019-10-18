@@ -43,8 +43,22 @@ export const command = new Command({
     aliases: ['rep'],
     description: 'Give rep points to someone',
     command: async (message: Message): Promise<void> => {
-        const member = message.mentions.members!.first()!;
-
+        let member: GuildMember | undefined = message.mentions.members!.first()!;
+        if (!member) {
+            const args = message.content.split(' ');
+            args.shift();
+            if (args.length >= 1) {
+                const guild = await message.guild!.fetch();
+                if (!isNaN(Number(args[0]))) {
+                    member = guild.members.get(args[0]);
+                    member = !member ? guild.members.find(m => m.displayName.toLowerCase() === args.join(' ').toLowerCase()) : member;
+                    member = !member ? message.member! : member;
+                } else {
+                    member = guild.members.find(m => m.displayName.toLowerCase() === args.join(' ').toLowerCase());
+                    member = !member ? message.member! : member;
+                }
+            }
+        }
         if (!member) {
             message.channel.send(`:x: You must specify a member to give rep to!`);
             return;

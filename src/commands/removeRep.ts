@@ -1,4 +1,4 @@
-import { Message } from 'discord.js';
+import { GuildMember, Message } from 'discord.js';
 
 import { RepEntity } from '../entities/Rep';
 import { database } from '../index';
@@ -14,7 +14,20 @@ export const command = new Command({
             return;
         }
 
-        const member = message.mentions.members!.first()!;
+        let member: GuildMember | undefined = message.mentions.members!.first()!;
+        if (!member) {
+            const args = message.content.split(' ');
+            args.shift();
+            if (args.length >= 1) {
+                const guild = await message.guild!.fetch();
+                if (!isNaN(Number(args[0]))) {
+                    member = guild.members.get(args[0]);
+                    member = !member ? guild.members.find(m => m.displayName.toLowerCase() === args[0].toLowerCase()) : member;
+                } else {
+                    member = guild.members.find(m => m.displayName.toLowerCase() === args[0].toLowerCase());
+                }
+            }
+        }
         const amount = parseInt(message.content.split(' ')[2]);
 
         if (!member) {
