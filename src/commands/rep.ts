@@ -52,6 +52,11 @@ export const repCommand = async (message: Message) => {
 			`:x: Nice try! You cannot send rep to yourself`,
 		);
 
+	if (member.user.bot)
+		return message.channel.send(
+			':x: You cannot give rep to bots!'
+		);
+
 	const cooldown = await calcCooldown(message.member);
 
 	if (cooldown == -1) {
