@@ -14,9 +14,12 @@ export const command = new Command({
             .orderBy('rep', 'DESC')
             .getMany();
 
-        const messageText = result.filter(({ id }: RepEntity) => message.guild?.members.get(id)).map(
-            ({ id, rep }: RepEntity, index) => `:white_medium_small_square: \`#${index + 1}\` ${message.guild!.members.get(id)!.user.tag} with **${rep}** reputation\n`,
-        );
+        const messageText = result
+            .filter(({ id }: RepEntity) => message.guild!.members.get(id))
+            .map(
+                ({ id, rep }: RepEntity, index) =>
+                    `:white_medium_small_square: \`#${index + 1}\` ${message.guild!.members.get(id)!.user.tag} with **${rep}** reputation\n`,
+            );
 
         message.channel.send(new MessageEmbed().setDescription(messageText).setTitle(`Reputation leaderboard`));
     },
