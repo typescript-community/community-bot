@@ -4,9 +4,8 @@ import { join } from 'path';
 
 import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
-import { Command, CommandHandler } from '../utils/commandHandler';
-
 import { ReminderScheduler } from '../schedulers/ReminderScheduler';
+import { Command, CommandHandler } from '../utils/commandHandler';
 
 export class PascalClient extends Client {
     commandHandler: CommandHandler;

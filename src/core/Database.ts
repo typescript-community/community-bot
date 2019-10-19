@@ -1,9 +1,9 @@
 import { join } from 'path';
 import { Connection } from 'typeorm';
 
+import { ReminderEntity } from '../entities/Reminder';
 import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
-import { ReminderEntity } from '../entities/Reminder';
 
 export class Database extends Connection {
     public constructor() {

@@ -1,9 +1,9 @@
-import { database, client } from '../index';
-import { ReminderEntity } from '../entities/Reminder';
+import { MessageEmbed } from 'discord.js';
+import ms from 'ms';
 import { Repository } from 'typeorm';
 
-import ms from 'ms';
-import { MessageEmbed } from 'discord.js';
+import { ReminderEntity } from '../entities/Reminder';
+import { client, database } from '../index';
 
 // thanks robin
 const timeElapsed = (timestamp: Date | number): number => Date.now() - new Date(timestamp).getTime();
@@ -18,7 +18,7 @@ export class ReminderScheduler {
         }, 10000);
     }
 
-    private async check() {
+    private async check(): Promise<void> {
         const all = await this.repository.find();
 
         all.forEach(async (reminder: ReminderEntity) => {
@@ -36,7 +36,7 @@ export class ReminderScheduler {
                             description = `:clock1: ${ms(reminder.length)} ago you asked me to remind you. [Scroll to message](${reminder.messageLink})`;
                         }
                         member.send(new MessageEmbed().setDescription(description).setColor('#3178C6'));
-                    } catch {} // because the user might have dms blocked
+                    } catch {} // eslint-disable-line no-empty
                 }
 
                 await this.repository.delete(reminder);

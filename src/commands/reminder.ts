@@ -1,15 +1,14 @@
-import { Command } from '../utils/commandHandler';
 import { Message } from 'discord.js';
+import ms from 'ms';
 
 import { ReminderEntity } from '../entities/Reminder';
 import { database } from '../index';
-
-import ms from 'ms';
+import { Command } from '../utils/commandHandler';
 
 export const command = new Command({
     aliases: ['reminder', 'remindme', 'remind'],
     description: 'Set a reminder',
-    command: async (message: Message) => {
+    command: async (message: Message): Promise<Message> => {
         const split = message.content.split(' ');
         const rawTime = split[1];
         const time = ms(rawTime);
@@ -27,7 +26,7 @@ export const command = new Command({
 
         const repository = database.getRepository(ReminderEntity);
 
-        const reminder = await repository.insert({
+        await repository.insert({
             createdAt: Date.now(),
             member: message.member!.id,
             messageLink: `https://ptb.discordapp.com/channels/${message.guild!.id}/${message.channel.id}/${message.id}`,
