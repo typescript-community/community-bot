@@ -11,11 +11,15 @@ export const command = new Command({
     command: async (message: Message): Promise<Message> => {
         const split = message.content.split(' ');
         const rawTime = split[1];
-        const time = ms(rawTime);
 
+        if (!rawTime) {
+            return message.channel.send(`:x: Please provide a time`);
+        }
+
+        const time = ms(rawTime);
         const reason = split.slice(2).join(' ');
 
-        if (time == undefined || !rawTime) {
+        if (time == undefined) {
             return message.channel.send(`:x: Please provide a valid time`);
         }
 
