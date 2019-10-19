@@ -15,7 +15,7 @@ export const command = new Command({
 
         const reason = split.slice(2).join(' ');
 
-        if (time == undefined || !time) {
+        if (time == undefined || !rawTime) {
             return message.channel.send(`:x: Please provide a valid time`);
         }
 
