@@ -3,6 +3,7 @@ import { Connection } from 'typeorm';
 
 import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
+import { ReminderEntity } from '../entities/Reminder';
 
 export class Database extends Connection {
     public constructor() {
@@ -10,7 +11,7 @@ export class Database extends Connection {
             type: 'sqlite',
             database: join(__dirname, '..', '..', 'database.sqlite'),
             logging: true,
-            entities: [RepEntity, RepCooldownEntity],
+            entities: [RepEntity, RepCooldownEntity, ReminderEntity],
             synchronize: true,
         });
 

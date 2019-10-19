@@ -39,6 +39,6 @@ export const command = new Command({
 
         await repository.save(found);
 
-        message.channel.send(`:white_check_mark: Removed ${amount} from ${member.user.username}'s balance. They now have ${found.rep} reputation.`);
+        message.channel.send(`:ballot_box_with_check: Removed ${amount} from ${member.user.username}'s balance. They now have ${found.rep} reputation.`);
     },
 });

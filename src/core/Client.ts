@@ -6,6 +6,8 @@ import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
 import { Command, CommandHandler } from '../utils/commandHandler';
 
+import { ReminderScheduler } from '../schedulers/ReminderScheduler';
+
 export class PascalClient extends Client {
     commandHandler: CommandHandler;
 
@@ -45,5 +47,7 @@ export class PascalClient extends Client {
     public async start(): Promise<void> {
         await this.login(this._token);
         console.log(`[BOT] Connected`);
+
+        new ReminderScheduler();
     }
 }
