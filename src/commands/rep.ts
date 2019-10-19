@@ -4,6 +4,7 @@ import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
+import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 
 const calcCooldown = async (member: GuildMember): Promise<number> => {
     const repository = database.getRepository(RepCooldownEntity);
@@ -43,7 +44,8 @@ export const command = new Command({
     aliases: ['rep'],
     description: 'Give rep points to someone',
     command: async (message: Message): Promise<void> => {
-        const member = message.mentions.members!.first()!;
+        let member: GuildMember | undefined = message.mentions.members!.first()!;
+        member = !member ? await resolveMemberWithNameSpaces(message) : member;
 
         if (!member) {
             message.channel.send(`:x: You must specify a member to give rep to!`);

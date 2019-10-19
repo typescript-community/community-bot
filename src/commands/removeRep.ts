@@ -1,8 +1,9 @@
-import { Message } from 'discord.js';
+import { GuildMember, Message } from 'discord.js';
 
 import { RepEntity } from '../entities/Rep';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
+import { resolveMember } from '../utils/resolvers';
 
 export const command = new Command({
     aliases: ['removerep'],
@@ -14,7 +15,9 @@ export const command = new Command({
             return;
         }
 
-        const member = message.mentions.members!.first()!;
+        let member: GuildMember | undefined = message.mentions.members!.first()!;
+        member = !member ? await resolvMember(message) : member;
+
         const amount = parseInt(message.content.split(' ')[2]);
 
         if (!member) {
@@ -39,6 +42,6 @@ export const command = new Command({
 
         await repository.save(found);
 
-        message.channel.send(`:ballot_box_with_check: Removed ${amount} from ${member.user.username}'s balance. They now have ${found.rep} reputation.`);
+        message.channel.send(`:white_check_mark: Removed ${amount} from ${member.user.username}'s balance. They now have ${found.rep} reputation.`);
     },
 });
