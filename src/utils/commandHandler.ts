@@ -50,6 +50,9 @@ export class CommandHandler {
      * @param message Message Event Object
      */
     private async handleMessageEvt(message: Message): Promise<void> {
+        if (message.author!.bot) return;
+        if (!message.guild) return;
+
         const rawMessageContent = message.content.split(' ');
         // First word is command word
         let cmd = rawMessageContent
