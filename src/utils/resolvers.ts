@@ -18,7 +18,7 @@ export const resolveMemberWithNameSpaces = async (message: Message): Promise<Gui
     return member;
 };
 
-export const resolveMemberWithoutNameSpaces = async (message: Message): Promise<GuildMember | undefined> => {
+export const resolveMember = async (message: Message): Promise<GuildMember | undefined> => {
     let member: GuildMember | undefined;
     const args = message.content.split(' ');
     args.shift();

@@ -3,7 +3,7 @@ import { GuildMember, Message } from 'discord.js';
 import { RepEntity } from '../entities/Rep';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
-import { resolveMemberWithoutNameSpaces } from '../utils/resolvers';
+import { resolveMember } from '../utils/resolvers';
 
 export const command = new Command({
     aliases: ['removerep'],
@@ -16,7 +16,7 @@ export const command = new Command({
         }
 
         let member: GuildMember | undefined = message.mentions.members!.first()!;
-        member = !member ? await resolveMemberWithoutNameSpaces(message) : member;
+        member = !member ? await resolveMember(message) : member;
 
         const amount = parseInt(message.content.split(' ')[2]);
 
