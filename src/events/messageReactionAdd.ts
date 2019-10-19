@@ -1,11 +1,19 @@
 import { MessageReaction, User } from 'discord.js';
 
-import { AUTOROLE } from '../utils/constants';
+import { AUTOROLE, VERIFICATION } from '../utils/constants';
 
 export const reactionAddEvent = async (reaction: MessageReaction, user: User): Promise<void> => {
     if (reaction.message.partial) await reaction.message.fetch();
 
     const member = reaction.message.guild!.member(user)!;
+
+    if (reaction.message.id == VERIFICATION.message) {
+        const role = reaction.message.guild!.roles.get(VERIFICATION.role)!;
+
+        await member.roles.add(role);
+
+        await reaction.users.remove(user);
+    }
 
     if (reaction.message.id == AUTOROLE.experienceMessage) {
         if (reaction.emoji.name == AUTOROLE.emojis.beginner) {

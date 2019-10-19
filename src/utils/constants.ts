@@ -16,3 +16,9 @@ export const AUTOROLE = {
         helper: '✅',
     },
 };
+
+export const VERIFICATION = {
+    role: '635190295881056287',
+    message: '635195859310739456',
+    emoji: '☑️',
+};
