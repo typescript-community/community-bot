@@ -82,6 +82,6 @@ export const command = new Command({
             await repository.save(found);
         }
 
-        message.channel.send(`:white_check_mark: Successfully sent rep to ${member.user.username} (${cooldown} remaining today)`);
+        message.channel.send(`:ballot_box_with_check: Successfully sent rep to ${member.user.username} (${cooldown} remaining today)`);
     },
 });

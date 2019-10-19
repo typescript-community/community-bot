@@ -24,18 +24,10 @@ interface CommandOptions {
 // Command Handler Class
 export class CommandHandler {
     private commands: Command[] = [];
-    private commandNotFoundFn: (message: Message) => Promise<void>;
 
     constructor(private bot: Client, private option: CommandHandlerOptions) {
         // Logger
         this.option.logger = option.logger || console.log;
-
-        // Not found command function
-        if (!option.commandNotFoundFnOrMessage || typeof option.commandNotFoundFnOrMessage == 'string') {
-            this.commandNotFoundFn = async (message: Message): Promise<void> => {
-                await message.channel.send(option.commandNotFoundFnOrMessage || 'Command Not Found');
-            };
-        }
 
         // Add Help Command
         this.addHelpCommand();
@@ -58,6 +50,9 @@ export class CommandHandler {
      * @param message Message Event Object
      */
     private async handleMessageEvt(message: Message): Promise<void> {
+        if (message.author!.bot) return;
+        if (!message.guild) return;
+
         const rawMessageContent = message.content.split(' ');
         // First word is command word
         let cmd = rawMessageContent
@@ -98,9 +93,6 @@ export class CommandHandler {
 
             await Promise.all(commandsRan);
         }
-
-        // If no commands found run the no command found function
-        else await this.commandNotFoundFn(message);
     }
 
     /**

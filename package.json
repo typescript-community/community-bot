@@ -44,6 +44,7 @@
         "abort-controller": "^3.0.0",
         "discord.js": "discordjs/discord.js",
         "dotenv": "^8.2.0",
+        "ms": "^2.1.2",
         "source-map-support": "^0.5.13",
         "sqlite3": "^4.1.0",
         "typeorm": "^0.2.20",
@@ -52,6 +53,7 @@
     "devDependencies": {
         "@codechecks/client": "^0.1.10",
         "@types/jest": "^24.0.19",
+        "@types/ms": "^0.7.31",
         "@typescript-eslint/eslint-plugin": "^2.4.0",
         "@typescript-eslint/parser": "^2.4.0",
         "codecov": "^3.6.1",
