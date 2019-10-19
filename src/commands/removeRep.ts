@@ -3,6 +3,7 @@ import { GuildMember, Message } from 'discord.js';
 import { RepEntity } from '../entities/Rep';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
+import { resolveMemberWithoutNameSpaces } from '../utils/resolvers';
 
 export const command = new Command({
     aliases: ['removerep'],
@@ -15,19 +16,8 @@ export const command = new Command({
         }
 
         let member: GuildMember | undefined = message.mentions.members!.first()!;
-        if (!member) {
-            const args = message.content.split(' ');
-            args.shift();
-            if (args.length >= 1) {
-                const guild = await message.guild!.fetch();
-                if (!isNaN(Number(args[0]))) {
-                    member = guild.members.get(args[0]);
-                    member = !member ? guild.members.find(m => m.displayName.toLowerCase() === args[0].toLowerCase()) : member;
-                } else {
-                    member = guild.members.find(m => m.displayName.toLowerCase() === args[0].toLowerCase());
-                }
-            }
-        }
+        member = !member ? await resolveMemberWithoutNameSpaces(message) : member;
+
         const amount = parseInt(message.content.split(' ')[2]);
 
         if (!member) {
