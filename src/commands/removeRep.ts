@@ -15,8 +15,7 @@ export const command = new Command({
             return;
         }
 
-        let member: GuildMember | undefined = message.mentions.members!.first()!;
-        member = !member ? await resolveMember(message) : member;
+        const member: GuildMember | undefined = message.mentions.members!.first()! ?? await resolveMember(message);
 
         const amount = parseInt(message.content.split(' ')[2]);
 
@@ -34,7 +33,7 @@ export const command = new Command({
         const found = await repository.findOne({ id: member.id });
 
         if (!found || found.rep <= 0) {
-            message.channel.send(`:x: This user has 0 reputation!`);
+            message.channel.send(`:x: This user has **0** reputation!`);
             return;
         }
 
@@ -42,6 +41,6 @@ export const command = new Command({
 
         await repository.save(found);
 
-        message.channel.send(`:white_check_mark: Removed ${amount} from ${member.user.username}'s balance. They now have ${found.rep} reputation.`);
+        message.channel.send(`:white_check_mark: Removed **${amount}** from **${member.user.username}**'s balance. They now have **${found.rep}** reputation.`);
     },
 });

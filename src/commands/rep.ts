@@ -44,15 +44,14 @@ export const command = new Command({
     aliases: ['rep'],
     description: 'Give rep points to someone',
     command: async (message: Message): Promise<void> => {
-        let member: GuildMember | undefined = message.mentions.members!.first()!;
-        member = !member ? await resolveMemberWithNameSpaces(message) : member;
+        const member: GuildMember | undefined = message.mentions.members!.first()! ?? await resolveMemberWithNameSpaces(message);
 
         if (!member) {
             message.channel.send(`:x: You must specify a member to give rep to!`);
             return;
         }
 
-        if (member.id == message.member!.id) {
+        if (member.id === message.member!.id) {
             message.channel.send(`:x: Nice try! You cannot send rep to yourself`);
             return;
         }
@@ -64,8 +63,8 @@ export const command = new Command({
 
         const cooldown = await calcCooldown(message.member!);
 
-        if (cooldown == -1) {
-            message.channel.send(`You have already used your 3 daily reps!`);
+        if (cooldown === -1) {
+            message.channel.send(`You have already used your **3** daily reps!`);
             return;
         }
 
@@ -82,6 +81,6 @@ export const command = new Command({
             await repository.save(found);
         }
 
-        message.channel.send(`:ballot_box_with_check: Successfully sent rep to ${member.user.username} (${cooldown} remaining today)`);
+        message.channel.send(`:ballot_box_with_check: Successfully sent rep to **${member.user.username}** (**${cooldown}** remaining today)`);
     },
 });

@@ -29,14 +29,14 @@ export class ReminderScheduler {
                     try {
                         let description;
                         if (reminder.reason) {
-                            description = `:clock1: ${ms(reminder.length)} ago you asked me to remind you: ${reminder.reason}. [Scroll to message](${
+                            description = `:clock1: **${ms(reminder.length)}** ago you asked me to remind you: ${reminder.reason}. [Scroll to message](${
                                 reminder.messageLink
-                            })`;
+                                })`;
                         } else {
-                            description = `:clock1: ${ms(reminder.length)} ago you asked me to remind you. [Scroll to message](${reminder.messageLink})`;
+                            description = `:clock1: **${ms(reminder.length)}** ago you asked me to remind you. [Scroll to message](${reminder.messageLink})`;
                         }
                         member.send(new MessageEmbed().setDescription(description).setColor('#3178C6'));
-                    } catch {} // eslint-disable-line no-empty
+                    } catch { } // eslint-disable-line no-empty
                 }
 
                 await this.repository.delete(reminder);
