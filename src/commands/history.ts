@@ -27,9 +27,9 @@ export const command = new Command({
 
         found.forEach((history: HistoryEntity) => {
             if (history.from == member!.id) {
-                content += `:white_small_square: Gave 1 rep to **${memberPartial(history.to)}**`;
+                content += `:white_small_square: Gave 1 rep to **<@${history.to}>**`;
             } else {
-                content += `:white_small_square: Got 1 rep from **${memberPartial(history.from)}**`;
+                content += `:white_small_square: Got 1 rep from **<@${history.from}>**`;
             }
 
             content += ` [[Scroll]](${history.messageLink}) \n`;
