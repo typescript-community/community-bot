@@ -4,8 +4,8 @@ import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
-import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 import { addRepHistory } from '../utils/history';
+import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 
 const calcCooldown = async (member: GuildMember): Promise<number> => {
     const repository = database.getRepository(RepCooldownEntity);

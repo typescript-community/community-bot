@@ -1,6 +1,6 @@
 import { client } from '../index';
 
-export const memberPartial = (id: string) => {
+export const memberPartial = (id: string): string => {
     const member = client.guilds.get('508357248330760243')!.member(id);
 
     if (!member) {

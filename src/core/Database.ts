@@ -1,10 +1,10 @@
 import { join } from 'path';
 import { Connection } from 'typeorm';
 
+import { HistoryEntity } from '../entities/History';
 import { ReminderEntity } from '../entities/Reminder';
 import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
-import { HistoryEntity } from '../entities/History';
 
 export class Database extends Connection {
     public constructor() {

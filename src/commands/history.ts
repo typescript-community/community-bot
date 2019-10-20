@@ -1,19 +1,18 @@
-import { Command } from '../utils/commandHandler';
 import { Message, MessageEmbed } from 'discord.js';
 
-import { database } from '../index';
 import { HistoryEntity } from '../entities/History';
-
-import { resolveMemberWithNameSpaces } from '../utils/resolvers';
+import { database } from '../index';
+import { Command } from '../utils/commandHandler';
 import { memberPartial } from '../utils/partials';
+import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 
 export const command = new Command({
     aliases: ['history', 'his'],
     description: 'Gets the reputation history',
-    command: async (message: Message) => {
+    command: async (message: Message): Promise<Message> => {
         let member = message.mentions.members!.first() ? message.mentions.members!.first() : undefined;
-        member = !member ? await resolveMemberWithNameSpaces(message) : member;
-        member = !member ? message.member! : member;
+        member = !member ? await resolveMemberWithNameSpaces(message) : member; // eslint-disable-line require-atomic-updates
+        member = !member ? message.member! : member; // eslint-disable-line require-atomic-updates
 
         const repository = database.getRepository(HistoryEntity);
 
