@@ -1,13 +1,13 @@
-import { Command } from '../utils/commandHandler';
 import { Message } from 'discord.js';
 
 import { RepCooldownEntity } from '../entities/RepCooldown';
 import { database } from '../index';
+import { Command } from '../utils/commandHandler';
 
 export const command = new Command({
     aliases: ['remaining'],
     description: 'Gets the amount of reputation you have left to give today',
-    command: async (message: Message) => {
+    command: async (message: Message): Promise<Message> => {
         const repository = database.getRepository(RepCooldownEntity);
 
         const found = await repository.findOne({ id: message.member!.id });

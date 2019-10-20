@@ -1,6 +1,7 @@
 import { join } from 'path';
 import { Connection } from 'typeorm';
 
+import { HistoryEntity } from '../entities/History';
 import { ReminderEntity } from '../entities/Reminder';
 import { RepEntity } from '../entities/Rep';
 import { RepCooldownEntity } from '../entities/RepCooldown';
@@ -11,7 +12,7 @@ export class Database extends Connection {
             type: 'sqlite',
             database: join(__dirname, '..', '..', 'database.sqlite'),
             logging: true,
-            entities: [RepEntity, RepCooldownEntity, ReminderEntity],
+            entities: [RepEntity, RepCooldownEntity, ReminderEntity, HistoryEntity],
             synchronize: true,
         });
 
