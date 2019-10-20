@@ -15,7 +15,8 @@ export const command = new Command({
             return;
         }
 
-        const member: GuildMember | undefined = message.mentions.members!.first()! ?? await resolveMember(message);
+        let member: GuildMember | undefined = message.mentions.members!.first()!;
+        member = !member ? await resolveMember(message) : member;
 
         const amount = parseInt(message.content.split(' ')[2]);
 

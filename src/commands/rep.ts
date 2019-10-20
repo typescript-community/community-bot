@@ -44,7 +44,8 @@ export const command = new Command({
     aliases: ['rep'],
     description: 'Give rep points to someone',
     command: async (message: Message): Promise<void> => {
-        const member: GuildMember | undefined = message.mentions.members!.first()! ?? await resolveMemberWithNameSpaces(message);
+        let member: GuildMember | undefined = message.mentions.members!.first()!;
+        member = !member ? await resolveMemberWithNameSpaces(message) : member;
 
         if (!member) {
             message.channel.send(`:x: You must specify a member to give rep to!`);
