@@ -5,6 +5,7 @@ import { RepCooldownEntity } from '../entities/RepCooldown';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
 import { resolveMemberWithNameSpaces } from '../utils/resolvers';
+import { addRepHistory } from '../utils/history';
 
 const calcCooldown = async (member: GuildMember): Promise<number> => {
     const repository = database.getRepository(RepCooldownEntity);
@@ -83,5 +84,7 @@ export const command = new Command({
         }
 
         message.channel.send(`:ballot_box_with_check: Successfully sent rep to **${member.user.username}** (**${cooldown}** remaining today)`);
+
+        addRepHistory(message.member!, member, message);
     },
 });

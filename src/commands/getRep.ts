@@ -1,4 +1,4 @@
-import { Message, GuildMember } from 'discord.js';
+import { Message } from 'discord.js';
 
 import { RepEntity } from '../entities/Rep';
 import { database } from '../index';
