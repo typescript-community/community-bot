@@ -20,7 +20,7 @@ export class PascalClient extends Client {
         this.commandHandler = new CommandHandler(this, {
             prefix: 't!',
             logger: (...message): void => console.log('[BOT]', ...message),
-            guildsAllowed: ['244230771232079873', '508357248330760243'],
+            guildsAllowed: ['508357248330760243'],
         });
 
         const registeredCommands = Promise.all(
