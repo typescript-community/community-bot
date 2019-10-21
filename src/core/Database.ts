@@ -9,8 +9,8 @@ import { RepCooldownEntity } from '../entities/RepCooldown';
 export class Database extends Connection {
     public constructor() {
         super({
-            type: 'sqlite',
-            database: join(__dirname, '..', '..', 'database.sqlite'),
+            type: process.env.NODE_ENV == 'production' ? 'postgres' : 'sqlite',
+            database: process.env.NODE_ENV == 'production' ? process.env.DATABASE_URL! : join(__dirname, '..', '..', 'database.sqlite'),
             logging: true,
             entities: [RepEntity, RepCooldownEntity, ReminderEntity, HistoryEntity],
             synchronize: true,
