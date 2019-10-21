@@ -3,7 +3,6 @@ import { Message, MessageEmbed } from 'discord.js';
 import { HistoryEntity } from '../entities/History';
 import { database } from '../index';
 import { Command } from '../utils/commandHandler';
-import { memberPartial } from '../utils/partials';
 import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 
 export const command = new Command({

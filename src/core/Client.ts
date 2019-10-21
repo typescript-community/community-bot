@@ -6,9 +6,17 @@ import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
 import { ReminderScheduler } from '../schedulers/ReminderScheduler';
 import { Command, CommandHandler } from '../utils/commandHandler';
+import { Filter, FilterHandler } from '../utils/filterHandler';
 
 export class PascalClient extends Client {
-    commandHandler: CommandHandler;
+    commandHandler: CommandHandler = new CommandHandler(this, {
+        prefix: 't!',
+        logger: (...message): void => console.log('[BOT]', ...message),
+        guildsAllowed: ['508357248330760243'],
+    });
+    filterHandler: FilterHandler = new FilterHandler(this, {
+        logger: (...message): void => console.log('[BOT]', ...message),
+    });
 
     public constructor(private readonly _token: string) {
         super({
@@ -17,12 +25,21 @@ export class PascalClient extends Client {
             partials: ['MESSAGE', 'CHANNEL'],
         });
 
-        this.commandHandler = new CommandHandler(this, {
-            prefix: 't!',
-            logger: (...message): void => console.log('[BOT]', ...message),
-            guildsAllowed: ['508357248330760243'],
-        });
+        this.loadHandlers();
 
+        // Handle other events
+        this.on('messageReactionAdd', reactionAddEvent);
+        this.on('messageReactionRemove', reactionRemoveEvent);
+    }
+
+    public async start(): Promise<void> {
+        await this.login(this._token);
+        console.log(`[BOT] Connected`);
+
+        new ReminderScheduler();
+    }
+
+    private loadHandlers(): void {
         const registeredCommands = Promise.all(
             readdirSync(join(__dirname, '../commands'))
                 .filter(fileName => fileName.endsWith('.js'))
@@ -38,15 +55,19 @@ export class PascalClient extends Client {
             console.error(err);
         });
 
-        // Handle other events
-        this.on('messageReactionAdd', reactionAddEvent);
-        this.on('messageReactionRemove', reactionRemoveEvent);
-    }
+        const registeredFilters = Promise.all(
+            readdirSync(join(__dirname, '../filters'))
+                .filter(fileName => fileName.endsWith('.js'))
+                .map(async fileName => {
+                    const path = join(__dirname, '../filters', fileName);
+                    const file: { filter: Filter } = await import(path);
+                    this.filterHandler.registerFilter(file.filter);
+                }),
+        );
 
-    public async start(): Promise<void> {
-        await this.login(this._token);
-        console.log(`[BOT] Connected`);
-
-        new ReminderScheduler();
+        registeredFilters.catch(err => {
+            console.error('[BOT] Was unable to load filters');
+            console.error(err);
+        });
     }
 }
