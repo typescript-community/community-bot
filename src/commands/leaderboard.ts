@@ -9,7 +9,7 @@ export const command = new Command({
     description: 'Get the leaderboard',
     command: async (message: Message): Promise<void> => {
         const repository = database.getRepository(RepEntity);
-        let result = await repository
+        const result = await repository
             .createQueryBuilder()
             .orderBy('rep', 'DESC')
             .limit(11)
