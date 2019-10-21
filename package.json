@@ -39,6 +39,7 @@
         "atLeast": 90
     },
     "dependencies": {
+        "@discordjs/collection": "^0.1.3",
         "@types/node": "^12.11.1",
         "@types/ws": "^6.0.3",
         "abort-controller": "^3.0.0",
