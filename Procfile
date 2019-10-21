@@ -1,1 +1,1 @@
-web: node -r source-map-support/register ./build
+worker: node -r source-map-support/register ./build
