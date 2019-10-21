@@ -9,18 +9,21 @@ export const command = new Command({
     description: 'Get the leaderboard',
     command: async (message: Message): Promise<void> => {
         const repository = database.getRepository(RepEntity);
-        const result = await repository
+        let result = await repository
             .createQueryBuilder()
             .orderBy('rep', 'DESC')
+            .limit(11)
             .getMany();
 
         const messageText = result
             .filter(({ id }: RepEntity) => message.guild!.members.get(id))
-            .map(
-                ({ id, rep }: RepEntity, index) =>
-                    `:white_medium_small_square: \`#${index + 1}\` ${message.guild!.members.get(id)!.user.tag} with **${rep}** reputation\n`,
-            );
+            .map(({ id, rep }: RepEntity, index) => `:white_small_square: \`#${index + 1}\` <@${id}> with **${rep}** reputation`);
 
-        message.channel.send(new MessageEmbed().setDescription(messageText).setTitle(`Reputation leaderboard`));
+        message.channel.send(
+            new MessageEmbed()
+                .setDescription(messageText)
+                .setTitle(`Reputation Leaderboard`)
+                .setColor(`#3178C6`),
+        );
     },
 });

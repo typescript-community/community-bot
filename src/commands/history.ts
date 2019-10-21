@@ -32,7 +32,12 @@ export const command = new Command({
                 content += `:white_small_square: Got 1 rep from **<@${history.from}>**`;
             }
 
-            content += ` [[Scroll]](${history.messageLink}) \n`;
+            const date = new Date(history.date);
+
+            content += ` [[Scroll]](${history.messageLink}) \`(${date.getUTCDate()}/${date.getMonth()}/${date
+                .getFullYear()
+                .toString()
+                .replace('20', '')} - ${date.getHours()}:${date.getMinutes()})\`\n`;
         });
 
         const avatar = member.user.avatarURL() == null ? undefined : member.user.avatarURL()!;
