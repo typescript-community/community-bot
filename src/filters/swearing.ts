@@ -6,7 +6,7 @@ import { Filter } from '../utils/filterHandler';
 export const filter = new Filter({
     name: 'swearing',
     handler: async (message: Message): Promise<undefined | Message> => {
-        const content = message.content.toLowerCase();
+        const content = message.content.toLowerCase().split(' ');
 
         const includes = words.some(word => content.includes(word));
         if (!includes) return;
