@@ -9,6 +9,8 @@ import { Command, CommandHandler } from '../utils/commandHandler';
 import { Filter, FilterHandler } from '../utils/filterHandler';
 import { pollsMessage } from '../utils/polls';
 
+import { ModLogManager } from '../utils/modlogManager';
+
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
         prefix: 't!',
@@ -72,5 +74,7 @@ export class PascalClient extends Client {
             console.error('[BOT] Was unable to load filters');
             console.error(err);
         });
+
+        new ModLogManager(this);
     }
 }
