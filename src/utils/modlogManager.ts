@@ -1,8 +1,24 @@
-import { Client, GuildMember, MessageEmbed, Message, TextChannel } from 'discord.js';
-import { LOGGING } from '../utils/constants';
-import { client } from '../index';
+import { Client, GuildMember, Message, MessageEmbed, TextChannel } from 'discord.js';
 
-const memberLog = (member: GuildMember, leave: boolean = false) => {
+import { client } from '../index';
+import { LOGGING } from '../utils/constants';
+
+export class ModLogManager {
+    public constructor(private readonly client: Client) {
+        this.client.on('guildMemberAdd', (member: GuildMember) => memberLog(member)); // eslint-disable-line
+        this.client.on('guildMemberRemove', (member: GuildMember) => memberLog(member, true)); // eslint-disable-line
+
+        this.client.on('messageDelete', deleteLog); // eslint-disable-line
+    }
+
+    static send(embed: MessageEmbed): void {
+        const channel = client.channels.get(LOGGING.channel)! as TextChannel;
+
+        channel.send(embed);
+    }
+}
+
+const memberLog = (member: GuildMember, leave = false): void => {
     const avatar = member.user.avatarURL() == null ? undefined : member.user.avatarURL()!;
 
     if (leave) {
@@ -26,7 +42,7 @@ const memberLog = (member: GuildMember, leave: boolean = false) => {
     );
 };
 
-const deleteLog = (message: Message) => {
+const deleteLog = (message: Message): void => {
     if (message.partial) return;
 
     const avatar = message.member!.user.avatarURL() == null ? undefined : message.member!.user.avatarURL()!;
@@ -41,7 +57,7 @@ const deleteLog = (message: Message) => {
     );
 };
 
-export const filterLog = (filterName: string, content: string, member: GuildMember) => {
+export const filterLog = (filterName: string, content: string, member: GuildMember): void => {
     const avatar = member!.user.avatarURL() == null ? undefined : member!.user.avatarURL()!;
 
     ModLogManager.send(
@@ -54,18 +70,3 @@ export const filterLog = (filterName: string, content: string, member: GuildMemb
             .addField('Filter', filterName),
     );
 };
-
-export class ModLogManager {
-    public constructor(private readonly client: Client) {
-        this.client.on('guildMemberAdd', (member: GuildMember) => memberLog(member));
-        this.client.on('guildMemberRemove', (member: GuildMember) => memberLog(member, true));
-
-        this.client.on('messageDelete', deleteLog);
-    }
-
-    static send(embed: MessageEmbed) {
-        const channel = client.channels.get(LOGGING.channel)! as TextChannel;
-
-        channel.send(embed);
-    }
-}

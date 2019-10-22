@@ -24,7 +24,7 @@ export const VERIFICATION = {
 };
 
 export const LOGGING = {
-    channel: '617112922711261186',
+    channel: '636167570650562560',
     colors: {
         good: '#00ba19',
         medium: '#d9b500',

@@ -2,7 +2,6 @@ import { Message } from 'discord.js';
 
 import { words } from '../utils/data/swearing.json';
 import { Filter } from '../utils/filterHandler';
-
 import { filterLog } from '../utils/modlogManager';
 
 export const filter = new Filter({

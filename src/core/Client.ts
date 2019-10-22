@@ -7,9 +7,8 @@ import { reactionRemoveEvent } from '../events/messageReactionRemove';
 import { ReminderScheduler } from '../schedulers/ReminderScheduler';
 import { Command, CommandHandler } from '../utils/commandHandler';
 import { Filter, FilterHandler } from '../utils/filterHandler';
-import { pollsMessage } from '../utils/polls';
-
 import { ModLogManager } from '../utils/modlogManager';
+import { pollsMessage } from '../utils/polls';
 
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
