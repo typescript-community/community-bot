@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 
-export const pollsMessage = async (message: Message) => {
+export const pollsMessage = (message: Message): void => {
     if (message.content.startsWith('poll:')) {
         message.react('👍');
         message.react('👎');

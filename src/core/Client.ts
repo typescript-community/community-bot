@@ -7,7 +7,7 @@ import { reactionRemoveEvent } from '../events/messageReactionRemove';
 import { ReminderScheduler } from '../schedulers/ReminderScheduler';
 import { Command, CommandHandler } from '../utils/commandHandler';
 import { Filter, FilterHandler } from '../utils/filterHandler';
-
+import { ModLogManager } from '../utils/modlogManager';
 import { pollsMessage } from '../utils/polls';
 
 export class PascalClient extends Client {
@@ -73,5 +73,7 @@ export class PascalClient extends Client {
             console.error('[BOT] Was unable to load filters');
             console.error(err);
         });
+
+        new ModLogManager(this);
     }
 }

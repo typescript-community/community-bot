@@ -22,7 +22,7 @@ export class FilterHandler {
 
     public registerFilter(filter: Filter): void {
         this.filters.push(filter);
-        this.options.logger(`Added filter`, filter.options.name);
+        this.options.logger(`Added filter:`, filter.options.name);
     }
 
     private handleMessage(message: Message): void {

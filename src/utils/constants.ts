@@ -22,3 +22,13 @@ export const VERIFICATION = {
     message: '635195859310739456',
     emoji: '☑️',
 };
+
+export const LOGGING = {
+    channel: '636167570650562560',
+    colors: {
+        good: '#00ba19',
+        medium: '#d9b500',
+        bad: '#c71010',
+        info: '#005791',
+    },
+};
