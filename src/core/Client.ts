@@ -8,6 +8,8 @@ import { ReminderScheduler } from '../schedulers/ReminderScheduler';
 import { Command, CommandHandler } from '../utils/commandHandler';
 import { Filter, FilterHandler } from '../utils/filterHandler';
 
+import { pollsMessage } from '../utils/polls';
+
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
         prefix: 't!',
@@ -30,6 +32,8 @@ export class PascalClient extends Client {
         // Handle other events
         this.on('messageReactionAdd', reactionAddEvent);
         this.on('messageReactionRemove', reactionRemoveEvent);
+
+        this.on('message', pollsMessage);
     }
 
     public async start(): Promise<void> {
