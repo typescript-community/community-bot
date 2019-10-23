@@ -30,12 +30,12 @@ export const playgroundLinksMessage = async (message: Message): Promise<void> =>
         await message.delete();
     } else {
         await message.channel.send(
+            `<@${message.author!.id}> Please remove the playground link from your message`,
             new MessageEmbed()
                 .setAuthor(message.author!.tag, avatar)
                 .setTitle(`Playground link shortened`)
                 .setURL(matches[0])
-                .setColor('#3178C6')
-                .setFooter('Message not deleted - please edit your message'),
+                .setColor('#3178C6'),
         );
     }
 };
