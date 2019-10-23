@@ -44,6 +44,7 @@ const memberLog = (member: GuildMember, leave = false): void => {
 
 const deleteLog = (message: Message): void => {
     if (message.partial) return;
+    if (message.author!.bot) return;
 
     const avatar = message.member!.user.avatarURL() == null ? undefined : message.member!.user.avatarURL()!;
 
