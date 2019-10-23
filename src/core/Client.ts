@@ -8,6 +8,7 @@ import { ReminderScheduler } from '../schedulers/ReminderScheduler';
 import { Command, CommandHandler } from '../utils/commandHandler';
 import { Filter, FilterHandler } from '../utils/filterHandler';
 import { ModLogManager } from '../utils/modlogManager';
+import { playgroundLinksMessage } from '../utils/playgroundLinks';
 import { pollsMessage } from '../utils/polls';
 
 export class PascalClient extends Client {
@@ -34,6 +35,7 @@ export class PascalClient extends Client {
         this.on('messageReactionRemove', reactionRemoveEvent);
 
         this.on('message', pollsMessage);
+        this.on('message', playgroundLinksMessage);
     }
 
     public async start(): Promise<void> {
