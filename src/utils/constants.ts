@@ -32,3 +32,7 @@ export const LOGGING = {
         info: '#005791',
     },
 };
+
+export const TAGS = {
+    prefix: '?',
+};
