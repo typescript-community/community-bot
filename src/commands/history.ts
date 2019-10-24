@@ -64,7 +64,7 @@ export const command = new Command({
             .setColor(`#3178C6`)
             .setDescription(content);
 
-        const chunked = chunk<string>(arr, 10).map(arr => arr.join('\n'));
+        const chunked = arr.length == 0 ? [`<@${member.id}> has no history`] : chunk<string>(arr, 10).map(arr => arr.join('\n'));
 
         new Paginator(embed, chunked, message.member!, message.channel as TextChannel);
     },
