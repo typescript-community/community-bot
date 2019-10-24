@@ -14,7 +14,7 @@ import { tagsMessage } from '../utils/tags';
 
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
-        prefix: 's!',
+        prefix: 't!',
         logger: (...message): void => console.log('[BOT]', ...message),
         guildsAllowed: ['508357248330760243'],
     });
