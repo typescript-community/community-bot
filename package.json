@@ -46,6 +46,7 @@
         "discord.js": "discordjs/discord.js",
         "dotenv": "^8.2.0",
         "ms": "^2.1.2",
+        "pascal-case": "^2.0.1",
         "pg": "^7.12.1",
         "source-map-support": "^0.5.13",
         "sqlite3": "^4.1.0",
