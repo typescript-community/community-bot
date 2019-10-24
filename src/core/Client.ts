@@ -10,10 +10,11 @@ import { Filter, FilterHandler } from '../utils/filterHandler';
 import { ModLogManager } from '../utils/modlogManager';
 import { playgroundLinksMessage } from '../utils/playgroundLinks';
 import { pollsMessage } from '../utils/polls';
+import { tagsMessage } from '../utils/tags';
 
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
-        prefix: 't!',
+        prefix: 's!',
         logger: (...message): void => console.log('[BOT]', ...message),
         guildsAllowed: ['508357248330760243'],
     });
@@ -36,6 +37,7 @@ export class PascalClient extends Client {
 
         this.on('message', pollsMessage);
         this.on('message', playgroundLinksMessage);
+        this.on('message', tagsMessage);
     }
 
     public async start(): Promise<void> {
