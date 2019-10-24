@@ -6,7 +6,7 @@
     <a href="https://travis-ci.com/typescript-community/community-bot"><img src="https://travis-ci.com/typescript-community/community-bot.svg?branch=master" alt="Build Status" /></a>
     <a href="https://codecov.io/gh/typescript-community/community-bot"><img src="https://codecov.io/gh/typescript-community/community-bot/branch/master/graph/badge.svg" alt="Coverage Status" /></a>
     <a href="https://github.com/codechecks/typecov"><img src="https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https://raw.githubusercontent.com/typescript-community/community-bot/master/package.json" alt="TypeCov" /></a>
-    <a href="https://discord.gg/kZVhUNj"><img src="https://img.shields.io/discord/508357248330760243?logo=discord" alt="chat on Discord"></a>
+    <a href="https://discord.gg/typescript"><img src="https://img.shields.io/discord/508357248330760243?logo=discord" alt="chat on Discord"></a>
     <a href="https://codechecks.io"><img src="https://raw.githubusercontent.com/codechecks/docs/master/images/badges/badge-green.svg?sanitize=true" alt="Codechecks" /></a>
   </p>
 
