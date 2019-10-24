@@ -67,6 +67,10 @@ export class Paginator {
 
             await this.refresh();
         });
+
+        this.collector.on('end', () => {
+            this.message.reactions.removeAll();
+        });
     }
 
     private async refresh(): Promise<void> {
