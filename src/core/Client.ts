@@ -12,8 +12,6 @@ import { playgroundLinksMessage } from '../utils/playgroundLinks';
 import { pollsMessage } from '../utils/polls';
 import { tagsMessage } from '../utils/tags';
 
-import { shortenLink } from '../utils/short';
-
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
         prefix: 't!',

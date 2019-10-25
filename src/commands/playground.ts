@@ -2,7 +2,6 @@ import { Message, MessageEmbed } from 'discord.js';
 
 import { Command } from '../utils/commandHandler';
 import { toPlayground } from '../utils/playground';
-
 import { shortenLink } from '../utils/short';
 
 const REGEXES = [new RegExp('```ts'), new RegExp('```typescript'), new RegExp('```')];

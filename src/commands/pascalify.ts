@@ -7,17 +7,15 @@ export const command = new Command({
     aliases: ['PascalCase', 'Pascalify', 'pascalify', 'Robinify', 'robinify'],
     command: async (message: Message): Promise<Message> => {
         // Gets rid of command prefix
-        const userMessage = message.content
-            .split(' ')
-            .slice(1)
-            .join(' ');
+        const userMessage = message.content.replace(/^\s*[^\s]+\s+/, '');
 
         const pascalifiedMessage =
             userMessage.charAt(0).toUpperCase() +
             userMessage
                 .slice(1)
+                .replace(/[A-Z]/g, ' $&')
                 .toLowerCase()
-                .replace(/ (.)/g, (match: string, p1: string): string => p1.toUpperCase());
+                .replace(/[\t\s\n\r](\w)/g, (match, p1: string) => p1.toUpperCase());
 
         return message.channel.send(pascalifiedMessage);
     },
