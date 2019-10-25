@@ -7,10 +7,7 @@ export const command = new Command({
     aliases: ['PascalCase', 'Pascalify', 'pascalify', 'Robinify', 'robinify'],
     command: async (message: Message): Promise<Message> => {
         // Gets rid of command prefix
-        const userMessage = message.content
-            .split(' ')
-            .slice(1)
-            .join(' ');
+        const userMessage = message.content.replace(/^\s*[^\s]+\s+/, '');
 
         const pascalifiedMessage =
             userMessage.charAt(0).toUpperCase() +
