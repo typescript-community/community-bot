@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-export const shortenLink = async (url: string) => {
+export const shortenLink = async (url: string): Promise<string> => {
     const res = await fetch(`https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=${process.env.LINKS_KEY}`, {
         method: 'POST',
         body: JSON.stringify({
