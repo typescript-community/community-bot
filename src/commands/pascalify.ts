@@ -11,7 +11,7 @@ export const command = new Command({
             .split(' ')
             .slice(1)
             .join(' ')
-            .replace(/[A-Z]/g, match => ` ${match.toLowerCase()}`);
+            .replace(/[A-Z]/g, match => ` ${match}`);
 
         const pascalifiedMessage =
             userMessage.charAt(0).toUpperCase() +
