@@ -10,14 +10,15 @@ export const command = new Command({
         const userMessage = message.content
             .split(' ')
             .slice(1)
-            .join(' ');
+            .join(' ')
+            .replace(/[A-Z]/g, match => ` ${match.toLowerCase()}`);
 
         const pascalifiedMessage =
             userMessage.charAt(0).toUpperCase() +
             userMessage
                 .slice(1)
                 .toLowerCase()
-                .replace(/ (.)/g, (match: string, p1: string): string => p1.toUpperCase());
+                .replace(/[\t\s\n\r](\w)/g, (match, p1: string) => p1.toUpperCase());
 
         return message.channel.send(pascalifiedMessage);
     },
