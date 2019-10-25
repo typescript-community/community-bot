@@ -20,25 +20,25 @@ const calcCooldown = async (member: GuildMember): Promise<number> => {
         });
 
         return 2;
-    } else {
-        const updatedDate = new Date(found.updated);
-        const nowDate = new Date();
-
-        if (updatedDate.getUTCDay() != nowDate.getUTCDay()) {
-            found.left = 3;
-        }
-
-        if (found.left <= 0) {
-            return -1;
-        }
-
-        found.left -= 1;
-        found.updated = Date.now();
-
-        await repository.save(found);
-
-        return found.left;
     }
+    
+    const updatedDate = new Date(found.updated);
+    const nowDate = new Date();
+
+    if (updatedDate.getUTCDay() != nowDate.getUTCDay()) {
+        found.left = 3;
+    }
+
+    if (found.left <= 0) {
+        return -1;
+    }
+
+    found.left -= 1;
+    found.updated = Date.now();
+
+    await repository.save(found);
+
+    return found.left;
 };
 
 export const command = new Command({

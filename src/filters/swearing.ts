@@ -12,7 +12,7 @@ export const filter = new Filter({
         const includes = words.some(word => content.includes(word));
         if (!includes) return;
 
-        if (message.deletable) await message.delete();
+        if (message.deletable) message.delete();
         const m = await message.channel.send(`:x: <@${message.member!.id}>, Please mind your language.`);
 
         setTimeout(() => {

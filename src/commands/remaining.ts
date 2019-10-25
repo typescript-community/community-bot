@@ -11,18 +11,15 @@ export const command = new Command({
         const repository = database.getRepository(RepCooldownEntity);
 
         const found = await repository.findOne({ id: message.member!.id });
+        
+        let left = 3;
 
-        if (!found) {
-            return message.channel.send(`:ballot_box_with_check: You have **3** remaining rep to give today`);
-        } else {
+        if(found) {
             const updatedDate = new Date(found.updated);
             const nowDate = new Date();
 
-            if (updatedDate.getUTCDay() != nowDate.getUTCDay()) {
-                return message.channel.send(`:ballot_box_with_check: You have **3** remaining rep to give today`);
-            }
-
-            return message.channel.send(`:ballot_box_with_check: You have **${found.left}** remaining rep to give today`);
+            if (updatedDate.getUTCDay() === nowDate.getUTCDay()) left = found.left;
         }
+        return `:ballot_box_with_check: You have **${left}** remaining rep to give today`
     },
 });

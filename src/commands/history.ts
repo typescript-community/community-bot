@@ -22,9 +22,10 @@ export const command = new Command({
     aliases: ['history', 'his'],
     description: 'Gets the reputation history',
     command: async (message: Message): Promise<Message | void> => {
-        let member = message.mentions.members!.first() ? message.mentions.members!.first() : undefined;
-        member = !member ? await resolveMemberWithNameSpaces(message) : member; // eslint-disable-line require-atomic-updates
-        member = !member ? message.member! : member; // eslint-disable-line require-atomic-updates
+        let member = message.mentions.members!.first()
+                  || await resolveMemberWithNameSpaces(message)
+                  || message.members
+                  || undefined;
 
         const repository = database.getRepository(HistoryEntity);
 
@@ -40,11 +41,11 @@ export const command = new Command({
         const arr: string[] = [];
 
         found.forEach((history: HistoryEntity) => {
-            let str: string;
+            let str = ":white_small_square: ";
             if (history.from == member!.id) {
-                str = `:white_small_square: Gave 1 rep to **<@${history.to}>**`;
+                str += `Gave 1 rep to **<@${history.to}>**`;
             } else {
-                str = `:white_small_square: Got 1 rep from **<@${history.from}>**`;
+                str += `Got 1 rep from **<@${history.from}>**`;
             }
 
             const date = new Date(history.date);
