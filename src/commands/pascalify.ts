@@ -10,13 +10,13 @@ export const command = new Command({
         const userMessage = message.content
             .split(' ')
             .slice(1)
-            .join(' ')
-            .replace(/[A-Z]/g, match => ` ${match}`);
+            .join(' ');
 
         const pascalifiedMessage =
             userMessage.charAt(0).toUpperCase() +
             userMessage
                 .slice(1)
+                .replace(/[A-Z]/g, ' $&')
                 .toLowerCase()
                 .replace(/[\t\s\n\r](\w)/g, (match, p1: string) => p1.toUpperCase());
 
