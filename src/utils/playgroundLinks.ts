@@ -1,4 +1,5 @@
 import { Message, MessageEmbed } from 'discord.js';
+
 import { shortenLink } from '../utils/short';
 
 const REGEX = /(https?:\/\/(www\.)?typescriptlang\.org\/play\/(index\.html)?\??(\?(([^&#\s]+)\&?)*)?#code\/[\w-+_]+)={0,4}/gi; // eslint-disable-line no-useless-escape
