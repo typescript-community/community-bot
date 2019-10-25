@@ -40,8 +40,6 @@ export class PascalClient extends Client {
         this.on('message', pollsMessage);
         this.on('message', playgroundLinksMessage);
         this.on('message', tagsMessage);
-
-        shortenLink('http://google.com');
     }
 
     public async start(): Promise<void> {
