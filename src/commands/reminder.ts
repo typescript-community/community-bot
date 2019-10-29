@@ -7,7 +7,6 @@ import { Command } from '../utils/commandHandler';
 
 export const command = new Command({
     aliases: ['reminder', 'remindme', 'remind'],
-    description: 'Set a reminder',
     command: async (message: Message): Promise<Message> => {
         const split = message.content.split(' ');
         const rawTime = split[1];
@@ -32,12 +31,13 @@ export const command = new Command({
 
         await repository.insert({
             createdAt: Date.now(),
+            length: time,
             member: message.member!.id,
             messageLink: `https://ptb.discordapp.com/channels/${message.guild!.id}/${message.channel.id}/${message.id}`,
-            length: time,
             reason,
         });
 
         return message.channel.send(`:ballot_box_with_check: Reminder set! I will remind you in ~**${ms(time)}**`);
     },
+    description: 'Set a reminder',
 });

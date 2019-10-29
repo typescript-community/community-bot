@@ -13,19 +13,19 @@ export class Database extends Connection {
 
         if (process.env.NODE_ENV != 'production') {
             super({
-                type: 'sqlite',
                 database: join(__dirname, '..', '..', 'database.sqlite'),
-                logging: true,
                 entities,
+                logging: true,
                 synchronize: true,
+                type: 'sqlite',
             });
         } else {
             super({
-                type: 'postgres',
-                logging: true,
                 entities,
-                synchronize: true,
+                logging: true,
                 ssl: true,
+                synchronize: true,
+                type: 'postgres',
                 url: process.env.DATABASE_URL!,
             });
         }

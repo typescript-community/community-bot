@@ -9,11 +9,10 @@ import { client, database } from '../index';
 const timeElapsed = (timestamp: Date | number): number => Date.now() - new Date(timestamp).getTime();
 
 export class ReminderScheduler {
-    private timeout: NodeJS.Timeout;
     private repository: Repository<ReminderEntity> = database.getRepository(ReminderEntity);
 
     public constructor() {
-        this.timeout = setInterval(() => {
+        setInterval(() => {
             this.check();
         }, 10000);
     }

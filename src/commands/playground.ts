@@ -7,7 +7,6 @@ import { shortenLink } from '../utils/short';
 const REGEXES = [new RegExp('```ts'), new RegExp('```typescript'), new RegExp('```')];
 
 export const command = new Command({
-    description: 'Converts ts code to a playground link',
     aliases: ['playground', 'pg'],
     command: async (message: Message): Promise<Message> => {
         let code = message.content
@@ -31,4 +30,5 @@ export const command = new Command({
                 .setAuthor(message.member!.user.tag, message.member!.user.avatarURL() == null ? undefined : message.member!.user.avatarURL()!),
         );
     },
+    description: 'Converts ts code to a playground link',
 });

@@ -14,9 +14,9 @@ import { tagsMessage } from '../utils/tags';
 
 export class PascalClient extends Client {
     commandHandler: CommandHandler = new CommandHandler(this, {
-        prefix: 't!',
-        logger: (...message): void => console.log('[BOT]', ...message),
         guildsAllowed: ['508357248330760243'],
+        logger: (...message): void => console.log('[BOT]', ...message),
+        prefix: 't!',
     });
     filterHandler: FilterHandler = new FilterHandler(this, {
         logger: (...message): void => console.log('[BOT]', ...message),
@@ -24,8 +24,8 @@ export class PascalClient extends Client {
 
     public constructor(private readonly _token: string) {
         super({
-            disabledEvents: ['TYPING_START'],
             disableEveryone: true,
+            disabledEvents: ['TYPING_START'],
             partials: ['MESSAGE', 'CHANNEL'],
         });
 

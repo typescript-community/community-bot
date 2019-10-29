@@ -6,7 +6,6 @@ import { Command } from '../utils/commandHandler';
 
 export const command = new Command({
     aliases: ['remaining'],
-    description: 'Gets the amount of reputation you have left to give today',
     command: async (message: Message): Promise<Message> => {
         const repository = database.getRepository(RepCooldownEntity);
 
@@ -25,4 +24,5 @@ export const command = new Command({
             return message.channel.send(`:ballot_box_with_check: You have **${found.left}** remaining rep to give today`);
         }
     },
+    description: 'Gets the amount of reputation you have left to give today',
 });

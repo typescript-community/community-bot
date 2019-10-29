@@ -43,7 +43,6 @@ const calcCooldown = async (member: GuildMember): Promise<number> => {
 
 export const command = new Command({
     aliases: ['rep'],
-    description: 'Give rep points to someone',
     command: async (message: Message): Promise<void> => {
         let member: GuildMember | undefined = message.mentions.members!.first()!;
         member = !member ? await resolveMemberWithNameSpaces(message) : member;
@@ -87,4 +86,5 @@ export const command = new Command({
 
         addRepHistory(message.member!, member, message);
     },
+    description: 'Give rep points to someone',
 });

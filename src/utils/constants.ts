@@ -1,4 +1,11 @@
 export const AUTOROLE = {
+    emojis: {
+        beginner: '🔴',
+        experienced: '🔵',
+        expert: '⚪',
+
+        helper: '✅',
+    },
     experienceMessage: '607690519966908426',
     helperMessage: '607690836238663700',
     roles: {
@@ -8,28 +15,21 @@ export const AUTOROLE = {
 
         helper: '591706452440383508',
     },
-    emojis: {
-        beginner: '🔴',
-        experienced: '🔵',
-        expert: '⚪',
-
-        helper: '✅',
-    },
 };
 
 export const VERIFICATION = {
-    role: '635190295881056287',
-    message: '635195859310739456',
     emoji: '☑️',
+    message: '635195859310739456',
+    role: '635190295881056287',
 };
 
 export const LOGGING = {
     channel: '636167570650562560',
     colors: {
-        good: '#00ba19',
-        medium: '#d9b500',
         bad: '#c71010',
+        good: '#00ba19',
         info: '#005791',
+        medium: '#d9b500',
     },
 };
 

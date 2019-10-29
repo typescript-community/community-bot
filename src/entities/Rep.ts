@@ -3,8 +3,8 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 @Entity('reps')
 export class RepEntity {
     @PrimaryColumn()
-    id: string; // the user id
+    public id!: string; // the user id
 
     @Column({ default: 0 })
-    rep: number;
+    public rep!: number;
 }
