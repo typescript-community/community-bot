@@ -3,17 +3,17 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('rephistory')
 export class HistoryEntity {
     @PrimaryGeneratedColumn()
-    id: string;
+    public id!: string;
 
     @Column()
-    from: string;
+    public from!: string;
 
     @Column()
-    to: string;
+    public to!: string;
 
     @Column({ type: 'bigint' })
-    date: number;
+    public date!: number;
 
     @Column()
-    messageLink: string;
+    public messageLink!: string;
 }

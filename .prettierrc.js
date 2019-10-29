@@ -1,3 +1,5 @@
+/* eslint-disable sort-keys */
+/* eslint-disable sort-keys-fix/sort-keys-fix */
 module.exports = {
     /**
      * Include parentheses around a sole arrow function parameter.

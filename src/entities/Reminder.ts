@@ -3,20 +3,20 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('reminders')
 export class ReminderEntity {
     @PrimaryGeneratedColumn()
-    id: string;
+    public id!: string;
 
     @Column()
-    length: number; // in ms
+    public length!: number; // in ms
 
     @Column({ type: 'bigint' })
-    createdAt: number; // Date.now()
+    public createdAt!: number; // Date.now()
 
     @Column()
-    member: string; // their id
+    public member!: string; // their id
 
     @Column({ nullable: true })
-    reason: string;
+    public reason!: string;
 
     @Column()
-    messageLink: string;
+    public messageLink!: string;
 }

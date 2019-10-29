@@ -6,7 +6,6 @@ import { Command } from '../utils/commandHandler';
 
 export const command = new Command({
     aliases: ['leaderboard', 'lb', 'top'],
-    description: 'Get the leaderboard',
     command: async (message: Message): Promise<void> => {
         const repository = database.getRepository(RepEntity);
         const result = await repository
@@ -26,4 +25,5 @@ export const command = new Command({
                 .setColor(`#3178C6`),
         );
     },
+    description: 'Get the leaderboard',
 });

@@ -18,9 +18,9 @@ const create = async (message: Message): Promise<Message> => {
     }
 
     await repository.insert({
-        name,
-        content,
         author: message.member!.id,
+        content,
+        name,
     });
 
     return message.channel.send(`:ballot_box_with_check: Successfully created a tag with the name **${name}**`);
@@ -65,9 +65,7 @@ const del = async (message: Message): Promise<Message> => {
 };
 
 export const command = new Command({
-    description: 'Manage tags (mods+ only)',
     aliases: ['tag', 'tags'],
-    privelagesRequired: ['MANAGE_MESSAGES'],
     command: async (message: Message): Promise<void | Message> => {
         const action = message.content.split(' ')[1];
 
@@ -78,4 +76,6 @@ export const command = new Command({
         if (action == 'edit') await edit(message);
         if (action == 'delete') await del(message);
     },
+    description: 'Manage tags (mods+ only)',
+    privelagesRequired: ['MANAGE_MESSAGES'],
 });

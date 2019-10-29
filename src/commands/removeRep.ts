@@ -7,8 +7,6 @@ import { resolveMember } from '../utils/resolvers';
 
 export const command = new Command({
     aliases: ['removerep'],
-    description: 'Remove rep from someone',
-    privelagesRequired: ['MANAGE_MESSAGES'],
     command: async (message: Message): Promise<void> => {
         if (!message.member!.hasPermission('MANAGE_MESSAGES')) {
             message.channel.send(`:x: Only moderators and above can use this command`);
@@ -44,4 +42,6 @@ export const command = new Command({
 
         message.channel.send(`:white_check_mark: Removed **${amount}** from **${member.user.username}**'s balance. They now have **${found.rep}** reputation.`);
     },
+    description: 'Remove rep from someone',
+    privelagesRequired: ['MANAGE_MESSAGES'],
 });
