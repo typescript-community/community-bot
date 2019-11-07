@@ -7,9 +7,9 @@ export const addRepHistory = async (from: GuildMember, to: GuildMember, message:
     const repository = database.getRepository(HistoryEntity);
 
     await repository.insert({
-        from: from.id,
-        to: to.id,
         date: Date.now(),
+        from: from.id,
         messageLink: `https://ptb.discordapp.com/channels/${message.guild!.id}/${message.channel.id}/${message.id}`,
+        to: to.id,
     });
 };

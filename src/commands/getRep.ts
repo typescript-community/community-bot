@@ -7,7 +7,6 @@ import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 
 export const command = new Command({
     aliases: ['getRep'],
-    description: 'Get Rep Points',
     command: async (message: Message): Promise<void> => {
         let member = message.mentions.members!.first() ? message.mentions.members!.first() : undefined;
         member = !member ? await resolveMemberWithNameSpaces(message) : member;
@@ -19,4 +18,5 @@ export const command = new Command({
         if (!found) message.channel.send(`:ballot_box_with_check: **${member!.user.username}** has **0** reputation`);
         else message.channel.send(`:ballot_box_with_check: **${member!.user.username}** has **${found.rep}** reputation`);
     },
+    description: 'Get Rep Points',
 });

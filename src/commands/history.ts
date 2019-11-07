@@ -6,21 +6,16 @@ import { Command } from '../utils/commandHandler';
 import { Paginator } from '../utils/Paginator';
 import { resolveMemberWithNameSpaces } from '../utils/resolvers';
 
-function chunk<T>(arr: Array<T>, chunkSize: number): Array<Array<T>> {
-    return arr.reduce(
-        (
-            prevVal: any, // eslint-disable-line
-            currVal: any, // eslint-disable-line
-            currIndx: number,
-            array: Array<T>,
-        ) => (!(currIndx % chunkSize) ? prevVal.concat([array.slice(currIndx, currIndx + chunkSize)]) : prevVal),
-        [],
-    );
-}
+/**
+ * @param Items An array to be split off into chunks.
+ * @param Chunk The maximum size of a chunk.
+ * @returns A new array of chunks. Each chunk is a subarray of `items` and has the length of `chunk` or less.
+ */
+export const chunk = <T>(Items: T[], Chunk: number): ReadonlyArray<ReadonlyArray<T>> =>
+    new Array(Math.ceil(Items.length / Chunk)).fill(0).map(() => Items.splice(0, Chunk));
 
 export const command = new Command({
     aliases: ['history', 'his'],
-    description: 'Gets the reputation history',
     command: async (message: Message): Promise<Message | void> => {
         let member = message.mentions.members!.first()
                   || await resolveMemberWithNameSpaces(message)
@@ -69,4 +64,5 @@ export const command = new Command({
 
         new Paginator(embed, chunked, message.member!, message.channel as TextChannel);
     },
+    description: 'Gets the reputation history',
 });

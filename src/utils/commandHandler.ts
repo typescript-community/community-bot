@@ -102,7 +102,6 @@ export class CommandHandler {
         this.registerCommand(
             new Command({
                 aliases: ['help'],
-                description: 'Help Command',
                 command: async (message, messageContent): Promise<void> => {
                     // Commands List
                     const commandsList = this.commands.map(({ options: { aliases, description } }) => ({
@@ -135,6 +134,7 @@ export class CommandHandler {
                     commandsList.forEach(({ aliases, description }) => embed.addField('`' + aliases[0] + '`', description));
                     await message.channel.send(embed);
                 },
+                description: 'Help Command',
             }),
         );
     }

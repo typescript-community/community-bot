@@ -1,6 +1,6 @@
 module.exports = {
     coverageDirectory: './coverage/',
-    testEnvironment: 'node',
     preset: 'ts-jest',
+    testEnvironment: 'node',
     testPathIgnorePatterns: ['<rootDir>/build/', '<rootDir>/node_modules/'],
 };

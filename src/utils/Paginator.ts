@@ -1,18 +1,18 @@
 import { GuildMember, Message, MessageEmbed, MessageReaction, ReactionCollector, TextChannel, User } from 'discord.js';
 
 const emojis = {
-    first: '⏮',
     back: '◀',
-    stop: '⏹',
-    next: '▶',
+    first: '⏮',
     last: '⏭',
+    next: '▶',
+    stop: '⏹',
 };
 
 export class Paginator {
-    private message: Message;
+    private message!: Message;
     private curPage = 0;
 
-    private collector: ReactionCollector;
+    private collector!: ReactionCollector;
 
     public constructor(
         private readonly embed: MessageEmbed,

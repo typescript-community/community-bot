@@ -5,8 +5,7 @@ import { Filter } from '../utils/filterHandler';
 import { filterLog } from '../utils/modlogManager';
 
 export const filter = new Filter({
-    name: 'swearing',
-    handler: async (message: Message): Promise<undefined | Message> => {
+    handler: async (message: Message): Promise<void | Message> => {
         const content = message.content.toLowerCase().split(' ');
 
         const includes = words.some(word => content.includes(word));
@@ -21,4 +20,5 @@ export const filter = new Filter({
 
         filterLog('swearing', message.content, message.member!);
     },
+    name: 'swearing',
 });

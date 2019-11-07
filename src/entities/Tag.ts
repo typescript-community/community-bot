@@ -3,11 +3,11 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 @Entity('tags')
 export class TagEntity {
     @PrimaryColumn()
-    name: string;
+    public name!: string;
 
     @Column()
-    content: string;
+    public content!: string;
 
     @Column()
-    author: string;
+    public author!: string;
 }
