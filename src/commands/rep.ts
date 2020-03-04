@@ -24,7 +24,7 @@ const calcCooldown = async (member: GuildMember): Promise<number> => {
         const updatedDate = new Date(found.updated);
         const nowDate = new Date();
 
-        if (updatedDate.getUTCDay() != nowDate.getUTCDay()) {
+        if (updatedDate.toDateString() != nowDate.toDateString()) {
             found.left = 3;
         }
 
