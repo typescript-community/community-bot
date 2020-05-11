@@ -15,7 +15,7 @@ export const command = new Command({
             .getMany();
 
         const messageText = result
-            .filter(({ id }: RepEntity) => message.guild!.members.get(id))
+            .filter(({ id }: RepEntity) => message.guild!.members.cache.get(id))
             .map(({ id, rep }: RepEntity, index) => `:white_small_square: \`#${index + 1}\` <@${id}> with **${rep}** reputation`);
 
         message.channel.send(

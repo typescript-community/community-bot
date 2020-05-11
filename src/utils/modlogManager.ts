@@ -1,24 +1,27 @@
-import { Client, GuildMember, Message, MessageEmbed, TextChannel } from 'discord.js';
+import { Client, GuildMember, Message, MessageEmbed, TextChannel, PartialGuildMember, PartialMessage } from 'discord.js';
 
 import { client } from '../index';
 import { LOGGING } from '../utils/constants';
 
 export class ModLogManager {
     public constructor(private readonly client: Client) {
-        this.client.on('guildMemberAdd', (member: GuildMember) => memberLog(member)); // eslint-disable-line
-        this.client.on('guildMemberRemove', (member: GuildMember) => memberLog(member, true)); // eslint-disable-line
+        this.client.on('guildMemberAdd', (member: GuildMember | PartialGuildMember) => memberLog(member)); // eslint-disable-line
+        this.client.on('guildMemberRemove', (member: GuildMember | PartialGuildMember) => memberLog(member, true)); // eslint-disable-line
 
         this.client.on('messageDelete', deleteLog); // eslint-disable-line
     }
 
     static send(embed: MessageEmbed): void {
-        const channel = client.channels.get(LOGGING.channel)! as TextChannel;
+        const channel = client.channels.cache.get(LOGGING.channel)! as TextChannel;
 
         channel.send(embed);
     }
 }
 
-const memberLog = (member: GuildMember, leave = false): void => {
+const memberLog = async (partialMember: GuildMember | PartialGuildMember, leave = false) => {
+    if (partialMember.partial) await partialMember.fetch();
+    const member = partialMember as GuildMember;
+
     const avatar = member.user.avatarURL() == null ? undefined : member.user.avatarURL()!;
 
     if (leave) {
@@ -42,7 +45,7 @@ const memberLog = (member: GuildMember, leave = false): void => {
     );
 };
 
-const deleteLog = (message: Message): void => {
+const deleteLog = (message: Message | PartialMessage): void => {
     if (message.partial) return;
     if (message.author!.bot) return;
 

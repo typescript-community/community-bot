@@ -7,10 +7,10 @@ export const resolveMemberWithNameSpaces = async (message: Message): Promise<Gui
     if (args.length >= 1) {
         const guild = await message.guild!.fetch();
         if (!isNaN(Number(args[0]))) {
-            member = guild.members.get(args[0]);
-            member = !member ? guild.members.find(m => m.displayName.toLowerCase() === args.join(' ').toLowerCase()) : member;
+            member = guild.members.cache.get(args[0]);
+            member = !member ? guild.members.cache.find(m => m.displayName.toLowerCase() === args.join(' ').toLowerCase()) : member;
         } else {
-            member = guild.members.find(m => m.displayName.toLowerCase() === args.join(' ').toLowerCase());
+            member = guild.members.cache.find(m => m.displayName.toLowerCase() === args.join(' ').toLowerCase());
         }
     } else {
         member = undefined;
@@ -25,10 +25,10 @@ export const resolveMember = async (message: Message): Promise<GuildMember | und
     if (args.length >= 1) {
         const guild = await message.guild!.fetch();
         if (!isNaN(Number(args[0]))) {
-            member = guild.members.get(args[0]);
-            member = !member ? guild.members.find(m => m.displayName.toLowerCase() === args[0].toLowerCase()) : member;
+            member = guild.members.cache.get(args[0]);
+            member = !member ? guild.members.cache.find(m => m.displayName.toLowerCase() === args[0].toLowerCase()) : member;
         } else {
-            member = guild.members.find(m => m.displayName.toLowerCase() === args[0].toLowerCase());
+            member = guild.members.cache.find(m => m.displayName.toLowerCase() === args[0].toLowerCase());
         }
     }
     return member;

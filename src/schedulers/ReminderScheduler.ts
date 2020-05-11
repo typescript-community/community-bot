@@ -22,7 +22,7 @@ export class ReminderScheduler {
 
         all.forEach(async (reminder: ReminderEntity) => {
             if (timeElapsed(reminder.createdAt) >= reminder.length) {
-                const member = client.guilds.get('508357248330760243')!.member(reminder.member);
+                const member = client.guilds.cache.get('508357248330760243')!.member(reminder.member);
 
                 if (member) {
                     try {

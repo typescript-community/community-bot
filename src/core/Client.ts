@@ -24,8 +24,7 @@ export class PascalClient extends Client {
 
     public constructor(private readonly _token: string) {
         super({
-            disableEveryone: true,
-            disabledEvents: ['TYPING_START'],
+            disableMentions: 'everyone',
             partials: ['MESSAGE', 'CHANNEL'],
         });
 
