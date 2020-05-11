@@ -1,14 +1,17 @@
-import { MessageReaction, User } from 'discord.js';
+import { MessageReaction, PartialUser, User } from 'discord.js';
 
 import { AUTOROLE, VERIFICATION } from '../utils/constants';
 
-export const reactionAddEvent = async (reaction: MessageReaction, user: User): Promise<void> => {
+export const reactionAddEvent = async (reaction: MessageReaction, partialUser: User | PartialUser): Promise<void> => {
     if (reaction.message.partial) await reaction.message.fetch();
+    if (partialUser.partial) await partialUser.fetch();
+
+    const user = partialUser as User;
 
     const member = reaction.message.guild!.member(user)!;
 
     if (reaction.message.id == VERIFICATION.message) {
-        const role = reaction.message.guild!.roles.get(VERIFICATION.role)!;
+        const role = reaction.message.guild!.roles.cache.get(VERIFICATION.role)!;
 
         await member.roles.add(role);
 
@@ -17,19 +20,19 @@ export const reactionAddEvent = async (reaction: MessageReaction, user: User): P
 
     if (reaction.message.id == AUTOROLE.experienceMessage) {
         if (reaction.emoji.name == AUTOROLE.emojis.beginner) {
-            const role = reaction.message.guild!.roles.get(AUTOROLE.roles.beginner)!;
+            const role = reaction.message.guild!.roles.cache.get(AUTOROLE.roles.beginner)!;
 
             await member.roles.add(role);
         }
 
         if (reaction.emoji.name == AUTOROLE.emojis.experienced) {
-            const role = reaction.message.guild!.roles.get(AUTOROLE.roles.experienced)!;
+            const role = reaction.message.guild!.roles.cache.get(AUTOROLE.roles.experienced)!;
 
             await member.roles.add(role);
         }
 
         if (reaction.emoji.name == AUTOROLE.emojis.expert) {
-            const role = reaction.message.guild!.roles.get(AUTOROLE.roles.expert)!;
+            const role = reaction.message.guild!.roles.cache.get(AUTOROLE.roles.expert)!;
 
             await member.roles.add(role);
         }
@@ -37,7 +40,7 @@ export const reactionAddEvent = async (reaction: MessageReaction, user: User): P
 
     if (reaction.message.id == AUTOROLE.helperMessage) {
         if (reaction.emoji.name == AUTOROLE.emojis.helper) {
-            const role = reaction.message.guild!.roles.get(AUTOROLE.roles.helper)!;
+            const role = reaction.message.guild!.roles.cache.get(AUTOROLE.roles.helper)!;
 
             await member.roles.add(role);
         }

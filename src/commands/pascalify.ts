@@ -12,7 +12,7 @@ export const command = new Command({
             userMessage.charAt(0).toUpperCase() +
             userMessage
                 .slice(1)
-                .replace(/[A-Z_\-]/g, ' $&')
+                .replace(/[A-Z_-]/g, ' $&')
                 .toLowerCase()
                 .replace(/\s(\w)/g, (_, p1: string) => p1.toUpperCase());
 
