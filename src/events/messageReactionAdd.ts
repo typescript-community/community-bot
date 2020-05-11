@@ -1,4 +1,4 @@
-import { MessageReaction, User, PartialUser } from 'discord.js';
+import { MessageReaction, PartialUser, User } from 'discord.js';
 
 import { AUTOROLE, VERIFICATION } from '../utils/constants';
 

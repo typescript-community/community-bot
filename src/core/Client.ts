@@ -6,7 +6,6 @@ import { reactionAddEvent } from '../events/messageReactionAdd';
 import { reactionRemoveEvent } from '../events/messageReactionRemove';
 import { ReminderScheduler } from '../schedulers/ReminderScheduler';
 import { Command, CommandHandler } from '../utils/commandHandler';
-import { Filter, FilterHandler } from '../utils/filterHandler';
 import { ModLogManager } from '../utils/modlogManager';
 import { playgroundLinksMessage } from '../utils/playgroundLinks';
 import { pollsMessage } from '../utils/polls';
@@ -17,9 +16,6 @@ export class PascalClient extends Client {
         guildsAllowed: ['508357248330760243'],
         logger: (...message): void => console.log('[BOT]', ...message),
         prefix: 't!',
-    });
-    filterHandler: FilterHandler = new FilterHandler(this, {
-        logger: (...message): void => console.log('[BOT]', ...message),
     });
 
     public constructor(private readonly _token: string) {
@@ -59,21 +55,6 @@ export class PascalClient extends Client {
 
         registeredCommands.catch(err => {
             console.error('[BOT] Was unable to load commands');
-            console.error(err);
-        });
-
-        const registeredFilters = Promise.all(
-            readdirSync(join(__dirname, '../filters'))
-                .filter(fileName => fileName.endsWith('.js'))
-                .map(async fileName => {
-                    const path = join(__dirname, '../filters', fileName);
-                    const file: { filter: Filter } = await import(path);
-                    this.filterHandler.registerFilter(file.filter);
-                }),
-        );
-
-        registeredFilters.catch(err => {
-            console.error('[BOT] Was unable to load filters');
             console.error(err);
         });
 
