@@ -82,7 +82,7 @@ export const command = new Command({
             await repository.save(found);
         }
 
-        message.channel.send(`:ballot_box_with_check: Successfully sent rep to **${member.user.username}** (**${cooldown}** remaining today)`);
+        message.channel.send(`:ballot_box_with_check: Successfully sent rep to **${member.displayName}** (**${cooldown}** remaining today)`);
 
         addRepHistory(message.member!, member, message);
     },
