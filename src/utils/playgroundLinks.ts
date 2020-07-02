@@ -31,7 +31,7 @@ export const playgroundLinksMessage = async (message: Message): Promise<void> =>
         await message.delete();
     } else {
         await message.channel.send(
-            `<@${message.author!.id}> Please remove the playground link from your message`,
+            `<@${message.author!.id}> Here's a shortened URL of your playground link! You can remove the full link from your message.`,
             new MessageEmbed()
                 .setAuthor(message.author!.tag, avatar)
                 .setTitle(`Playground link shortened`)
