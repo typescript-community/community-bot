@@ -129,7 +129,6 @@ export default class RepModule extends Module {
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
 			.setTitle("Top 10 Reputation")
-			.setFooter(`Requested by ${msg.author.tag}`)
 			.setDescription(
 				data
 					.map(
