@@ -1,6 +1,7 @@
 import { Connection, createConnection } from "typeorm";
 import { Reminder } from "./modules/reminders";
 import { db as dbEnv } from "./env";
+import { RepUser, RepGive } from "./modules/rep";
 
 let db: Connection | undefined;
 export async function getDB() {
@@ -12,8 +13,8 @@ export async function getDB() {
 		username: dbEnv.user,
 		database: "tsc-bot",
 		synchronize: true,
-		logging: true,
-		entities: [Reminder],
+		logging: false,
+		entities: [Reminder, RepUser, RepGive],
 	});
 	console.log("Connected to DB");
 	return db;
