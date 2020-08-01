@@ -3,6 +3,7 @@ import {
 	default as CookiecordClient,
 	Module,
 	optional,
+	listener,
 } from "cookiecord";
 import { GuildMember, Message, MessageEmbed, User } from "discord.js";
 import prettyMilliseconds from "pretty-ms";
@@ -35,6 +36,17 @@ export default class RepModule extends Module {
 		}
 		return ru;
 	}
+
+	@listener({ event: "message" })
+	async onThank(msg: Message) {
+		const THANKS_REGEX = /thanks? ?<@!?(\d+)>/gi;
+		const exec = THANKS_REGEX.exec(msg.content);
+		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
+		const member = await msg.guild.members.fetch(exec[1]);
+		if (!member) return;
+		await this.rep(msg, member);
+	}
+
 	@command()
 	async remaining(msg: Message) {
 		const USED = "✅";
@@ -52,6 +64,7 @@ export default class RepModule extends Module {
 	async rep(msg: Message, targetMember: GuildMember) {
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
+		
 		if ((await senderRU.sent()) >= this.MAX_REP)
 			return await msg.channel.send(
 				":warning: no rep remaining! come back later."
@@ -63,11 +76,13 @@ export default class RepModule extends Module {
 		}).save();
 
 		await msg.channel.send(
-			`:ok_hand: sent ${targetMember.displayName} 1 rep (${await senderRU.sent() + 1}/${this.MAX_REP} sent)`
+			`:ok_hand: sent \`${targetMember.displayName}\` 1 rep (${
+				(await senderRU.sent()) + 1
+			}/${this.MAX_REP} sent)`
 		);
 	}
 
-	@command()
+	@command({ aliases: ["history"] })
 	async getrep(msg: Message, @optional user?: User) {
 		if (!user) user = msg.author;
 		const targetRU = await this.getOrMakeUser(user);
