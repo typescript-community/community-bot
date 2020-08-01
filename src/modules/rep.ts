@@ -15,6 +15,7 @@ import {
 	OneToMany,
 	PrimaryColumn,
 	PrimaryGeneratedColumn,
+	Column,
 } from "typeorm";
 import { getDB } from "../db";
 import { TS_BLUE } from "../env";
@@ -39,7 +40,7 @@ export default class RepModule extends Module {
 
 	@listener({ event: "message" })
 	async onThank(msg: Message) {
-		const THANKS_REGEX = /thanks? ?<@!?(\d+)>/gi;
+		const THANKS_REGEX = /thanks?,? ?<@!?(\d+)>/gi;
 		const exec = THANKS_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
 		const member = await msg.guild.members.fetch(exec[1]);
@@ -64,7 +65,7 @@ export default class RepModule extends Module {
 	async rep(msg: Message, targetMember: GuildMember) {
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
-		
+
 		if ((await senderRU.sent()) >= this.MAX_REP)
 			return await msg.channel.send(
 				":warning: no rep remaining! come back later."
@@ -110,6 +111,32 @@ export default class RepModule extends Module {
 							})
 					)
 				).join("\n")
+			);
+		await msg.channel.send(embed);
+	}
+
+	@command()
+	async leaderboard(msg: Message) {
+		const data = ((await RepGive.createQueryBuilder("give")
+			.select(["give.to", "COUNT(*)"])
+			.groupBy("give.to")
+			.orderBy("COUNT(*)", "DESC")
+			.limit(10)
+			.getRawMany()) as { toId: string; count: string }[]).map(x => ({
+			id: x.toId,
+			count: parseInt(x.count, 10),
+		}));
+		const embed = new MessageEmbed()
+			.setColor(TS_BLUE)
+			.setTitle("Top 10 Reputation")
+			.setFooter(`Requested by ${msg.author.tag}`)
+			.setDescription(
+				data
+					.map(
+						x =>
+							`:white_small_square: **<@${x.id}>** with **${x.count}** points.`
+					)
+					.join("\n")
 			);
 		await msg.channel.send(embed);
 	}
