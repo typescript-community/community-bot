@@ -1,13 +1,12 @@
 import CookiecordClient from "cookiecord";
-import dotenv from "dotenv-safe";
-dotenv.config();
+import { token, botAdmins } from "./env";
 
 const client = new CookiecordClient({
-	botAdmins: process.env.BOT_ADMINS?.split(","),
+	botAdmins,
 	prefix: "!",
 });
 
 client.loadModulesFromFolder("src/modules");
 client.reloadModulesFromFolder("src/modules");
-client.login(process.env.TOKEN);
+client.login(token);
 client.on("ready", () => console.log(`Logged in as ${client.user?.tag}`));
