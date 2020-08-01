@@ -1,6 +1,6 @@
 import CookiecordClient from "cookiecord";
-import { token, botAdmins } from "./env";
 import { Intents } from "discord.js";
+import { botAdmins, token } from "./env";
 const client = new CookiecordClient(
 	{
 		botAdmins,

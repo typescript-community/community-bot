@@ -1,11 +1,12 @@
-import { Message, MessageEmbed } from "discord.js";
 import {
 	command,
 	default as CookiecordClient,
-	Module,
-	optional,
-	listener,
+
+
+	listener, Module,
+	optional
 } from "cookiecord";
+import { Message, MessageEmbed } from "discord.js";
 import { compressToEncodedURIComponent } from "lz-string";
 
 export default class PlaygroundModule extends Module {

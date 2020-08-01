@@ -1,10 +1,9 @@
-import { Message, MessageReaction, User } from "discord.js";
 import {
-	command,
 	default as CookiecordClient,
-	Module,
-	listener,
+
+	listener, Module
 } from "cookiecord";
+import { MessageReaction, User } from "discord.js";
 import { autorole } from "../env";
 
 export default class AutoroleModule extends Module {
