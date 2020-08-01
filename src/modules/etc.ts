@@ -10,4 +10,9 @@ export default class EtcModule extends Module {
 	async ping(msg: Message) {
 		await msg.channel.send("pong. :ping_pong:");
 	}
+
+	@command()
+	async ask(msg: Message) {
+		await msg.channel.send("https://dontasktoask.com/");
+	}
 }
