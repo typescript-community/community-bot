@@ -1,8 +1,8 @@
 Welcome all newcomers! This announcement is highlighting our bespoke bot, @PascalCaseBot. It is an open-source community developed bot built specifically for this server. It has a lot of amazing features described below
 
 Reputation: This is probably the biggest feature. It's a infinite points based system. :
-	✔ You can give 3 reputation per day, the command to do this is t!rep [@user]. To get your/someone else's rep, do t!getrep <@user>. @done(20-08-01 19:10)
-	- We also have a leaderboard, accessible with t!leaderboard (t!lb too). 
+	✔ You can give 3 reputation per day, the command to do this is t!rep [@user]. To get your/someone else's rep, do t!getrep <@user>. @done(20-08-01 21:02)
+	✔ We also have a leaderboard, accessible with t!leaderboard (t!lb too). @done(20-08-01 21:02)
 	✔ trigger t!rep with "thanks, @fartieboi2k" @done(20-08-01 19:16)
 	✔ You can also view your/somebodys reputation history (how they got all their rep) with t!history <@user>. @done(20-08-01 19:16)
 	✔ To see how much more rep you can give on the current day, you can do t!remaining. @done(20-08-01 19:10)

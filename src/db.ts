@@ -1,6 +1,6 @@
 import { Connection, createConnection } from "typeorm";
 import { Reminder } from "./modules/reminders";
-import { db as dbEnv } from "./env";
+import { dbUrl } from "./env";
 import { RepUser, RepGive } from "./modules/rep";
 
 let db: Connection | undefined;
@@ -8,10 +8,7 @@ export async function getDB() {
 	if (db) return db;
 	db = await createConnection({
 		type: "postgres",
-		host: dbEnv.host,
-		port: dbEnv.port,
-		username: dbEnv.user,
-		database: "tsc-bot",
+		url: dbUrl,
 		synchronize: true,
 		logging: false,
 		entities: [Reminder, RepUser, RepGive],

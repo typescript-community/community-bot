@@ -13,10 +13,6 @@ export const autorole = process.env.AUTOROLE!.split(",").map(x => {
 	};
 });
 
-export const db = {
-	host: process.env.DB_HOST!,
-	port: parseInt(process.env.DB_PORT!, 10),
-	user: process.env.DB_USER!,
-};
+export const dbUrl = process.env.DB_URL!;
 
 export const TS_BLUE = "#007ACC";
