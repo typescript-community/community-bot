@@ -2,7 +2,7 @@ Welcome all newcomers! This announcement is highlighting our bespoke bot, @Pasca
 
 - Reputation: This is probably the biggest feature. It's a infinite points based system. You can give 3 reputation per day, the command to do this is t!rep [@user]. To get your/someone else's rep, do t!getrep <@user>. We also have a leaderboard, accessible with t!leaderboard (t!lb too). You can also view your/somebodys reputation history (how they got all their rep) with t!history <@user>. To see how much more rep you can give on the current day, you can do t!remaining.
 
-- Autorole: You can get experience and helper roles in #roles
+✔ Autorole: You can get experience and helper roles in #roles @done(20-08-01 05:00)
 
 - Reminders: You can set a reminder by writing t!reminder [length] <reason>. At the end of the time, it will send you a dm, so make sure you have dms enabled.
 

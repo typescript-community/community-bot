@@ -3,6 +3,12 @@ dotenv.config();
 
 export const token = process.env.TOKEN;
 export const botAdmins = process.env.BOT_ADMINS!.split(",");
-export const verificationMessage = process.env.VERIFICATION_MESSAGE;
-export const experienceMessage = process.env.EXPERIENCE_MESSAGE;
-export const helperMessage = process.env.HELPER_MESSAGE;
+export const autorole = process.env.AUTOROLE!.split(",").map(x => {
+	const [msgID, roleID, emoji, autoRemove] = x.split(":");
+	return {
+		msgID,
+		roleID,
+		emoji,
+		autoRemove: autoRemove == "true",
+	};
+});

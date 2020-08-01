@@ -1,10 +1,16 @@
 import CookiecordClient from "cookiecord";
 import { token, botAdmins } from "./env";
-
-const client = new CookiecordClient({
-	botAdmins,
-	prefix: "!",
-});
+import { Intents } from "discord.js";
+const client = new CookiecordClient(
+	{
+		botAdmins,
+		prefix: "!",
+	},
+	{
+		ws: { intents: Intents.NON_PRIVILEGED },
+		partials: ["REACTION", "MESSAGE", "USER", "CHANNEL"],
+	}
+);
 
 client.loadModulesFromFolder("src/modules");
 client.reloadModulesFromFolder("src/modules");
