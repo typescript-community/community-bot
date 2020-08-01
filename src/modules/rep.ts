@@ -23,6 +23,8 @@ export default class RepModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
+	MAX_REP = 3;
+
 	async getOrMakeUser(user: User) {
 		const db = await getDB();
 		let ru = await db.manager.findOne(RepUser, user.id, {
@@ -33,12 +35,24 @@ export default class RepModule extends Module {
 		}
 		return ru;
 	}
+	@command()
+	async remaining(msg: Message) {
+		const USED = "✅";
+		const UNUSED = "⬜";
+		const ru = await this.getOrMakeUser(msg.author);
+		const sent = await ru.sent();
+		await msg.channel.send(
+			`Rep used: ${
+				USED.repeat(sent) + UNUSED.repeat(this.MAX_REP - sent)
+			}`
+		);
+	}
 
 	@command()
 	async rep(msg: Message, targetMember: GuildMember) {
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
-		if ((await senderRU.sent()) >= 3)
+		if ((await senderRU.sent()) >= this.MAX_REP)
 			return await msg.channel.send(
 				":warning: no rep remaining! come back later."
 			);
@@ -49,7 +63,7 @@ export default class RepModule extends Module {
 		}).save();
 
 		await msg.channel.send(
-			`:ok_hand: sent ${targetMember.displayName} 1 rep`
+			`:ok_hand: sent ${targetMember.displayName} 1 rep (${await senderRU.sent() + 1}/${this.MAX_REP} sent)`
 		);
 	}
 
