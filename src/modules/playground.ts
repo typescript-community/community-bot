@@ -1,13 +1,13 @@
 import {
 	command,
 	default as CookiecordClient,
-
-
-	listener, Module,
-	optional
+	listener,
+	Module,
+	optional,
 } from "cookiecord";
 import { Message, MessageEmbed } from "discord.js";
 import { compressToEncodedURIComponent } from "lz-string";
+import { TS_BLUE } from "../env";
 
 export default class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -38,7 +38,7 @@ export default class PlaygroundModule extends Module {
 		const embed = new MessageEmbed()
 			.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
 			.setTitle("View in Playground")
-			.setColor("BLUE");
+			.setColor(TS_BLUE);
 		await msg.channel.send({ embed });
 	}
 
@@ -47,7 +47,7 @@ export default class PlaygroundModule extends Module {
 		const exec = this.PG_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[0]) return;
 		const embed = new MessageEmbed()
-			.setColor("BLUE")
+			.setColor(TS_BLUE)
 			.setTitle("Shortened Playground link")
 			.setAuthor(msg.author.tag, msg.author.displayAvatarURL())
 			.setURL(exec[0]);

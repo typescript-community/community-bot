@@ -12,3 +12,5 @@ export const autorole = process.env.AUTOROLE!.split(",").map(x => {
 		autoRemove: autoRemove == "true",
 	};
 });
+
+export const TS_BLUE = "#007ACC";
