@@ -40,12 +40,25 @@ export default class RepModule extends Module {
 
 	@listener({ event: "message" })
 	async onThank(msg: Message) {
+		const GAVE = "✅";
+		// parsing
 		const THANKS_REGEX = /thanks?,? ?<@!?(\d+)>/gi;
 		const exec = THANKS_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
 		const member = await msg.guild.members.fetch(exec[1]);
 		if (!member) return;
-		await this.rep(msg, member);
+		// give rep
+		const senderRU = await this.getOrMakeUser(msg.author);
+		const targetRU = await this.getOrMakeUser(member.user);
+
+		if ((await senderRU.sent()) >= this.MAX_REP) return;
+
+		await RepGive.create({
+			from: senderRU,
+			to: targetRU,
+		}).save();
+
+		await msg.react(GAVE);
 	}
 
 	@command()
@@ -115,7 +128,7 @@ export default class RepModule extends Module {
 		await msg.channel.send(embed);
 	}
 
-	@command()
+	@command({ aliases: ["lb"] })
 	async leaderboard(msg: Message) {
 		const data = ((await RepGive.createQueryBuilder("give")
 			.select(["give.to", "COUNT(*)"])
