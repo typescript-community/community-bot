@@ -52,8 +52,8 @@ export default class HelpChanModule extends Module {
 			return;
 		if (
 			(await msg.channel.messages.fetchPinned())?.first()?.author.id !==
-			msg.author.id /*&&
-			!msg.member?.hasPermission("MANAGE_MESSAGES")*/
+			msg.author.id &&
+			!msg.member?.hasPermission("MANAGE_MESSAGES")
 		)
 			return await msg.channel.send(
 				":warning: you have to be the asker to close the channel."
