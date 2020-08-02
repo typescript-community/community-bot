@@ -19,8 +19,6 @@ export default class HelpChanModule extends Module {
 		.setColor(TS_BLUE)
 		.setDescription("Blah blah blah\nBlah more blah");
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
-	askCooldowns: AskCooldownEntry[] = [];
-	cooldownTime = 30000; //900000; // 15 min -> ms
 
 	@listener({ event: "message" })
 	async onNewQuestion(msg: Message) {
@@ -40,10 +38,6 @@ export default class HelpChanModule extends Module {
 
 		await msg.channel.setParent(categories.ongoing);
 		await msg.member.roles.add(askCooldownRoleId);
-		this.askCooldowns.push({
-			memberID: msg.member.id,
-			when: Date.now() + this.cooldownTime,
-		});
 
 		await this.ensureAskChannels(msg.guild);
 		this.busyChannels.delete(msg.channel.id);
@@ -70,9 +64,11 @@ export default class HelpChanModule extends Module {
 			);
 		this.busyChannels.add(msg.channel.id);
 		await (await msg.channel.messages.fetchPinned()).first()?.unpin();
-		await msg.channel.send(":ok_hand: question resolved! (:");
+		await msg.member?.roles.remove(askCooldownRoleId);
 		await msg.channel.setParent(categories.answered);
 		await msg.channel.lockPermissions();
+		await msg.channel.send(":ok_hand: question resolved! (:");
+
 		await this.ensureAskChannels(msg.guild);
 		this.busyChannels.delete(msg.channel.id);
 	}
@@ -107,23 +103,5 @@ export default class HelpChanModule extends Module {
 		// just incase it somehow gets stuck
 		this.busyChannels.delete(msg.channel.id);
 		await msg.channel.send(":ok_hand:");
-	}
-	@listener({ event: "ready" })
-	removeCooldowns() {
-		setInterval(async () => {
-			this.askCooldowns = (
-				await Promise.all(
-					this.askCooldowns.map(async e => {
-						if (e.when > Date.now()) return e;
-						const member = await this.client.guilds.cache
-							.first()
-							?.members.fetch(e.memberID);
-						if (!member) return e;
-						await member.roles.remove(askCooldownRoleId);
-						return;
-					})
-				)
-			).filter(x => x !== undefined) as AskCooldownEntry[]; // ts cant narrow down based on the .filter
-		}, 1000 * 10);
 	}
 }
