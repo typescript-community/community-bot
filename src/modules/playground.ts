@@ -66,6 +66,7 @@ export default class PlaygroundModule extends Module {
 	}
 	@listener({ event: "messageUpdate" })
 	async onLongFix(_oldMsg: Message, msg: Message) {
+		if (msg.partial) await msg.fetch();
 		const exec = this.PG_REGEX.exec(msg.content);
 		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
