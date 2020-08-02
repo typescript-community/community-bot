@@ -36,9 +36,7 @@ export default class HelpChanModule extends Module {
 			return;
 		this.busyChannels.add(msg.channel.id);
 
-		await msg.channel.setTopic(
-			`Busy! Go to a new help channel to ask a new question or help ${msg.author} with their question.`
-		);
+		await msg.pin();
 
 		await msg.channel.setParent(categories.ongoing);
 		await msg.member.roles.add(askCooldownRoleId);
@@ -59,8 +57,9 @@ export default class HelpChanModule extends Module {
 		)
 			return;
 		if (
-			!msg.channel.topic?.includes(msg.author.toString()) &&
-			!msg.member?.hasPermission("MANAGE_MESSAGES")
+			(await msg.channel.messages.fetchPinned())?.first()?.author.id !==
+			msg.author.id /*&&
+			!msg.member?.hasPermission("MANAGE_MESSAGES")*/
 		)
 			return await msg.channel.send(
 				":warning: you have to be the asker to close the channel."
@@ -70,7 +69,7 @@ export default class HelpChanModule extends Module {
 				":warning: you can only run this in ongoing help channels."
 			);
 		this.busyChannels.add(msg.channel.id);
-
+		await (await msg.channel.messages.fetchPinned()).first()?.unpin();
 		await msg.channel.send(":ok_hand: question resolved! (:");
 		await msg.channel.setParent(categories.answered);
 		await msg.channel.lockPermissions();
@@ -120,7 +119,7 @@ export default class HelpChanModule extends Module {
 							.first()
 							?.members.fetch(e.memberID);
 						if (!member) return e;
-						await member.roles.remove([askCooldownRoleId]);
+						await member.roles.remove(askCooldownRoleId);
 						return;
 					})
 				)
