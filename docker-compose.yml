@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  bot:
+    image: node:13
+    command: yarn start
+    depends_on:
+      - postgres
+    volumes:
+      - .:/srv/bot:rw
+    working_dir: /srv/bot
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://tscbot:tscbot@postgres:5432/tscbot
+    env_file:
+      - .env
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: 'tscbot'
+      POSTGRES_DB: 'tscbot'
+      POSTGRES_PASSWORD: tscbot
+      PGPORT: 5432
+    volumes:
+      - 'postgres_data:/postgres/data'
+    ports:
+      - 5432:5432
+
+volumes:
+  postgres_data:

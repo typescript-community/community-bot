@@ -16,5 +16,6 @@ export default class PollModule extends Module {
 		if (msg.author.bot || !POLL_REGEX.test(msg.content)) return;
 		await msg.react("✅");
 		await msg.react("❌");
+		await msg.react("🤷");
 	}
 }

@@ -5,20 +5,52 @@ import {
 	listener,
 	CommonInhibitors,
 } from "cookiecord";
-import { Message, MessageEmbed, Guild, TextChannel } from "discord.js";
-import { categories, TS_BLUE, askCooldownRoleId } from "../env";
-
-type AskCooldownEntry = { memberID: string; when: number };
+import {
+	Message,
+	MessageEmbed,
+	Guild,
+	TextChannel,
+	Collection,
+} from "discord.js";
+import { categories, TS_BLUE, askCooldownRoleId, channelNames } from "../env";
+import { oneLine } from "common-tags";
 
 export default class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
 
+	CHANNEL_PREFIX = "help-";
+
 	INFO_EMBED = new MessageEmbed()
 		.setColor(TS_BLUE)
 		.setDescription("Blah blah blah\nBlah more blah");
+	AVAILABLE_EMBED = new MessageEmbed()
+		.setColor(TS_BLUE)
+		.setDescription(
+			"This help channel is now **available**, which means that " +
+				"you can claim it by typing your question into it." +
+				"Once claimed, the channel will move into the **Help: Ongoing** category, and " +
+				"will be yours until it has been inactive for 30 minutes or is closed " +
+				"manually with `!close`. When that happens, it will be set to **dormant** and moved into the **Help: Dormant** category.\n\n" +
+				"Try to write the best question you can by providing a detailed description and telling us what you've tried already."
+		);
+
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
+
+	private getChannelName(guild: Guild) {
+		const takenChannelNames = guild.channels.cache
+			.filter(channel => channel.name.startsWith("help-"))
+			.map(channel => channel.name.replace(this.CHANNEL_PREFIX, ""));
+		let decidedChannel = channelNames[0];
+
+		do {
+			decidedChannel =
+				channelNames[Math.floor(Math.random() * channelNames.length)];
+		} while (takenChannelNames.includes(decidedChannel));
+
+		return `${this.CHANNEL_PREFIX}${decidedChannel}`;
+	}
 
 	@listener({ event: "message" })
 	async onNewQuestion(msg: Message) {
@@ -32,16 +64,18 @@ export default class HelpChanModule extends Module {
 			this.busyChannels.has(msg.channel.id)
 		)
 			return;
+
 		this.busyChannels.add(msg.channel.id);
 
 		await msg.pin();
-
 		await msg.channel.setParent(categories.ongoing);
+		await msg.channel.lockPermissions();
 		await msg.member.roles.add(askCooldownRoleId);
 
 		await this.ensureAskChannels(msg.guild);
 		this.busyChannels.delete(msg.channel.id);
 	}
+
 	@command({ aliases: ["resolve", "done", "close"] })
 	async resolved(msg: Message) {
 		if (
@@ -50,9 +84,9 @@ export default class HelpChanModule extends Module {
 			this.busyChannels.has(msg.channel.id)
 		)
 			return;
+		const pinned = (await msg.channel.messages.fetchPinned()).first();
 		if (
-			(await msg.channel.messages.fetchPinned())?.first()?.author.id !==
-			msg.author.id &&
+			pinned?.author.id !== msg.author.id &&
 			!msg.member?.hasPermission("MANAGE_MESSAGES")
 		)
 			return await msg.channel.send(
@@ -62,12 +96,15 @@ export default class HelpChanModule extends Module {
 			return await msg.channel.send(
 				":warning: you can only run this in ongoing help channels."
 			);
+
+		const m = await msg.channel.send(`:lock: closing channel...`);
+
 		this.busyChannels.add(msg.channel.id);
 		await (await msg.channel.messages.fetchPinned()).first()?.unpin();
 		await msg.member?.roles.remove(askCooldownRoleId);
-		await msg.channel.setParent(categories.answered);
+		await msg.channel.setParent(categories.dormant);
 		await msg.channel.lockPermissions();
-		await msg.channel.send(":ok_hand: question resolved! (:");
+		await msg.channel.send(":closed_lock_with_key: channel closed");
 
 		await this.ensureAskChannels(msg.guild);
 		this.busyChannels.delete(msg.channel.id);
@@ -78,26 +115,29 @@ export default class HelpChanModule extends Module {
 			guild.channels.cache.filter(x => x.parentID == categories.ask)
 				.size !== 2
 		) {
-			const answered = guild.channels.cache.find(
-				x => x.parentID == categories.answered
+			const dormant = guild.channels.cache.find(
+				x => x.parentID == categories.dormant
 			);
-			if (answered && answered instanceof TextChannel) {
-				// await answered.setTopic("Ask your questions here!");
-				await answered.setParent(categories.ask);
-				await answered.send(this.INFO_EMBED);
-				await answered.lockPermissions();
+			if (dormant && dormant instanceof TextChannel) {
+				await dormant.setParent(categories.ask);
+				await dormant.send(this.AVAILABLE_EMBED);
+				await dormant.lockPermissions();
 			} else {
-				const chan = await guild.channels.create("help", {
-					type: "text",
-					topic: "Ask your questions here!",
-					reason: "maintain help channel goal",
-					parent: categories.ask,
-				});
+				const chan = await guild.channels.create(
+					this.getChannelName(guild),
+					{
+						type: "text",
+						topic: "Ask your questions here!",
+						reason: "maintain help channel goal",
+						parent: categories.ask,
+					}
+				);
 				await chan.lockPermissions();
-				await chan.send(this.INFO_EMBED);
+				await chan.send(this.AVAILABLE_EMBED);
 			}
 		}
 	}
+
 	@command({ inhibitors: [CommonInhibitors.botAdminsOnly] })
 	async removelock(msg: Message) {
 		// just incase it somehow gets stuck

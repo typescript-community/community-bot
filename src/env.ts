@@ -13,14 +13,14 @@ export const autorole = process.env.AUTOROLE!.split(",").map(x => {
 	};
 });
 
-export const dbUrl = process.env.DB_URL!;
+export const dbUrl = process.env.DATABASE_URL!;
 
 export const categories = {
 	ask: process.env.ASK_CATEGORY!,
 	ongoing: process.env.ONGOING_CATEGORY!,
-	answered: process.env.ANSWERED_CATEGORY!,
+	dormant: process.env.DORMANT_CATEGORY!,
 };
 
 export const askCooldownRoleId = process.env.ASK_COOLDOWN_ROLE!;
-
+export const channelNames = process.env.CHANNEL_NAMES!.split(",");
 export const TS_BLUE = "#007ACC";
