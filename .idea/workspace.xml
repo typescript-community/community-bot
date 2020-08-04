@@ -6,22 +6,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee58e4dc-8152-46f5-9bd3-feaaa34bc689" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.prettierrc.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/main.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/main.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.prettierrc" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/db.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/env.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/env.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/autorole.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/autorole.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/etc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/etc.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/helpchan.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/helpchan.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/playground.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/playground.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/poll.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/poll.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/reminders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/reminders.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/modules/rep.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/rep.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -55,7 +42,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1596481402739</updated>
-      <workItem from="1596481404449" duration="30318000" />
+      <workItem from="1596481404449" duration="31107000" />
     </task>
     <servers />
   </component>
