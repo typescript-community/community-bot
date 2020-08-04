@@ -6,10 +6,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee58e4dc-8152-46f5-9bd3-feaaa34bc689" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.prettierrc.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.prettierrc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/db.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/env.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/env.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modules/autorole.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/autorole.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modules/etc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/etc.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/modules/helpchan.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/helpchan.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modules/playground.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/playground.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modules/poll.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/poll.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modules/reminders.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/reminders.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/modules/rep.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/modules/rep.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,7 +40,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../.nvm/versions/node/v13.12.0/lib/node_modules/prettier" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Edge/backend" />
     <property name="nodejs_package_manager_path" value="yarn" />
     <property name="prettierjs.PrettierConfiguration.Package" value="\\wsl$\Ubuntu-18.04\home\robert\.nvm\versions\node\v13.12.0\lib\node_modules\prettier" />
     <property name="run.prettier.on.save" value="true" />
@@ -42,7 +55,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1596481402739</updated>
-      <workItem from="1596481404449" duration="18859000" />
+      <workItem from="1596481404449" duration="30318000" />
     </task>
     <servers />
   </component>
@@ -61,9 +74,10 @@
     </option>
   </component>
   <component name="WindowStateProjectService">
-    <state x="1060" y="280" key="FileChooserDialogImpl" timestamp="1596483653090">
-      <screen x="0" y="0" width="2560" height="1050" />
+    <state x="3256" y="272" key="FileChooserDialogImpl" timestamp="1596536108981">
+      <screen x="2560" y="0" width="1680" height="1020" />
     </state>
+    <state x="3256" y="272" key="FileChooserDialogImpl/0.0.2560.1050/2560.0.1680.1020@2560.0.1680.1020" timestamp="1596536108981" />
     <state x="1060" y="280" key="FileChooserDialogImpl/0.0.2560.1050/2560.170.1680.1020/-1920.0.1920.1050@0.0.2560.1050" timestamp="1596483653090" />
     <state x="781" y="170" key="SettingsEditor" timestamp="1596483655615">
       <screen x="0" y="0" width="2560" height="1050" />
