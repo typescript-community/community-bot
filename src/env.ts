@@ -16,7 +16,7 @@ export const autorole = process.env.AUTOROLE!.split(',').map(x => {
     };
 });
 
-export const dbUrl = process.env.DATABASE_UR!;
+export const dbUrl = process.env.DATABASE_URL!;
 
 export const categories = {
     ask: process.env.ASK_CATEGORY!,
