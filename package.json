@@ -4,7 +4,6 @@
     "description": "Typescript Community Bot",
     "main": "dist/index.js",
     "dependencies": {
-        "@sentry/node": "^5.20.1",
         "common-tags": "^1.8.0",
         "cookiecord": "^0.2.12",
         "dotenv-safe": "^8.2.0",
