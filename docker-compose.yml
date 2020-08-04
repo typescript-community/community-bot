@@ -12,7 +12,7 @@ services:
         working_dir: /srv/bot
         environment:
             - NODE_ENV=development
-            - DATABASE_URL=postgres://tscbot:tscbot@postgres:5432/tscbot
+            - DATABASE=postgres://tscbot:tscbot@postgres:5432/tscbot
         env_file:
             - .env
 
