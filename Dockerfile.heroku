@@ -1,2 +1,0 @@
-# Small hack to get heroku to pull from our GitHub package
-FROM docker.pkg.github.com/typescript-community/community-bot/bot:latest
