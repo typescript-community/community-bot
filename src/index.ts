@@ -14,7 +14,7 @@ const client = new CookiecordClient(
 );
 const prod = process.env.NODE_ENV == 'production';
 
-client.loadModulesFromFolder('src/modules');
+client.loadModulesFromFolder(prod ? 'dist/modules' : 'src/modules');
 if (!prod) client.reloadModulesFromFolder('src/modules');
 
 getDB(); // prepare the db for later
