@@ -1,0 +1,17 @@
+---
+before_install:
+  - "yarn upgrade"
+cache: yarn
+branches:
+  only:
+    - master
+install:
+  - "yarn"
+language: node_js
+node_js:
+  - node
+script:
+  - "npm run build"
+  - "npx codechecks"
+  - "npm run coverage"
+sudo: false

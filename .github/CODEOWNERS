@@ -1,0 +1,9 @@
+# This file defines who should review and approve changes in each tribe or team, and
+# also other content inside this repo.
+#
+# Code owners are automatically requested for review when someone opens a pull
+# request that modifies code that they own.
+
+# See https://help.github.com/articles/about-codeowners/
+
+* @Robinlemon @Haxified @Draem

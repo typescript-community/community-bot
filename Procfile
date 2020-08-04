@@ -1,0 +1,1 @@
+worker: node -r source-map-support/register ./build
