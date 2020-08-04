@@ -368,10 +368,10 @@ concat-map@0.0.1:
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=
 
-cookiecord@^0.1.11:
-  version "0.1.12"
-  resolved "https://registry.yarnpkg.com/cookiecord/-/cookiecord-0.1.12.tgz#5224cfcdc8ff4722a491997bf21ab6750b305496"
-  integrity sha512-DDZjrNOxEx/UuqT2bfr8UcuRH/UcDCcaxMr0IHchEd7fhlUWFNztUqxcnX+i7Ag9XxPCf+/iI+sgR52tBiCnAA==
+cookiecord@^0.2.12:
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/cookiecord/-/cookiecord-0.2.12.tgz#8c193a00cefb71055c6dd97c5bb621562b419837"
+  integrity sha512-uOHW4eQg9vbWId1ncipAVzzEWiN9NXbJ5qjAQVevROq5FYD2HSuc/H5qvhkYI243NDNAPkTXaMpfgnlhuH8amQ==
   dependencies:
     chokidar "^3.3.1"
     discord.js discordjs/discord.js#stable

@@ -8,6 +8,10 @@
     <list default="true" id="ee58e4dc-8152-46f5-9bd3-feaaa34bc689" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/meta/logo.png" beforeDir="false" afterPath="$PROJECT_DIR$/meta/logo.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,7 +44,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1596481402739</updated>
-      <workItem from="1596481404449" duration="36613000" />
+      <workItem from="1596481404449" duration="39502000" />
     </task>
     <servers />
   </component>

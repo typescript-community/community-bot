@@ -2,7 +2,7 @@
 
 # TypeScript Community Bot
 
-_A utility bot builty for the [TypeScript Community Discord Server](https://discord.gg/typescript)._
+_A utility bot built for the [TypeScript Community Discord Server](https://discord.gg/typescript)._
 
 <a href="https://discord.gg/typescript"><img src="https://img.shields.io/discord/508357248330760243?logo=discord" alt="chat on Discord"></a>
 

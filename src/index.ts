@@ -5,7 +5,7 @@ import { getDB } from './db';
 const client = new CookiecordClient(
     {
         botAdmins,
-        prefix: '!',
+        prefix: ['!', 't!'],
     },
     {
         ws: { intents: Intents.NON_PRIVILEGED },

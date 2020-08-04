@@ -5,7 +5,7 @@
     "main": "dist/index.js",
     "dependencies": {
         "common-tags": "^1.8.0",
-        "cookiecord": "^0.1.11",
+        "cookiecord": "^0.2.12",
         "dotenv-safe": "^8.2.0",
         "lz-string": "^1.4.4",
         "parse-duration": "^0.4.4",
