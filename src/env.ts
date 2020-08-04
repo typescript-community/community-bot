@@ -4,6 +4,8 @@ dotenv.config();
 export const token = process.env.TOKEN!;
 export const botAdmins = process.env.BOT_ADMINS!.split(',');
 
+export const sentryDsn = process.env.SENTRY_DSN;
+
 export const guildId = process.env.GUILD_ID!;
 
 export const autorole = process.env.AUTOROLE!.split(',').map(x => {
