@@ -2,7 +2,7 @@ import { token, botAdmins, sentryDsn } from './env';
 import CookiecordClient from 'cookiecord';
 import { Intents } from 'discord.js';
 import { getDB } from './db';
-import Sentry from '@sentry/node';
+// import Sentry from '@sentry/node';
 
 const client = new CookiecordClient(
     {
@@ -20,7 +20,7 @@ client.loadModulesFromFolder('src/modules');
 
 if (!prod) client.reloadModulesFromFolder('src/modules');
 
-if (prod && sentryDsn) Sentry.init({ dsn: sentryDsn });
+// if (prod && sentryDsn) Sentry.init({ dsn: sentryDsn });
 
 getDB(); // prepare the db for later
 client.login(token);
