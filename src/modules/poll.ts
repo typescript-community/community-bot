@@ -8,8 +8,8 @@ export default class PollModule extends Module {
 
     @listener({ event: 'message' })
     async onMessage(msg: Message) {
-        const POLL_REGEX = /^poll:/i;
-        if (msg.author.bot || !POLL_REGEX.test(msg.content)) return;
+        if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
+            return;
         await msg.react('✅');
         await msg.react('❌');
         await msg.react('🤷');
