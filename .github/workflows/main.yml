@@ -2,6 +2,9 @@ on:
     push:
     pull_request:
 
+env:
+    IMAGE_NAME: bot
+
 jobs:
     main:
         name: main
@@ -18,3 +21,33 @@ jobs:
               run: yarn run build
             - name: lint
               run: yarn run lint
+            - name: Build image
+              if: contains(github.ref, "rewrite")
+              run: docker build . --file Dockerfile --tag $IMAGE_NAME
+
+            - name: Log into registry
+              if: contains(github.ref, "rewrite")
+              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+            - name: Push image
+              if: contains(github.ref, "rewrite")
+              run: |
+                  IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+
+                  # Change all uppercase to lowercase
+                  IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+                  # Strip git ref prefix from version
+                  VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+                  # Strip "v" prefix from tag name
+                  [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+                  # Use Docker `latest` tag convention
+                  [ "$VERSION" == "master" ] && VERSION=latest
+
+                  echo IMAGE_ID=$IMAGE_ID
+                  echo VERSION=$VERSION
+
+                  docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+                  docker push $IMAGE_ID:$VERSION
