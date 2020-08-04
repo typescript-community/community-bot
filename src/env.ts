@@ -23,4 +23,8 @@ export const categories = {
 
 export const askCooldownRoleId = process.env.ASK_COOLDOWN_ROLE!;
 export const channelNames = process.env.CHANNEL_NAMES!.split(",");
+export const dormantChannelTimeout = parseInt(
+	process.env.DORMANT_CHANNEL_TIMEOUT!
+);
+export const dormantChannelLoop = parseInt(process.env.DORMANT_CHANNEL_LOOP!);
 export const TS_BLUE = "#007ACC";
