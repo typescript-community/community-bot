@@ -6,7 +6,7 @@ import { RepUser, RepGive } from './modules/rep';
 let db: Connection | undefined;
 export async function getDB() {
 	if (db) return db;
-	console.log(dbUrl);
+
 	db = await createConnection({
 		type: 'postgres',
 		url: dbUrl,
