@@ -15,7 +15,7 @@ export default class PlaygroundModule extends Module {
 	}
 
 	private editedLongLink = new Map<string, Message>();
-	private PG_REGEX = /(https?:\/\/(www\.)?typescriptlang\.org\/play\/(index\.html)?\??(\?(([^\s#&]+)&?)*)?#code\/[\w-+_]+)={0,4}/gi;
+	private PG_REGEX = /https?:\/\/(?:www\.)?typescriptlang\.org\/(play|dev\/bug-workbench)(?:\/index\.html)?\/?\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*#code\/[\w-+_]+={0,4}/gi;
 
 	@command({ aliases: ['pg', 'playg'], single: true })
 	async playground(msg: Message, @optional code?: string) {
