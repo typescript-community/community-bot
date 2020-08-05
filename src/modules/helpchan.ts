@@ -131,7 +131,19 @@ export default class HelpChanModule extends Module {
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await dormant.setParent(categories.ask);
-				await dormant.send(this.AVAILABLE_EMBED);
+
+				const lastMessage = dormant.messages.cache
+					.array()
+					.reverse()
+					.find(m => m.author.id === this.client.user?.id);
+				if (lastMessage) {
+					// If there is a last message (the dormant message) by the bot, just edit it
+					await lastMessage.edit(this.AVAILABLE_EMBED);
+				} else {
+					// Otherwise, just send a new message
+					await dormant.send(this.AVAILABLE_EMBED);
+				}
+
 				await dormant.lockPermissions();
 			} else {
 				const chan = await guild.channels.create(
