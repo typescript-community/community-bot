@@ -95,6 +95,20 @@ export default class HelpChanModule extends Module {
 		this.busyChannels.delete(msg.channel.id);
 	}
 
+	@listener({ event: 'message' })
+	async onNewSystemPinMessage(msg: Message) {
+		if (
+			msg.type !== 'PINS_ADD' ||
+			msg.channel.type !== 'text' ||
+			!(
+				msg.channel.parentID == categories.ask ||
+				msg.channel.parentID == categories.ongoing
+			)
+		)
+			return;
+		await msg.delete({ reason: 'Pin system message' });
+	}
+
 	@command({ aliases: ['resolve', 'done', 'close'] })
 	async resolved(msg: Message) {
 		if (
