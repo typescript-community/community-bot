@@ -169,8 +169,7 @@ export default class HelpChanModule extends Module {
 		setTimeout(() => {
 			pinned?.member?.roles.remove(askCooldownRoleId);
 		}, askCooldownTimeout * 1000);
-		await channel.setParent(categories.dormant);
-		await channel.lockPermissions();
+		await channel.setParent(categories.dormant, { lockPermissions: true });
 
 		await channel.send(this.DORMANT_EMBED);
 
