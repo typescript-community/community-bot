@@ -87,9 +87,10 @@ export default class HelpChanModule extends Module {
 		this.busyChannels.add(msg.channel.id);
 
 		await msg.pin();
-		await msg.channel.setParent(categories.ongoing);
+		await msg.channel.setParent(categories.ongoing, {
+			lockPermissions: true,
+		});
 		await msg.member.roles.add(askCooldownRoleId);
-		await msg.channel.lockPermissions();
 
 		await this.ensureAskChannels(msg.guild);
 		this.busyChannels.delete(msg.channel.id);
@@ -111,6 +112,7 @@ export default class HelpChanModule extends Module {
 			return await msg.channel.send(
 				':warning: you have to be the asker to close the channel.',
 			);
+
 		if (msg.channel.parentID !== categories.ongoing)
 			return await msg.channel.send(
 				':warning: you can only run this in ongoing help channels.',
@@ -130,7 +132,9 @@ export default class HelpChanModule extends Module {
 				x => x.parentID == categories.dormant,
 			);
 			if (dormant && dormant instanceof TextChannel) {
-				await dormant.setParent(categories.ask);
+				await dormant.setParent(categories.ask, {
+					lockPermissions: true,
+				});
 
 				const lastMessage = dormant.messages.cache
 					.array()
@@ -143,8 +147,6 @@ export default class HelpChanModule extends Module {
 					// Otherwise, just send a new message
 					await dormant.send(this.AVAILABLE_EMBED);
 				}
-
-				await dormant.lockPermissions();
 			} else {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
@@ -169,8 +171,7 @@ export default class HelpChanModule extends Module {
 		setTimeout(() => {
 			pinned?.member?.roles.remove(askCooldownRoleId);
 		}, askCooldownTimeout * 1000);
-		await channel.setParent(categories.dormant);
-		await channel.lockPermissions();
+		await channel.setParent(categories.dormant, { lockPermissions: true });
 
 		await channel.send(this.DORMANT_EMBED);
 
