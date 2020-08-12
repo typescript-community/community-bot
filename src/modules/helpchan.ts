@@ -185,6 +185,7 @@ export default class HelpChanModule extends Module {
 		}, askCooldownTimeout * 1000);
 		
 		const parent = channel.guild.channels.resolve(categories.dormant)
+		if (parent == null) return;
 		const data = {
 			parentID: categories.dormant,
 			permissionOverwrites: parent.permissionOverwrites
