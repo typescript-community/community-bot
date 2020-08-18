@@ -41,11 +41,11 @@ export default class RepModule extends Module {
 	async onThank(msg: Message) {
 		const GAVE = '✅';
 		// parsing
-		const THANKS_REGEX = /thanks?,? ?<@!?(\d+)>/gi;
+		const THANKS_REGEX = /thanks?,?\s*<@!?(\d+)>/gi;
 		const exec = THANKS_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
 		const member = await msg.guild.members.fetch(exec[1]);
-		if (!member) return;
+		if (!member || member === msg.member) return;
 		// give rep
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(member.user);
@@ -75,6 +75,7 @@ export default class RepModule extends Module {
 
 	@command()
 	async rep(msg: Message, targetMember: GuildMember) {
+		if (targetMember === msg.member) return;
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
 
