@@ -30,8 +30,8 @@ export default class HelpChanModule extends Module {
 				'you can claim it by typing your question into it. ' +
 				'Once claimed, the channel will move into the **Help: Ongoing** category, and ' +
 				`will be yours until it has been inactive for ${
-					dormantChannelTimeout / 60
-				} minutes or is closed ` +
+					dormantChannelTimeout / 60 / 60
+				} hours or is closed ` +
 				'manually with `!close`. When that happens, it will be set to **dormant** and moved into the **Help: Dormant** category.\n\n' +
 				"Try to write the best question you can by providing a detailed description and telling us what you've tried already.",
 		);
