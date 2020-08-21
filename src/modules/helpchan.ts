@@ -63,16 +63,6 @@ export default class HelpChanModule extends Module {
 		return `${this.CHANNEL_PREFIX}${decidedChannel}`;
 	}
 
-	async moveChannel(channel: TextChannel, category: string) {
-		const parent = channel.guild.channels.resolve(category);
-		if (parent == null) return;
-
-		await channel.edit({
-			parentID: categories.dormant,
-			permissionOverwrites: parent.permissionOverwrites,
-		});
-	}
-
 	@listener({ event: 'ready' })
 	async startDormantLoop() {
 		setInterval(() => {
@@ -97,8 +87,9 @@ export default class HelpChanModule extends Module {
 		this.busyChannels.add(msg.channel.id);
 
 		await msg.pin();
+		await msg.channel.setParent(categories.ongoing);
 		await msg.member.roles.add(askCooldownRoleId);
-		await this.moveChannel(msg.channel, categories.ongoing);
+		await msg.channel.lockPermissions();
 
 		await this.ensureAskChannels(msg.guild);
 		this.busyChannels.delete(msg.channel.id);
@@ -153,7 +144,7 @@ export default class HelpChanModule extends Module {
 				x => x.parentID == categories.dormant,
 			);
 			if (dormant && dormant instanceof TextChannel) {
-				await this.moveChannel(dormant, categories.ask);
+				await dormant.setParent(categories.ask);
 
 				const lastMessage = dormant.messages.cache
 					.array()
@@ -166,6 +157,8 @@ export default class HelpChanModule extends Module {
 					// Otherwise, just send a new message
 					await dormant.send(this.AVAILABLE_EMBED);
 				}
+
+				await dormant.lockPermissions();
 			} else {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
@@ -176,7 +169,7 @@ export default class HelpChanModule extends Module {
 						parent: categories.ask,
 					},
 				);
-				await this.moveChannel(chan, categories.ask);
+				await chan.lockPermissions();
 				await chan.send(this.AVAILABLE_EMBED);
 			}
 		}
@@ -191,7 +184,13 @@ export default class HelpChanModule extends Module {
 			pinned?.member?.roles.remove(askCooldownRoleId);
 		}, askCooldownTimeout * 1000);
 
-		await this.moveChannel(channel, categories.dormant);
+		const parent = channel.guild.channels.resolve(categories.dormant);
+		if (parent == null) return;
+		const data = {
+			parentID: categories.dormant,
+			permissionOverwrites: parent.permissionOverwrites,
+		};
+		await channel.edit(data);
 
 		await channel.send(this.DORMANT_EMBED);
 
