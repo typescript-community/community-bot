@@ -45,7 +45,7 @@ export default class RepModule extends Module {
 		const exec = THANKS_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
 		const member = await msg.guild.members.fetch(exec[1]);
-		if (!member || member === msg.member) return;
+		if (!member || member.id === msg.member.id) return;
 		// give rep
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(member.user);
@@ -75,7 +75,7 @@ export default class RepModule extends Module {
 
 	@command()
 	async rep(msg: Message, targetMember: GuildMember) {
-		if (targetMember === msg.member) return;
+		if (targetMember.id === msg.member.id) return;
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
 
