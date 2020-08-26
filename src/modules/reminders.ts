@@ -19,8 +19,8 @@ export class ReminderModule extends Module {
 
 	@listener({ event: 'ready' })
 	async loadPrevReminders() {
-		const db = await getDB();
-		const reminders = await db.manager.find(Reminder);
+		const reminders = await Reminder.find();
+
 		for (const rem of reminders) {
 			setTimeout(
 				() =>
@@ -87,7 +87,7 @@ export class ReminderModule extends Module {
 		} catch (e) {
 			// Fail silently, as the user might have their DMs off.
 		}
-		const db = await getDB();
-		await db.manager.remove(rem);
+
+		await rem.remove();
 	}
 }
