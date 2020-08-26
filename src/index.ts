@@ -1,7 +1,15 @@
 import { token, botAdmins } from './env';
-import CookiecordClient from 'cookiecord';
+import CookiecordClient, { Module } from 'cookiecord';
 import { Intents } from 'discord.js';
 import { getDB } from './db';
+
+import { AutoroleModule } from './modules/autorole';
+import { EtcModule } from './modules/etc';
+import { HelpChanModule } from './modules/helpchan';
+import { PlaygroundModule } from './modules/playground';
+import { PollModule } from './modules/poll';
+import { ReminderModule } from './modules/reminders';
+import { RepModule } from './modules/rep';
 
 const client = new CookiecordClient(
 	{
@@ -13,12 +21,20 @@ const client = new CookiecordClient(
 		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],
 	},
 );
-const prod = process.env.NODE_ENV == 'production';
 
-client.loadModulesFromFolder('src/modules');
-
-if (!prod) client.reloadModulesFromFolder('src/modules');
+for (const mod of [
+	AutoroleModule,
+	EtcModule,
+	HelpChanModule,
+	PlaygroundModule,
+	PollModule,
+	ReminderModule,
+	RepModule,
+]) {
+	client.registerModule(mod);
+}
 
 getDB(); // prepare the db for later
+
 client.login(token);
 client.on('ready', () => console.log(`Logged in as ${client.user?.tag}`));

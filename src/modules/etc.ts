@@ -1,7 +1,7 @@
 import { command, default as CookiecordClient, Module } from 'cookiecord';
 import { Message } from 'discord.js';
 
-export default class EtcModule extends Module {
+export class EtcModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}

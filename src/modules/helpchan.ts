@@ -16,7 +16,7 @@ import {
 	askCooldownTimeout,
 } from '../env';
 
-export default class HelpChanModule extends Module {
+export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}

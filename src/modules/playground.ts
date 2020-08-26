@@ -9,7 +9,7 @@ import { Message, MessageEmbed } from 'discord.js';
 import { compressToEncodedURIComponent } from 'lz-string';
 import { TS_BLUE } from '../env';
 
-export default class PlaygroundModule extends Module {
+export class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}

@@ -1,7 +1,8 @@
 import { Connection, createConnection } from 'typeorm';
-import { Reminder } from './modules/reminders';
 import { dbUrl } from './env';
-import { RepUser, RepGive } from './modules/rep';
+import { Reminder } from './entities/Reminder';
+import { RepUser } from './entities/RepUser';
+import { RepGive } from './entities/RepGive';
 
 let db: Connection | undefined;
 export async function getDB() {

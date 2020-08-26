@@ -7,20 +7,13 @@ import {
 } from 'cookiecord';
 import { GuildMember, Message, MessageEmbed, User } from 'discord.js';
 import prettyMilliseconds from 'pretty-ms';
-import {
-	BaseEntity,
-	CreateDateColumn,
-	Entity,
-	ManyToOne,
-	OneToMany,
-	PrimaryColumn,
-	PrimaryGeneratedColumn,
-} from 'typeorm';
 import { getDB } from '../db';
 import { TS_BLUE } from '../env';
-const DAY_MS = 86400000;
 
-export default class RepModule extends Module {
+import { RepGive } from '../entities/RepGive';
+import { RepUser } from '../entities/RepUser';
+
+export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
@@ -28,12 +21,16 @@ export default class RepModule extends Module {
 
 	async getOrMakeUser(user: User) {
 		const db = await getDB();
-		let ru = await db.manager.findOne(RepUser, user.id, {
-			relations: ['got', 'given'],
-		});
+
+		let ru = await RepUser.findOne(
+			{ id: user.id },
+			{ relations: ['got', 'given'] },
+		);
+
 		if (!ru) {
 			ru = await RepUser.create({ id: user.id }).save();
 		}
+
 		return ru;
 	}
 
@@ -41,11 +38,12 @@ export default class RepModule extends Module {
 	async onThank(msg: Message) {
 		const GAVE = '✅';
 		// parsing
-		const THANKS_REGEX = /thanks?,? ?<@!?(\d+)>/gi;
+		const THANKS_REGEX = /thanks?,?\s*<@!?(\d+)>/gi;
 		const exec = THANKS_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
 		const member = await msg.guild.members.fetch(exec[1]);
-		if (!member) return;
+		if (!member || member.id === msg.member?.id) return;
+
 		// give rep
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(member.user);
@@ -64,8 +62,10 @@ export default class RepModule extends Module {
 	async remaining(msg: Message) {
 		const USED = '✅';
 		const UNUSED = '⬜';
+
 		const ru = await this.getOrMakeUser(msg.author);
 		const sent = await ru.sent();
+
 		await msg.channel.send(
 			`Rep used: ${
 				USED.repeat(sent) + UNUSED.repeat(this.MAX_REP - sent)
@@ -75,6 +75,9 @@ export default class RepModule extends Module {
 
 	@command()
 	async rep(msg: Message, targetMember: GuildMember) {
+		if (targetMember.id === msg.member?.id)
+			return msg.channel.send(`:x: you cannot send rep to yourself`);
+
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
 
@@ -98,6 +101,7 @@ export default class RepModule extends Module {
 	@command({ aliases: ['history'] })
 	async getrep(msg: Message, @optional user?: User) {
 		if (!user) user = msg.author;
+
 		const targetRU = await this.getOrMakeUser(user);
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
@@ -151,40 +155,4 @@ export default class RepModule extends Module {
 			);
 		await msg.channel.send(embed);
 	}
-}
-
-@Entity()
-export class RepUser extends BaseEntity {
-	@PrimaryColumn()
-	id!: string;
-
-	@OneToMany(type => RepGive, rg => rg.from, { nullable: false })
-	got!: Promise<RepGive[]>;
-
-	@OneToMany(type => RepGive, rg => rg.to, { nullable: false })
-	given!: Promise<RepGive[]>;
-
-	async sent() {
-		return (await this.got).filter(
-			x => Date.now() - x.createdAt.getTime() < DAY_MS,
-		).length;
-	}
-}
-
-@Entity()
-export class RepGive extends BaseEntity {
-	@PrimaryGeneratedColumn()
-	id!: number;
-
-	@ManyToOne(type => RepUser, ru => ru.given, {
-		nullable: false,
-		eager: true,
-	})
-	from!: RepUser;
-
-	@ManyToOne(type => RepUser, ru => ru.got, { nullable: false, eager: true })
-	to!: RepUser;
-
-	@CreateDateColumn()
-	createdAt!: Date;
 }

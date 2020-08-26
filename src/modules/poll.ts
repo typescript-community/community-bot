@@ -1,7 +1,7 @@
 import { default as CookiecordClient, listener, Module } from 'cookiecord';
 import { Message } from 'discord.js';
 
-export default class PollModule extends Module {
+export class PollModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}

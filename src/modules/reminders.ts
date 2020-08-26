@@ -10,8 +10,9 @@ import { Message } from 'discord.js';
 import { getDB } from '../db';
 import prettyMs from 'pretty-ms';
 import { setTimeout } from 'timers';
+import { Reminder } from '../entities/Reminder';
 
-export default class ReminderModule extends Module {
+export class ReminderModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
@@ -43,10 +44,13 @@ export default class ReminderModule extends Module {
 		const dur = parse(splitArgs.shift()!); // TS doesn't know about the length check
 		if (!dur || !maxDur || dur > maxDur)
 			return await msg.channel.send(':warning: invalid duration!');
-		const db = await getDB();
-		const rem = await db.manager.save(
-			new Reminder(msg.author.id, Date.now() + dur, splitArgs.join(' ')),
-		);
+
+		const reminder = new Reminder();
+		reminder.userID = msg.author.id;
+		reminder.date = Date.now() + dur;
+		reminder.message = splitArgs.join('');
+
+		await reminder.save();
 
 		if (splitArgs.length == 0) {
 			await msg.channel.send(
@@ -63,7 +67,7 @@ export default class ReminderModule extends Module {
 		// set the timeout, bot will take all the reminders from the DB on init if interrupted while a reminder is still pending
 		setTimeout(
 			() =>
-				this.sendReminder(rem).catch(err => {
+				this.sendReminder(reminder).catch(err => {
 					throw err;
 				}),
 			dur,
@@ -85,26 +89,5 @@ export default class ReminderModule extends Module {
 		}
 		const db = await getDB();
 		await db.manager.remove(rem);
-	}
-}
-
-@Entity()
-export class Reminder {
-	@PrimaryGeneratedColumn()
-	id!: number;
-
-	@Column()
-	userID: string;
-
-	@Column({ type: 'bigint' })
-	date: number;
-
-	@Column()
-	message: string;
-
-	constructor(userID: string, date: number, message: string) {
-		this.userID = userID;
-		this.date = date;
-		this.message = message;
 	}
 }

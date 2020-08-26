@@ -2,7 +2,7 @@ import { default as CookiecordClient, listener, Module } from 'cookiecord';
 import { MessageReaction, User } from 'discord.js';
 import { autorole } from '../env';
 
-export default class AutoroleModule extends Module {
+export class AutoroleModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
