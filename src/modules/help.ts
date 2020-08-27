@@ -2,15 +2,12 @@ import { command, default as CookiecordClient, Module } from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
 
 export default class HelpModule extends Module {
-	protected client: any;
-	constructor (client: CookiecordClient) {
+	constructor(client: CookiecordClient) {
 		super(client);
-
-		this.client = client;
 	}
 
 	@command({ aliases: ['help', 'commands', 'h'] })
-	async help (message: Message, args: string) {
+	async help(message: Message, args: string) {
 		if (!args) {
 			let embed = new MessageEmbed()
 				.setAuthor(
