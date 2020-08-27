@@ -1,4 +1,10 @@
-import { command, default as CookiecordClient, Module } from 'cookiecord';
+import {
+	command,
+	default as CookiecordClient,
+	Module,
+	CommonInhibitors,
+	optional,
+} from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
 
 export default class HelpModule extends Module {
@@ -6,11 +12,19 @@ export default class HelpModule extends Module {
 		super(client);
 	}
 
-	@command({ aliases: ['help', 'commands', 'h'] })
-	async help(msg: Message, args: string) {
-		if (!args) {
+	@command({
+		aliases: ['help', 'commands', 'h'],
+		inhibitors: [CommonInhibitors.guildsOnly],
+	})
+	async help(msg: Message, @optional cmd?: string) {
+		if (!msg.guild) return;
+
+		if (!cmd) {
 			let embed = new MessageEmbed()
-				.setAuthor(msg.guild.name, msg.guild.iconURL({ dynamic: true }))
+				.setAuthor(
+					msg.guild.name,
+					msg.guild.iconURL({ dynamic: true }) || undefined,
+				)
 				.setTitle('Help Command!')
 				.setDescription(
 					`Hello ${msg.author.username}! Here is a list of all commands in me! To get detailed description on any specific command, do \`help <command>\``,
@@ -28,14 +42,14 @@ export default class HelpModule extends Module {
 					`\`rep\` ► Did somebody help you? Give them a reputation point!\n\`history\` ► Check the reputation history of a user!\n\`leaderboard\` ► See the reputation leaderboard!`,
 				)
 				.setFooter(
-					this.client.user.username,
-					this.client.displayAvatarURL(),
+					this.client.user?.username,
+					this.client.user?.displayAvatarURL(),
 				)
 				.setTimestamp();
 
 			return msg.channel.send(embed);
 		} else {
-			switch (args[0]) {
+			switch (cmd[0]) {
 				case 'ping':
 					msg.channel.send(
 						`Aliases: \`ping\`\nDescription: *View the latency of the bot*\nUsage: \`ping\``,
