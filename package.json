@@ -4,6 +4,7 @@
 	"description": "Typescript Community Bot",
 	"main": "dist/index.js",
 	"dependencies": {
+		"@typescript/twoslash": "^1.0.1",
 		"cookiecord": "^0.2.12",
 		"dotenv-safe": "^8.2.0",
 		"lz-string": "^1.4.4",

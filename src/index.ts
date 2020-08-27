@@ -10,6 +10,7 @@ import { PlaygroundModule } from './modules/playground';
 import { PollModule } from './modules/poll';
 import { ReminderModule } from './modules/reminders';
 import { RepModule } from './modules/rep';
+import { TwoslashModule } from './modules/twoslash';
 
 const client = new CookiecordClient(
 	{
@@ -30,6 +31,7 @@ for (const mod of [
 	PollModule,
 	ReminderModule,
 	RepModule,
+	TwoslashModule,
 ]) {
 	client.registerModule(mod);
 }
