@@ -13,7 +13,7 @@ export async function findCodeblockFromChannel(
 		.array()
 		.filter(msg => msg.author.bot !== true);
 
-	if (ignoreLatest) msgs.pop();
+	if (ignoreLatest) msgs.shift();
 
 	return msgs
 		.map(m => CODEBLOCK_REGEX.exec(m.content))
