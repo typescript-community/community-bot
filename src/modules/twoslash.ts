@@ -1,7 +1,7 @@
 import { command, Module } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
-import { findCodeblockFromChannel } from '../util/findCodeblockFromChannel';
+import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 
 const CODEBLOCK = '```';
 
@@ -19,7 +19,7 @@ export class TwoslashModule extends Module {
 
 		const symbol = match[0];
 
-		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
 			return msg.channel.send(
@@ -45,7 +45,7 @@ export class TwoslashModule extends Module {
 
 	@command()
 	async twoslash(msg: Message) {
-		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
 			return msg.channel.send(
@@ -96,7 +96,11 @@ export class TwoslashModule extends Module {
 					const spaceBefore = q.offset - queryComment.length;
 					queryComment += ' '.repeat(spaceBefore);
 					queryComment += '^? - ';
-					queryComment += q.text;
+					queryComment +=
+						q.text?.replace(
+							/\n/g,
+							'\n//' + ' '.repeat(spaceBefore),
+						) || '';
 				});
 				resultLines.push(queryComment);
 			}
