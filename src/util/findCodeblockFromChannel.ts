@@ -3,7 +3,7 @@ import { TextChannel } from 'discord.js';
 export async function findCodeblockFromChannel(
 	channel: TextChannel,
 	ignoreLatest?: boolean,
-) {
+): Promise<string | undefined> {
 	const CODEBLOCK_REGEX = /```(?:ts|typescript)?\n([\s\S]+)```/gm;
 
 	const msgs = (await channel.messages.fetch({ limit: 10 }))
