@@ -2,12 +2,24 @@ import { command, Module } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
 import { findCodeblockFromChannel } from '../util/findCodeblockFromChannel';
+import { send } from 'process';
 
 const CODEBLOCK = '```';
 
 export class TwoslashModule extends Module {
 	@command({ single: true })
-	async ts(msg: Message, symbol: string) {
+	async ts(msg: Message, content: string) {
+		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
+
+		if (!match) {
+			msg.channel.send(
+				'You need to give me a valid symbol name to look for!',
+			);
+			return;
+		}
+
+		const symbol = match[0];
+
 		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
 
 		if (!code)
