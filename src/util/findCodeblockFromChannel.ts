@@ -28,7 +28,7 @@ export async function findCodeblockFromChannel(
 export async function findCodeFromChannel(channel: TextChannel) {
 	const msgs = (await channel.messages.fetch({ limit: 10 })).array();
 
-	for (const { author, content } of msgs) {
+	for (const { author, content, embeds } of msgs) {
 		if (!author.bot) {
 			const match = content.match(CODEBLOCK_REGEX);
 			if (match && match[1].length) {
@@ -39,6 +39,13 @@ export async function findCodeFromChannel(channel: TextChannel) {
 		const match = content.match(PLAYGROUND_REGEX);
 		if (match) {
 			return decompressFromEncodedURIComponent(match[1]);
+		}
+
+		for (const embed of embeds) {
+			const match = embed.url?.match(PLAYGROUND_REGEX);
+			if (match) {
+				return decompressFromEncodedURIComponent(match[1]);
+			}
 		}
 	}
 }
