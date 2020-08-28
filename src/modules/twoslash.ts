@@ -1,14 +1,14 @@
 import { command, Module } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
-import { findCodeblockFromChannel } from '../util/findCodeblockFromChannel';
+import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 
 const CODEBLOCK = '```';
 
 export class TwoslashModule extends Module {
 	@command({ single: true })
 	async ts(msg: Message, symbol: string) {
-		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
 			return msg.channel.send(
@@ -34,11 +34,11 @@ export class TwoslashModule extends Module {
 
 	@command()
 	async twoslash(msg: Message) {
-		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
 			return msg.channel.send(
-				`:warning: cou  ld not find any TypeScript codeblocks in the past 10 messages`,
+				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
 			);
 
 		const ret = twoslasher(code, 'ts', {

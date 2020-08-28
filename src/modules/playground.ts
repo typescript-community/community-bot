@@ -8,7 +8,10 @@ import {
 import { Message, MessageEmbed, TextChannel } from 'discord.js';
 import { compressToEncodedURIComponent } from 'lz-string';
 import { TS_BLUE } from '../env';
-import { findCodeblockFromChannel } from '../util/findCodeblockFromChannel';
+import {
+	findCodeblockFromChannel,
+	PLAYGROUND_REGEX,
+} from '../util/findCodeblockFromChannel';
 
 export class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -16,7 +19,6 @@ export class PlaygroundModule extends Module {
 	}
 
 	private editedLongLink = new Map<string, Message>();
-	private PG_REGEX = /https?:\/\/(?:www\.)?typescriptlang\.org\/(play|dev\/bug-workbench)(?:\/index\.html)?\/?\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*#code\/[\w-+_]+={0,4}/gi;
 
 	@command({ aliases: ['pg', 'playg'], single: true })
 	async playground(msg: Message, @optional code?: string) {
@@ -41,7 +43,7 @@ export class PlaygroundModule extends Module {
 
 	@listener({ event: 'message' })
 	async onLongPGLink(msg: Message) {
-		const exec = this.PG_REGEX.exec(msg.content);
+		const exec = PLAYGROUND_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[0]) return;
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
@@ -64,7 +66,7 @@ export class PlaygroundModule extends Module {
 	@listener({ event: 'messageUpdate' })
 	async onLongFix(_oldMsg: Message, msg: Message) {
 		if (msg.partial) await msg.fetch();
-		const exec = this.PG_REGEX.exec(msg.content);
+		const exec = PLAYGROUND_REGEX.exec(msg.content);
 		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		await botMsg?.edit('');
