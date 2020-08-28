@@ -85,7 +85,11 @@ export class TwoslashModule extends Module {
 					const spaceBefore = q.offset - queryComment.length;
 					queryComment += ' '.repeat(spaceBefore);
 					queryComment += '^? - ';
-					queryComment += q.text;
+					queryComment +=
+						q.text?.replace(
+							/\n/g,
+							'\n//' + ' '.repeat(spaceBefore),
+						) || '';
 				});
 				resultLines.push(queryComment);
 			}
