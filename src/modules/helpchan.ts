@@ -219,12 +219,22 @@ export class HelpChanModule extends Module {
 		}
 	}
 
+	// Commands to fix race conditions
 	@command({
 		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
 	})
 	async removelock(msg: Message) {
-		// just incase it somehow gets stuck
 		this.busyChannels.delete(msg.channel.id);
+		await msg.channel.send(':ok_hand:');
+	}
+
+	@command({
+		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+	})
+	async ensureAsk(msg: Message) {
+		if (!msg.guild) return;
+
+		await this.ensureAskChannels(msg.guild);
 		await msg.channel.send(':ok_hand:');
 	}
 }
