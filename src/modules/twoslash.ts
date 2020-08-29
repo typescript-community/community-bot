@@ -1,14 +1,14 @@
-import { command, Module } from 'cookiecord';
+import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
-import { findCodeblockFromChannel } from '../util/findCodeblockFromChannel';
+import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 
 const CODEBLOCK = '```';
 
 export class TwoslashModule extends Module {
 	@command({ single: true })
 	async ts(msg: Message, symbol: string) {
-		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
 			return msg.channel.send(
@@ -34,13 +34,26 @@ export class TwoslashModule extends Module {
 
 	@command()
 	async twoslash(msg: Message) {
-		const code = await findCodeblockFromChannel(msg.channel as TextChannel);
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
 			return msg.channel.send(
-				`:warning: cou  ld not find any TypeScript codeblocks in the past 10 messages`,
+				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
 			);
 
+		return this.twoslashBlock(msg, code);
+	}
+
+	@listener({ event: 'message' })
+	async onTwoslashCodeBlock(msg: Message) {
+		const match = msg.content.match(/^```ts twoslash\n([\s\S]+)```$/im);
+		if (!msg.author.bot && match) {
+			await this.twoslashBlock(msg, match[1]);
+			await msg.delete();
+		}
+	}
+
+	private async twoslashBlock(msg: Message, code: string) {
 		const ret = twoslasher(code, 'ts', {
 			defaultOptions: {
 				noErrorValidation: true,
@@ -85,7 +98,11 @@ export class TwoslashModule extends Module {
 					const spaceBefore = q.offset - queryComment.length;
 					queryComment += ' '.repeat(spaceBefore);
 					queryComment += '^? - ';
-					queryComment += q.text;
+					queryComment +=
+						q.text?.replace(
+							/\n/g,
+							'\n//' + ' '.repeat(spaceBefore),
+						) || '';
 				});
 				resultLines.push(queryComment);
 			}
