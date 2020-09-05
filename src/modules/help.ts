@@ -60,41 +60,6 @@ export default class HelpModule extends Module {
 						: ''
 				}`,
 			);
-			// case 'ping':
-			// 	msg.channel.send(
-			// 		`Aliases: \`ping\`\nDescription: *View the latency of the bot*\nUsage: \`ping\``,
-			// 	);
-			// 	break;
-			// case 'ask':
-			// 	msg.channel.send(
-			// 		`Aliases: \`ask\`\nDescription: *Bot sends a dontasktoask website link*\nUsage: \`ask\``,
-			// 	);
-			// 	break;
-			// case 'done':
-			// 	msg.channel.send(
-			// 		`Aliases: \`done\`, \`close\`, \`resolve\`\nDescription: *Close a opened help channel*\nUsage: \`close\``,
-			// 	);
-			// 	break;
-			// case 'rep':
-			// 	msg.channel.send(
-			// 		`Aliases: \`rep\`\nDescription: *Give a user some reputation*\nUsage: \`rep <user>\``,
-			// 	);
-			// 	break;
-			// case 'history':
-			// 	msg.channel.send(
-			// 		`Aliases: \`getrep\`, \`history\`\nDescription: *Get the reputation history of a user*\nUsage: \`history <user>\``,
-			// 	);
-			// 	break;
-			// case 'leaderboard':
-			// 	msg.channel.send(
-			// 		`Aliases: \`leaderboard\`, \`lb\`\nDescription: *View the reputation leaderboard!*\nUsage: \`leaderboard\``,
-			// 	);
-			// 	break;
-			// case 'help':
-			// 	msg.channel.send(
-			// 		`Aliases: \`help\`, \`commands\`, \`h\`\nDescription: *Get the list of commands in me!*\nUsage: \`help [command (optional)]\``,
-			// 	);
-			// 	break;
 		}
 	}
 }
