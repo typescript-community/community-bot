@@ -6,7 +6,11 @@ import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 const CODEBLOCK = '```';
 
 export class TwoslashModule extends Module {
-	@command({ single: true })
+	@command({
+		single: true,
+		description:
+			'Search for a symbol and get the type of it in the latest codeblock',
+	})
 	async ts(msg: Message, symbol: string) {
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
@@ -32,7 +36,10 @@ export class TwoslashModule extends Module {
 		);
 	}
 
-	@command()
+	@command({
+		description:
+			'Run twoslash on the latest codeblock, returning compiler errors and queries',
+	})
 	async twoslash(msg: Message) {
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
