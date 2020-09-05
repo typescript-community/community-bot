@@ -52,7 +52,9 @@ export class HelpModule extends Module {
 		} else {
 			const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
 			await msg.channel.send(
-				`Usage: \`${cmd?.triggers.join('|')} ${cmd?.args.map(arg =>
+				`Usage: \`${cmd?.triggers.join('|')}${
+					cmd?.args.length ? ' ' : ''
+				}${cmd?.args.map(arg =>
 					arg.optional ? `[${arg.type.name}]` : `<${arg.type.name}>`,
 				)}\`${
 					cmd?.description
