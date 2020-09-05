@@ -15,6 +15,7 @@ export default class HelpModule extends Module {
 	@command({
 		aliases: ['help', 'commands', 'h'],
 		inhibitors: [CommonInhibitors.guildsOnly],
+		description: "Sends what you're looking at right now",
 	})
 	async help(msg: Message, @optional cmdTrigger?: string) {
 		if (!msg.guild) return;
