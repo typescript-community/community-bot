@@ -7,7 +7,7 @@ import {
 } from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
 
-export default class HelpModule extends Module {
+export class HelpModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}

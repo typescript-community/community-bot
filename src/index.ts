@@ -1,5 +1,5 @@
 import { token, botAdmins } from './env';
-import CookiecordClient, { Module } from 'cookiecord';
+import CookiecordClient from 'cookiecord';
 import { Intents } from 'discord.js';
 import { getDB } from './db';
 
@@ -11,6 +11,7 @@ import { PollModule } from './modules/poll';
 import { ReminderModule } from './modules/reminders';
 import { RepModule } from './modules/rep';
 import { TwoslashModule } from './modules/twoslash';
+import { HelpModule } from './modules/help';
 
 const client = new CookiecordClient(
 	{
@@ -32,6 +33,7 @@ for (const mod of [
 	ReminderModule,
 	RepModule,
 	TwoslashModule,
+	HelpModule,
 ]) {
 	client.registerModule(mod);
 }
