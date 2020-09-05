@@ -32,7 +32,7 @@ export class HelpModule extends Module {
 				)
 				.addField(
 					`**Misc Commands:**`,
-					`\`help\` ► View a list of all commands!\n\`ping\` ► View the latency of the bot\n\`ask\` ► Sends a message with a link redirecting to dontasktoask.com\n\`playground\` ► Just enter your code and get a link with TS playground!`,
+					`\`help\` ► View a list of all commands!\n\`ping\` ► View the latency of the bot\n\`ask\` ► Sends a message with a link for [dontasktoask.com](https://dontasktoask.com)\n\`playground\` ► Just enter your code and get a link with TS playground!`,
 				)
 				.addField(
 					`**Help Channel Commands:**`,
