@@ -20,7 +20,11 @@ export class PlaygroundModule extends Module {
 
 	private editedLongLink = new Map<string, Message>();
 
-	@command({ aliases: ['pg', 'playg'], single: true })
+	@command({
+		aliases: ['pg', 'playg'],
+		single: true,
+		description: 'Shorten a TypeScript playground link',
+	})
 	async playground(msg: Message, @optional code?: string) {
 		const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
 

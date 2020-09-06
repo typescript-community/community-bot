@@ -118,7 +118,10 @@ export class HelpChanModule extends Module {
 		await msg.delete({ reason: 'Pin system message' });
 	}
 
-	@command({ aliases: ['resolve', 'done', 'close'] })
+	@command({
+		aliases: ['resolve', 'done', 'close'],
+		description: 'Marks this channel as resolved',
+	})
 	async resolved(msg: Message) {
 		if (
 			!(msg.channel instanceof TextChannel) ||
