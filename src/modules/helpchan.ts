@@ -4,8 +4,15 @@ import {
 	Module,
 	listener,
 	CommonInhibitors,
+	optional,
 } from 'cookiecord';
-import { Message, MessageEmbed, Guild, TextChannel } from 'discord.js';
+import {
+	Message,
+	MessageEmbed,
+	Guild,
+	GuildMember,
+	TextChannel,
+} from 'discord.js';
 import {
 	categories,
 	TS_BLUE,
@@ -48,6 +55,7 @@ export class HelpChanModule extends Module {
 		);
 
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
+	private cooldownResets = new Set<string>();
 
 	private getChannelName(guild: Guild) {
 		const takenChannelNames = guild.channels.cache
@@ -192,9 +200,14 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(channel.id);
 		await pinned?.unpin();
-		setTimeout(() => {
-			pinned?.member?.roles.remove(askCooldownRoleId);
-		}, askCooldownTimeout * 1000);
+		const member = pinned?.member;
+		if (member) {
+			this.cooldownResets.add(member.id);
+			setTimeout(() => {
+				this.cooldownResets.delete(member.id);
+				member.roles.remove(askCooldownRoleId); // Really ought to check errors here...
+			}, askCooldownTimeout * 1000);
+		}
 
 		await this.moveChannel(channel, categories.dormant);
 
@@ -220,6 +233,37 @@ export class HelpChanModule extends Module {
 			if (diff > dormantChannelTimeout)
 				await this.markChannelAsDormant(channel as TextChannel);
 		}
+	}
+
+	@command({
+		description:
+			'Check to see if the given user has a broken help cooldown and fix it.',
+	})
+	async cooldown(message: Message, @optional targetUser?: GuildMember) {
+		if (!message.guild) return;
+
+		const guildTarget = await message.guild.members.fetch(
+			targetUser ?? message.author,
+		);
+
+		if (!guildTarget) return;
+
+		const prefix = targetUser ? `${targetUser.displayName} does` : 'You do';
+
+		if (
+			!guildTarget.roles.cache.some(role => role.id === askCooldownRoleId)
+		) {
+			await message.channel.send(`${prefix} not have the cooldown role.`);
+			return;
+		}
+
+		if (this.cooldownResets.has(guildTarget.id)) {
+			await message.channel.send(`${prefix} not have a broken cooldown.`);
+			return;
+		}
+
+		await guildTarget.roles.remove(askCooldownRoleId);
+		await message.channel.send(`Removed cooldown.`);
 	}
 
 	// Commands to fix race conditions
