@@ -23,7 +23,6 @@ export const categories = {
 };
 
 export const askCooldownRoleId = process.env.ASK_COOLDOWN_ROLE!;
-export const askCooldownTimeout = parseInt(process.env.ASK_COOLDOWN_TIMEOUT!);
 
 export const channelNames = process.env.CHANNEL_NAMES!.split(',');
 export const dormantChannelTimeout = parseInt(
