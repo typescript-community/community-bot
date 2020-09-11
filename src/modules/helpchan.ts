@@ -191,10 +191,7 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(channel.id);
 		await pinned?.unpin();
-		const member = pinned?.member;
-		if (member) {
-			await member.roles.remove(askCooldownRoleId);
-		}
+		await pinned?.member?.roles.remove(askCooldownRoleId);
 
 		await this.moveChannel(channel, categories.dormant);
 
