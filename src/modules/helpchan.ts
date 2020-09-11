@@ -13,7 +13,6 @@ import {
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
-	askCooldownTimeout,
 } from '../env';
 
 export class HelpChanModule extends Module {
@@ -192,9 +191,7 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(channel.id);
 		await pinned?.unpin();
-		setTimeout(() => {
-			pinned?.member?.roles.remove(askCooldownRoleId);
-		}, askCooldownTimeout * 1000);
+		await pinned?.member?.roles.remove(askCooldownRoleId);
 
 		await this.moveChannel(channel, categories.dormant);
 
