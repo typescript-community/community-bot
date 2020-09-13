@@ -6,13 +6,23 @@ export class EtcModule extends Module {
 		super(client);
 	}
 
-	@command()
+	@command({ description: 'See if the bot is alive' })
 	async ping(msg: Message) {
 		await msg.channel.send('pong. :ping_pong:');
 	}
 
-	@command()
+	@command({ description: 'Sends a link to <https://dontasktoask.com>' })
 	async ask(msg: Message) {
 		await msg.channel.send('https://dontasktoask.com/');
+	}
+
+	@command({
+		description:
+			'Sends a link to <https://github.com/facebook/create-react-app/pull/8177#issue-353062710>',
+	})
+	async reactfc(msg: Message) {
+		await msg.channel.send(
+			'https://github.com/facebook/create-react-app/pull/8177#issue-353062710',
+		);
 	}
 }

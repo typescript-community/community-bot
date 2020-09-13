@@ -20,7 +20,11 @@ export class PlaygroundModule extends Module {
 
 	private editedLongLink = new Map<string, Message>();
 
-	@command({ aliases: ['pg', 'playg'], single: true })
+	@command({
+		aliases: ['pg', 'playg'],
+		single: true,
+		description: 'Shorten a TypeScript playground link',
+	})
 	async playground(msg: Message, @optional code?: string) {
 		const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
 
@@ -70,5 +74,6 @@ export class PlaygroundModule extends Module {
 		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		await botMsg?.edit('');
+		this.editedLongLink.delete(msg.id);
 	}
 }

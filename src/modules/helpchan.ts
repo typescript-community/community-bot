@@ -13,7 +13,6 @@ import {
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
-	askCooldownTimeout,
 } from '../env';
 
 export class HelpChanModule extends Module {
@@ -118,7 +117,10 @@ export class HelpChanModule extends Module {
 		await msg.delete({ reason: 'Pin system message' });
 	}
 
-	@command({ aliases: ['resolve', 'done', 'close'] })
+	@command({
+		aliases: ['resolve', 'done', 'close'],
+		description: 'Marks this channel as resolved',
+	})
 	async resolved(msg: Message) {
 		if (
 			!(msg.channel instanceof TextChannel) ||
@@ -189,9 +191,7 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(channel.id);
 		await pinned?.unpin();
-		setTimeout(() => {
-			pinned?.member?.roles.remove(askCooldownRoleId);
-		}, askCooldownTimeout * 1000);
+		await pinned?.member?.roles.remove(askCooldownRoleId);
 
 		await this.moveChannel(channel, categories.dormant);
 
@@ -219,12 +219,22 @@ export class HelpChanModule extends Module {
 		}
 	}
 
+	// Commands to fix race conditions
 	@command({
 		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
 	})
 	async removelock(msg: Message) {
-		// just incase it somehow gets stuck
 		this.busyChannels.delete(msg.channel.id);
+		await msg.channel.send(':ok_hand:');
+	}
+
+	@command({
+		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+	})
+	async ensureAsk(msg: Message) {
+		if (!msg.guild) return;
+
+		await this.ensureAskChannels(msg.guild);
 		await msg.channel.send(':ok_hand:');
 	}
 }

@@ -1,4 +1,4 @@
-import { command, Module } from 'cookiecord';
+import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
 import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
@@ -6,7 +6,11 @@ import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 const CODEBLOCK = '```';
 
 export class TwoslashModule extends Module {
-	@command({ single: true })
+	@command({
+		single: true,
+		description:
+			'Search for a symbol and get the type of it in the latest codeblock',
+	})
 	async ts(msg: Message, content: string) {
 		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
 
@@ -43,7 +47,10 @@ export class TwoslashModule extends Module {
 		);
 	}
 
-	@command()
+	@command({
+		description:
+			'Run twoslash on the latest codeblock, returning compiler errors and queries',
+	})
 	async twoslash(msg: Message) {
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
@@ -52,6 +59,19 @@ export class TwoslashModule extends Module {
 				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
 			);
 
+		return this.twoslashBlock(msg, code);
+	}
+
+	@listener({ event: 'message' })
+	async onTwoslashCodeBlock(msg: Message) {
+		const match = msg.content.match(/^```ts twoslash\n([\s\S]+)```$/im);
+		if (!msg.author.bot && match) {
+			await this.twoslashBlock(msg, match[1]);
+			await msg.delete();
+		}
+	}
+
+	private async twoslashBlock(msg: Message, code: string) {
 		const ret = twoslasher(code, 'ts', {
 			defaultOptions: {
 				noErrorValidation: true,

@@ -32,7 +32,10 @@ export class ReminderModule extends Module {
 		}
 	}
 
-	@command({ single: true })
+	@command({
+		single: true,
+		description: 'Get me to remind you about anything in the future',
+	})
 	async remind(msg: Message, args: string) {
 		// cookiecord can't have args with spaces in them (yet)
 		const splitArgs = args.split(' ').filter(x => x.trim().length !== 0);
