@@ -74,5 +74,6 @@ export class PlaygroundModule extends Module {
 		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		await botMsg?.edit('');
+		this.editedLongLink.delete(msg.id);
 	}
 }
