@@ -8,7 +8,7 @@ export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?typescriptlang\.org\/(?:pl
 export async function findCodeblockFromChannel(
 	channel: TextChannel,
 	ignoreLatest?: boolean,
-) {
+): Promise<string | undefined> {
 	const msgs = (await channel.messages.fetch({ limit: 10 }))
 		.array()
 		.filter(msg => msg.author.bot !== true);

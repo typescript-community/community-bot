@@ -11,7 +11,18 @@ export class TwoslashModule extends Module {
 		description:
 			'Search for a symbol and get the type of it in the latest codeblock',
 	})
-	async ts(msg: Message, symbol: string) {
+	async ts(msg: Message, content: string) {
+		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
+
+		if (!match) {
+			msg.channel.send(
+				'You need to give me a valid symbol name to look for!',
+			);
+			return;
+		}
+
+		const symbol = match[0];
+
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
 		if (!code)
