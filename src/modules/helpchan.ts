@@ -6,6 +6,7 @@ import {
 	CommonInhibitors,
 } from 'cookiecord';
 import { Message, MessageEmbed, Guild, TextChannel } from 'discord.js';
+import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
 	TS_BLUE,
@@ -95,6 +96,11 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
+		const helpUser = new HelpUser();
+		helpUser.userId = msg.author.id;
+		helpUser.channelId = msg.channel.id;
+		await helpUser.save();
+
 		await msg.pin();
 		await msg.member.roles.add(askCooldownRoleId);
 		await this.moveChannel(msg.channel, categories.ongoing);
@@ -130,7 +136,8 @@ export class HelpChanModule extends Module {
 			return;
 		const pinned = (await msg.channel.messages.fetchPinned()).first();
 		if (
-			pinned?.author.id !== msg.author.id &&
+			pinned && // If there's no pinned message, let anyone close the channel.
+			pinned.author.id !== msg.author.id &&
 			!msg.member?.hasPermission('MANAGE_MESSAGES')
 		)
 			return await msg.channel.send(
@@ -191,7 +198,20 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(channel.id);
 		await pinned?.unpin();
-		await pinned?.member?.roles.remove(askCooldownRoleId);
+		if (pinned) {
+			await pinned?.member?.roles.remove(askCooldownRoleId);
+		} else {
+			const helpUser = await HelpUser.findOne({
+				where: { channelId: channel.id },
+			});
+			if (helpUser) {
+				const member = await channel.guild.members.fetch({
+					user: helpUser.userId,
+				});
+				await member?.roles.remove(askCooldownRoleId);
+			}
+		}
+		await HelpUser.delete({ channelId: channel.id });
 
 		await this.moveChannel(channel, categories.dormant);
 
