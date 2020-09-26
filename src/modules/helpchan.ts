@@ -21,6 +21,8 @@ import {
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
+	trustedRoleId,
+	askHelpChannelId,
 } from '../env';
 
 export class HelpChanModule extends Module {
@@ -103,13 +105,8 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		const helpUser = new HelpUser();
-		helpUser.userId = msg.author.id;
-		helpUser.channelId = msg.channel.id;
-		await helpUser.save();
-
 		await msg.pin();
-		await msg.member.roles.add(askCooldownRoleId);
+		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
 
 		await this.ensureAskChannels(msg.guild);
@@ -249,6 +246,14 @@ export class HelpChanModule extends Module {
 		}
 	}
 
+	private async addCooldown(member: GuildMember, channel: TextChannel) {
+		await member.roles.add(askCooldownRoleId);
+		const helpUser = new HelpUser();
+		helpUser.userId = member.user.id;
+		helpUser.channelId = channel.id;
+		await helpUser.save();
+	}
+
 	@command()
 	async cooldown(msg: Message, @optional user?: GuildMember) {
 		console.log('Cooldown', msg.content);
@@ -270,21 +275,82 @@ export class HelpChanModule extends Module {
 		});
 
 		if (helpUser) {
-			const channel = msg.guild.channels.resolve(helpUser.channelId);
-			// If we don't have a channel, just remove the cooldown. This should
-			// only happen if someone deletes a help channel.
-			if (channel) {
-				await msg.channel.send(
-					`${guildTarget.displayName} has an active help channel: ${channel.name}`,
-				);
-				return;
-			}
+			return msg.channel.send(
+				`${guildTarget.displayName} has an active help channel: <#${helpUser.channelId}>`,
+			);
 		}
 
 		await guildTarget.roles.remove(askCooldownRoleId);
 		await msg.channel.send(
 			`Removed ${guildTarget.displayName}'s cooldown.`,
 		);
+	}
+
+	@command()
+	async claim(msg: Message, user: GuildMember) {
+		if (!msg.guild || !msg.member || msg.channel.type !== 'text') {
+			return;
+		}
+
+		// We'll want to refactor this into an inhibitor someday.
+		if (
+			!msg.member.roles.cache.has(trustedRoleId) &&
+			!msg.member.hasPermission('MANAGE_MESSAGES')
+		) {
+			return msg.channel.send(
+				"You don't have permission to use that command.",
+			);
+		}
+
+		const helpUser = await HelpUser.findOne({ where: { userId: user.id } });
+		if (helpUser) {
+			return msg.channel.send(
+				`${user.displayName} already has an open help channel: <#${helpUser.channelId}>`,
+			);
+		}
+
+		const channelMessages = await msg.channel.messages.fetch({ limit: 50 });
+		const questionMessages = channelMessages.filter(
+			msg => msg.author.id === user.id,
+		);
+
+		const msgContent = questionMessages
+			.array()
+			.slice(0, 10)
+			.map(msg => msg.content)
+			.reverse()
+			.join('\n')
+			.slice(0, 2000);
+
+		const claimedChannel = msg.guild.channels.cache.find(
+			channel =>
+				channel.type === 'text' &&
+				channel.parentID == categories.ask &&
+				channel.name.startsWith(this.CHANNEL_PREFIX) &&
+				!this.busyChannels.has(channel.id),
+		) as TextChannel | undefined;
+
+		if (!claimedChannel) {
+			return msg.channel.send(
+				'Failed to claim a help channel, no available channel.',
+			);
+		}
+
+		this.busyChannels.add(claimedChannel.id);
+		const toPin = await claimedChannel.send(
+			new MessageEmbed()
+				.setAuthor(user.displayName, user.user.displayAvatarURL())
+				.setDescription(msgContent),
+		);
+		await toPin.pin();
+		await this.addCooldown(user, claimedChannel);
+		await this.moveChannel(claimedChannel, categories.ongoing);
+		await claimedChannel.send(
+			`<@${user.id}> this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
+		);
+		await this.ensureAskChannels(msg.guild);
+
+		this.busyChannels.delete(claimedChannel.id);
 	}
 
 	// Commands to fix race conditions
