@@ -4,8 +4,15 @@ import {
 	Module,
 	listener,
 	CommonInhibitors,
+	optional,
 } from 'cookiecord';
-import { Message, MessageEmbed, Guild, TextChannel } from 'discord.js';
+import {
+	Message,
+	MessageEmbed,
+	Guild,
+	TextChannel,
+	GuildMember,
+} from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
@@ -134,21 +141,27 @@ export class HelpChanModule extends Module {
 			this.busyChannels.has(msg.channel.id)
 		)
 			return;
-		const pinned = (await msg.channel.messages.fetchPinned()).first();
-		if (
-			pinned && // If there's no pinned message, let anyone close the channel.
-			pinned.author.id !== msg.author.id &&
-			!msg.member?.hasPermission('MANAGE_MESSAGES')
-		)
-			return await msg.channel.send(
-				':warning: you have to be the asker to close the channel.',
-			);
-		if (msg.channel.parentID !== categories.ongoing)
+
+		if (msg.channel.parentID !== categories.ongoing) {
 			return await msg.channel.send(
 				':warning: you can only run this in ongoing help channels.',
 			);
+		}
 
-		await this.markChannelAsDormant(msg.channel, pinned);
+		const owner = await HelpUser.findOne({
+			where: { channelId: msg.channel.id },
+		});
+
+		if (
+			(owner && owner.userId === msg.author.id) ||
+			msg.member?.hasPermission('MANAGE_MESSAGES')
+		) {
+			await this.markChannelAsDormant(msg.channel);
+		} else {
+			return await msg.channel.send(
+				':warning: you have to be the asker to close the channel.',
+			);
+		}
 	}
 
 	async ensureAskChannels(guild: Guild) {
@@ -193,23 +206,20 @@ export class HelpChanModule extends Module {
 		}
 	}
 
-	private async markChannelAsDormant(channel: TextChannel, pinned?: Message) {
-		if (!pinned) pinned = (await channel.messages.fetchPinned()).first();
-
+	private async markChannelAsDormant(channel: TextChannel) {
 		this.busyChannels.add(channel.id);
-		await pinned?.unpin();
-		if (pinned) {
-			await pinned?.member?.roles.remove(askCooldownRoleId);
-		} else {
-			const helpUser = await HelpUser.findOne({
-				where: { channelId: channel.id },
+
+		const pinned = await channel.messages.fetchPinned();
+		await Promise.all(pinned.map(msg => msg.unpin()));
+
+		const helpUser = await HelpUser.findOne({
+			where: { channelId: channel.id },
+		});
+		if (helpUser) {
+			const member = await channel.guild.members.fetch({
+				user: helpUser.userId,
 			});
-			if (helpUser) {
-				const member = await channel.guild.members.fetch({
-					user: helpUser.userId,
-				});
-				await member?.roles.remove(askCooldownRoleId);
-			}
+			await member?.roles.remove(askCooldownRoleId);
 		}
 		await HelpUser.delete({ channelId: channel.id });
 
@@ -237,6 +247,44 @@ export class HelpChanModule extends Module {
 			if (diff > dormantChannelTimeout)
 				await this.markChannelAsDormant(channel as TextChannel);
 		}
+	}
+
+	@command()
+	async cooldown(msg: Message, @optional user?: GuildMember) {
+		console.log('Cooldown', msg.content);
+		if (!msg.guild) return;
+
+		const guildTarget = await msg.guild.members.fetch(user ?? msg.author);
+
+		if (!guildTarget) return;
+
+		if (!guildTarget.roles.cache.has(askCooldownRoleId)) {
+			await msg.channel.send(
+				`${guildTarget.displayName} doesn't have a cooldown.`,
+			);
+			return;
+		}
+
+		const helpUser = await HelpUser.findOne({
+			where: { userId: guildTarget.id },
+		});
+
+		if (helpUser) {
+			const channel = msg.guild.channels.resolve(helpUser.channelId);
+			// If we don't have a channel, just remove the cooldown. This should
+			// only happen if someone deletes a help channel.
+			if (channel) {
+				await msg.channel.send(
+					`${guildTarget.displayName} has an active help channel: ${channel.name}`,
+				);
+				return;
+			}
+		}
+
+		await guildTarget.roles.remove(askCooldownRoleId);
+		await msg.channel.send(
+			`Removed ${guildTarget.displayName}'s cooldown.`,
+		);
 	}
 
 	// Commands to fix race conditions
