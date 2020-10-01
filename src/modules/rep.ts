@@ -37,23 +37,30 @@ export class RepModule extends Module {
 	@listener({ event: 'message' })
 	async onThank(msg: Message) {
 		const GAVE = '✅';
-		// parsing
-		const THANKS_REGEX = /thanks?,?\s*<@!?(\d+)>/gi;
+
+		// Check for thanks or thx
+		const THANKS_REGEX = /(thanks|thx)+/gi;
 		const exec = THANKS_REGEX.exec(msg.content);
-		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
-		const member = await msg.guild.members.fetch(exec[1]);
-		if (!member || member.id === msg.member?.id) return;
 
-		// give rep
+		if (msg.author.bot || !exec || !msg.guild) return;
+
+		const mentionUsers = msg.mentions.users.array();
+		if (!mentionUsers.length) return;
+
 		const senderRU = await this.getOrMakeUser(msg.author);
-		const targetRU = await this.getOrMakeUser(member.user);
-
 		if ((await senderRU.sent()) >= this.MAX_REP) return;
 
-		await RepGive.create({
-			from: senderRU,
-			to: targetRU,
-		}).save();
+		for (const user of mentionUsers) {
+			if (user.id === msg.member?.id) continue;
+
+			// give rep
+			const targetRU = await this.getOrMakeUser(user);
+
+			await RepGive.create({
+				from: senderRU,
+				to: targetRU,
+			}).save();
+		}
 
 		await msg.react(GAVE);
 	}
