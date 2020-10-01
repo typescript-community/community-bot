@@ -44,19 +44,17 @@ export class RepModule extends Module {
 
 		if (msg.author.bot || !exec || !msg.guild) return;
 
-		const mentions = msg.mentions.users.array().map(u => u.id);
-
-		if (!mentions.length) return;
+		const mentionUsers = msg.mentions.users.array();
+		if (!mentionUsers.length) return;
 
 		const senderRU = await this.getOrMakeUser(msg.author);
 		if ((await senderRU.sent()) >= this.MAX_REP) return;
 
-		for (const mention of mentions) {
-			const member = await msg.guild.members.fetch(mention.slice(3, -1));
-			if (!member || member.id === msg.member?.id) continue;
+		for (const user of mentionUsers) {
+			if (user.id === msg.member?.id) continue;
 
 			// give rep
-			const targetRU = await this.getOrMakeUser(member.user);
+			const targetRU = await this.getOrMakeUser(user);
 
 			await RepGive.create({
 				from: senderRU,
