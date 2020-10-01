@@ -36,7 +36,9 @@ export class RepModule extends Module {
 
 	@listener({ event: 'message' })
 	async onThank(msg: Message) {
-		const GAVE = '✅';
+		const GIVE = '✅';
+		const PARTIAL_GIVE = '🤔';
+		const NO_GIVE = '❌';
 
 		// Check for thanks or thx
 		const THANKS_REGEX = /(thanks|thx)+/gi;
@@ -48,10 +50,16 @@ export class RepModule extends Module {
 		if (!mentionUsers.length) return;
 
 		const senderRU = await this.getOrMakeUser(msg.author);
-		if ((await senderRU.sent()) >= this.MAX_REP) return;
+		// track how much rep the author has sent
+		// 3 possible outcomes: NO_GIVE, PARTIAL_GIVE and GAVE
+		let currentSent = await senderRU.sent();
+
+		if (currentSent >= this.MAX_REP) return await msg.react(NO_GIVE);
 
 		for (const user of mentionUsers) {
 			if (user.id === msg.member?.id) continue;
+			if (currentSent >= this.MAX_REP)
+				return await msg.react(PARTIAL_GIVE);
 
 			// give rep
 			const targetRU = await this.getOrMakeUser(user);
@@ -60,9 +68,11 @@ export class RepModule extends Module {
 				from: senderRU,
 				to: targetRU,
 			}).save();
+
+			currentSent++;
 		}
 
-		await msg.react(GAVE);
+		await msg.react(GIVE);
 	}
 
 	@command({
