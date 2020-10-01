@@ -44,11 +44,9 @@ export class RepModule extends Module {
 
 		if (msg.author.bot || !exec || !msg.guild) return;
 
-		// Retrieve mention ids
-		const MENTION_REGREX = /(<@!?(\d+)>)+/gi;
-		const mentions = msg.content.match(MENTION_REGREX);
+		const mentions = msg.mentions.users.array().map(u => u.id);
 
-		if (!mentions || !mentions.length) return;
+		if (!mentions.length) return;
 
 		const senderRU = await this.getOrMakeUser(msg.author);
 		if ((await senderRU.sent()) >= this.MAX_REP) return;
