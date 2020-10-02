@@ -177,10 +177,17 @@ export class HelpChanModule extends Module {
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
 
-				const lastMessage = dormant.messages.cache
+				let lastMessage = dormant.messages.cache
 					.array()
 					.reverse()
 					.find(m => m.author.id === this.client.user?.id);
+
+				if (!lastMessage)
+					lastMessage = (await dormant.messages.fetch({ limit: 5 }))
+						.array()
+						.reverse()
+						.find(m => m.author.id === this.client.user?.id);
+
 				if (lastMessage) {
 					// If there is a last message (the dormant message) by the bot, just edit it
 					await lastMessage.edit(this.AVAILABLE_EMBED);
