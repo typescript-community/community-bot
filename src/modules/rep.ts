@@ -20,7 +20,7 @@ export class RepModule extends Module {
 	MAX_REP = 3;
 
 	// all messages have to be fully lowercase
-	THANKS_MESSAGES = ['thanks', 'thx', 'cheers', 'thanx', 'ty'];
+	THANKS_MESSAGES = ['thanks', 'thx', 'cheers', 'thanx', 'ty', 'tks', 'tkx'];
 
 	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
