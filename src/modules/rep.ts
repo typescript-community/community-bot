@@ -20,7 +20,7 @@ export class RepModule extends Module {
 	MAX_REP = 3;
 
 	// all messages have to be fully lowercase
-	THANKS_MESSAGES = ['thanks', 'thx', 'cheers', 'thanx', 'ty', 'tks', 'tkx'];
+	THANKS_REGEX = /(?:thanks|thx|cheers|thanx|ty|tks|tkx)\b/;
 
 	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
@@ -42,9 +42,7 @@ export class RepModule extends Module {
 		const NO_GIVE = '❌';
 
 		// Check for thanks messages
-		const isThanks = this.THANKS_MESSAGES.some(s =>
-			msg.content.toLowerCase().includes(s),
-		);
+		const isThanks = this.THANKS_REGEX.test(msg.content.toLowerCase());
 
 		if (msg.author.bot || !isThanks || !msg.guild) return;
 
