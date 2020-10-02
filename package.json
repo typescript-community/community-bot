@@ -33,7 +33,7 @@
 	"scripts": {
 		"start": "ts-node-dev --respawn src",
 		"build": "tsc",
-		"lint": "prettier --check src/**/*.ts",
-		"lint:fix": "prettier src/**/*.ts --write "
+		"lint": "prettier --check \"src/**/*.ts\"",
+		"lint:fix": "prettier \"src/**/*.ts\" --write "
 	}
 }
