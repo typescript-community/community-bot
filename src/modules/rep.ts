@@ -7,7 +7,6 @@ import {
 } from 'cookiecord';
 import { GuildMember, Message, MessageEmbed, User } from 'discord.js';
 import prettyMilliseconds from 'pretty-ms';
-import { getDB } from '../db';
 import { TS_BLUE } from '../env';
 
 import { RepGive } from '../entities/RepGive';
@@ -17,11 +16,13 @@ export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
+
 	MAX_REP = 3;
 
-	async getOrMakeUser(user: User) {
-		const db = await getDB();
+	// all messages have to be fully lowercase
+	THANKS_MESSAGES = ['thanks', 'thx', 'cheers', 'thanx', 'ty', 'tks', 'tkx'];
 
+	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
 			{ id: user.id },
 			{ relations: ['got', 'given'] },
@@ -40,11 +41,12 @@ export class RepModule extends Module {
 		const PARTIAL_GIVE = '🤔';
 		const NO_GIVE = '❌';
 
-		// Check for thanks or thx
-		const THANKS_REGEX = /(thanks|thx)+/gi;
-		const exec = THANKS_REGEX.exec(msg.content);
+		// Check for thanks messages
+		const isThanks = this.THANKS_MESSAGES.some(s =>
+			msg.content.toLowerCase().includes(s),
+		);
 
-		if (msg.author.bot || !exec || !msg.guild) return;
+		if (msg.author.bot || !isThanks || !msg.guild) return;
 
 		const mentionUsers = msg.mentions.users.array();
 		if (!mentionUsers.length) return;
