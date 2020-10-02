@@ -58,7 +58,7 @@ export class HelpChanModule extends Module {
 
 	private getChannelName(guild: Guild) {
 		const takenChannelNames = guild.channels.cache
-			.filter(channel => channel.name.startsWith('help-'))
+			.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX))
 			.map(channel => channel.name.replace(this.CHANNEL_PREFIX, ''));
 		let decidedChannel = channelNames[0];
 
@@ -185,7 +185,6 @@ export class HelpChanModule extends Module {
 				if (!lastMessage)
 					lastMessage = (await dormant.messages.fetch({ limit: 5 }))
 						.array()
-						.reverse()
 						.find(m => m.author.id === this.client.user?.id);
 
 				if (lastMessage) {
