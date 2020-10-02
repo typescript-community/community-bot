@@ -1,4 +1,9 @@
-import { command, default as CookiecordClient, Module } from 'cookiecord';
+import {
+	command,
+	default as CookiecordClient,
+	Module,
+	listener,
+} from 'cookiecord';
 import { Message } from 'discord.js';
 
 export class EtcModule extends Module {
@@ -24,5 +29,14 @@ export class EtcModule extends Module {
 		await msg.channel.send(
 			'https://github.com/facebook/create-react-app/pull/8177#issue-353062710',
 		);
+	}
+
+	@listener({ event: 'message' })
+	async onMessage(msg: Message) {
+		if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
+			return;
+		await msg.react('✅');
+		await msg.react('❌');
+		await msg.react('🤷');
 	}
 }
