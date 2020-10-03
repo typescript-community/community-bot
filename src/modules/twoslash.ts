@@ -105,9 +105,11 @@ export class TwoslashModule extends Module {
 					linkWithHats += ' '.repeat(spaceBefore);
 					linkWithHats += '^'.repeat(e.length || 0);
 				});
+
 				if (linkWithHats.length > 0) {
 					resultLines.push('//' + linkWithHats.substr(2));
 				}
+
 				resultLines.push(...errors);
 			}
 
