@@ -21,9 +21,9 @@ import {
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
-	trustedRoleId,
 	askHelpChannelId,
 } from '../env';
+import { isTrustedMember } from '../util/inhibitors';
 
 export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -146,7 +146,7 @@ export class HelpChanModule extends Module {
 		}
 
 		const owner = await HelpUser.findOne({
-			where: { channelId: msg.channel.id },
+			channelId: msg.channel.id,
 		});
 
 		if (
@@ -210,7 +210,7 @@ export class HelpChanModule extends Module {
 		await Promise.all(pinned.map(msg => msg.unpin()));
 
 		const helpUser = await HelpUser.findOne({
-			where: { channelId: channel.id },
+			channelId: channel.id,
 		});
 		if (helpUser) {
 			const member = await channel.guild.members.fetch({
@@ -254,12 +254,11 @@ export class HelpChanModule extends Module {
 		await helpUser.save();
 	}
 
-	@command()
-	async cooldown(msg: Message, @optional user?: GuildMember) {
-		console.log('Cooldown', msg.content);
-		if (!msg.guild) return;
-
-		const guildTarget = await msg.guild.members.fetch(user ?? msg.author);
+	@command({ inhibitors: [CommonInhibitors.guildsOnly] })
+	async cooldown(msg: Message, @optional member?: GuildMember) {
+		const guildTarget = await msg.guild!.members.fetch(
+			member ?? msg.author,
+		);
 
 		if (!guildTarget) return;
 
@@ -271,7 +270,7 @@ export class HelpChanModule extends Module {
 		}
 
 		const helpUser = await HelpUser.findOne({
-			where: { userId: guildTarget.id },
+			userId: guildTarget.id,
 		});
 
 		if (helpUser) {
@@ -286,32 +285,20 @@ export class HelpChanModule extends Module {
 		);
 	}
 
-	@command()
-	async claim(msg: Message, user: GuildMember) {
-		if (!msg.guild || !msg.member || msg.channel.type !== 'text') {
-			return;
-		}
-
-		// We'll want to refactor this into an inhibitor someday.
-		if (
-			!msg.member.roles.cache.has(trustedRoleId) &&
-			!msg.member.hasPermission('MANAGE_MESSAGES')
-		) {
-			return msg.channel.send(
-				"You don't have permission to use that command.",
-			);
-		}
-
-		const helpUser = await HelpUser.findOne({ where: { userId: user.id } });
+	@command({ inhibitors: [isTrustedMember] })
+	async claim(msg: Message, member: GuildMember) {
+		const helpUser = await HelpUser.findOne({
+			userId: member.id,
+		});
 		if (helpUser) {
 			return msg.channel.send(
-				`${user.displayName} already has an open help channel: <#${helpUser.channelId}>`,
+				`${member.displayName} already has an open help channel: <#${helpUser.channelId}>`,
 			);
 		}
 
 		const channelMessages = await msg.channel.messages.fetch({ limit: 50 });
 		const questionMessages = channelMessages.filter(
-			msg => msg.author.id === user.id,
+			({ author, id }) => author.id === member.id && id !== msg.id,
 		);
 
 		const msgContent = questionMessages
@@ -322,7 +309,7 @@ export class HelpChanModule extends Module {
 			.join('\n')
 			.slice(0, 2000);
 
-		const claimedChannel = msg.guild.channels.cache.find(
+		const claimedChannel = msg.guild!.channels.cache.find(
 			channel =>
 				channel.type === 'text' &&
 				channel.parentID == categories.ask &&
@@ -332,23 +319,23 @@ export class HelpChanModule extends Module {
 
 		if (!claimedChannel) {
 			return msg.channel.send(
-				'Failed to claim a help channel, no available channel.',
+				':warning: failed to claim a help channel, no available channel.',
 			);
 		}
 
 		this.busyChannels.add(claimedChannel.id);
 		const toPin = await claimedChannel.send(
 			new MessageEmbed()
-				.setAuthor(user.displayName, user.user.displayAvatarURL())
+				.setAuthor(member.displayName, member.user.displayAvatarURL())
 				.setDescription(msgContent),
 		);
 		await toPin.pin();
-		await this.addCooldown(user, claimedChannel);
+		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
 		await claimedChannel.send(
-			`<@${user.id}> this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
+			`${member.user} this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
 		);
-		await this.ensureAskChannels(msg.guild);
+		await this.ensureAskChannels(msg.guild!);
 
 		this.busyChannels.delete(claimedChannel.id);
 	}
