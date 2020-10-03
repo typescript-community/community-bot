@@ -7,7 +7,6 @@ import {
 } from 'cookiecord';
 import { GuildMember, Message, MessageEmbed, User } from 'discord.js';
 import prettyMilliseconds from 'pretty-ms';
-import { getDB } from '../db';
 import { TS_BLUE } from '../env';
 
 import { RepGive } from '../entities/RepGive';
@@ -17,11 +16,13 @@ export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
+
 	MAX_REP = 3;
 
-	async getOrMakeUser(user: User) {
-		const db = await getDB();
+	// all messages have to be fully lowercase
+	THANKS_REGEX = /(?:thanks|thx|cheers|thanx|ty|tks|tkx)\b/i;
 
+	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
 			{ id: user.id },
 			{ relations: ['got', 'given'] },
@@ -36,26 +37,42 @@ export class RepModule extends Module {
 
 	@listener({ event: 'message' })
 	async onThank(msg: Message) {
-		const GAVE = '✅';
-		// parsing
-		const THANKS_REGEX = /thanks?,?\s*<@!?(\d+)>/gi;
-		const exec = THANKS_REGEX.exec(msg.content);
-		if (msg.author.bot || !exec || !exec[1] || !msg.guild) return;
-		const member = await msg.guild.members.fetch(exec[1]);
-		if (!member || member.id === msg.member?.id) return;
+		const GIVE = '✅';
+		const PARTIAL_GIVE = '🤔';
+		const NO_GIVE = '❌';
 
-		// give rep
+		// Check for thanks messages
+		const isThanks = this.THANKS_REGEX.test(msg.content);
+
+		if (msg.author.bot || !isThanks || !msg.guild) return;
+
+		const mentionUsers = msg.mentions.users.array();
+		if (!mentionUsers.length) return;
+
 		const senderRU = await this.getOrMakeUser(msg.author);
-		const targetRU = await this.getOrMakeUser(member.user);
+		// track how much rep the author has sent
+		// 3 possible outcomes: NO_GIVE, PARTIAL_GIVE and GAVE
+		let currentSent = await senderRU.sent();
 
-		if ((await senderRU.sent()) >= this.MAX_REP) return;
+		if (currentSent >= this.MAX_REP) return await msg.react(NO_GIVE);
 
-		await RepGive.create({
-			from: senderRU,
-			to: targetRU,
-		}).save();
+		for (const user of mentionUsers) {
+			if (user.id === msg.member?.id) continue;
+			if (currentSent >= this.MAX_REP)
+				return await msg.react(PARTIAL_GIVE);
 
-		await msg.react(GAVE);
+			// give rep
+			const targetRU = await this.getOrMakeUser(user);
+
+			await RepGive.create({
+				from: senderRU,
+				to: targetRU,
+			}).save();
+
+			currentSent++;
+		}
+
+		await msg.react(GIVE);
 	}
 
 	@command({
