@@ -20,7 +20,7 @@ export class RepModule extends Module {
 	MAX_REP = 3;
 
 	// all messages have to be fully lowercase
-	THANKS_REGEX = /(?:thanks|thx|cheers|thanx|ty|tks|tkx)\b/i;
+	THANKS_REGEX = /\b(?:thanks|thx|cheers|thanx|ty|tks|tkx)\b/i;
 
 	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
