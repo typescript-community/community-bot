@@ -11,6 +11,7 @@ import { getDB } from '../db';
 import prettyMs from 'pretty-ms';
 import { setTimeout } from 'timers';
 import { Reminder } from '../entities/Reminder';
+import { invalidDuration, okHand, syntaxWarning } from './msg';
 
 export class ReminderModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -39,14 +40,11 @@ export class ReminderModule extends Module {
 	async remind(msg: Message, args: string) {
 		// cookiecord can't have args with spaces in them (yet)
 		const splitArgs = args.split(' ').filter(x => x.trim().length !== 0);
-		if (splitArgs.length == 0)
-			return await msg.channel.send(
-				':warning: syntax: !remind <duration> [message]',
-			);
+		if (splitArgs.length == 0) return await msg.channel.send(syntaxWarning);
 		const maxDur = parse('10yr');
 		const dur = parse(splitArgs.shift()!); // TS doesn't know about the length check
 		if (!dur || !maxDur || dur > maxDur)
-			return await msg.channel.send(':warning: invalid duration!');
+			return await msg.channel.send(invalidDuration);
 
 		const reminder = new Reminder();
 		reminder.userID = msg.author.id;
@@ -57,11 +55,11 @@ export class ReminderModule extends Module {
 
 		if (splitArgs.length == 0) {
 			await msg.channel.send(
-				`:ok_hand: set a reminder for ${prettyMs(dur)}.`,
+				`${okHand} set a reminder for ${prettyMs(dur)}.`,
 			);
 		} else {
 			await msg.channel.send(
-				`:ok_hand: set a reminder for ${prettyMs(
+				`${okHand} set a reminder for ${prettyMs(
 					dur,
 				)} to remind you about "${splitArgs.join('')}".`,
 			);

@@ -12,6 +12,7 @@ import {
 	findCodeblockFromChannel,
 	PLAYGROUND_REGEX,
 } from '../util/findCodeblockFromChannel';
+import { couldntFindCodeblock, canRemoveFullLink } from './msg';
 
 export class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -33,10 +34,7 @@ export class PlaygroundModule extends Module {
 				msg.channel as TextChannel,
 				true,
 			);
-			if (!code)
-				return await msg.channel.send(
-					":warning: couldn't find a codeblock!",
-				);
+			if (!code) return await msg.channel.send(couldntFindCodeblock);
 		}
 		const embed = new MessageEmbed()
 			.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
@@ -61,7 +59,7 @@ export class PlaygroundModule extends Module {
 		} else {
 			// Message also contained other characters
 			const botMsg = await msg.channel.send(
-				`${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
+				`${msg.author} ${canRemoveFullLink}`,
 				{ embed },
 			);
 			this.editedLongLink.set(msg.id, botMsg);

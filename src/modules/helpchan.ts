@@ -23,6 +23,8 @@ import {
 	dormantChannelLoop,
 } from '../env';
 
+import { beAskerToCloseChannel, okHand, onlyRunInHelp } from './msg';
+
 export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
@@ -143,9 +145,7 @@ export class HelpChanModule extends Module {
 			return;
 
 		if (msg.channel.parentID !== categories.ongoing) {
-			return await msg.channel.send(
-				':warning: you can only run this in ongoing help channels.',
-			);
+			return await msg.channel.send(onlyRunInHelp);
 		}
 
 		const owner = await HelpUser.findOne({
@@ -158,9 +158,7 @@ export class HelpChanModule extends Module {
 		) {
 			await this.markChannelAsDormant(msg.channel);
 		} else {
-			return await msg.channel.send(
-				':warning: you have to be the asker to close the channel.',
-			);
+			return await msg.channel.send(beAskerToCloseChannel);
 		}
 	}
 
@@ -293,7 +291,7 @@ export class HelpChanModule extends Module {
 	})
 	async removelock(msg: Message) {
 		this.busyChannels.delete(msg.channel.id);
-		await msg.channel.send(':ok_hand:');
+		await msg.channel.send(okHand);
 	}
 
 	@command({
@@ -303,6 +301,6 @@ export class HelpChanModule extends Module {
 		if (!msg.guild) return;
 
 		await this.ensureAskChannels(msg.guild);
-		await msg.channel.send(':ok_hand:');
+		await msg.channel.send(okHand);
 	}
 }
