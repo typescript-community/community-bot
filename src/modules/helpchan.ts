@@ -298,7 +298,9 @@ export class HelpChanModule extends Module {
 
 		const channelMessages = await msg.channel.messages.fetch({ limit: 50 });
 		const questionMessages = channelMessages.filter(
-			({ author, id }) => author.id === member.id && id !== msg.id,
+			questionMsg =>
+				questionMsg.author.id === member.id &&
+				questionMsg.id !== msg.id,
 		);
 
 		const msgContent = questionMessages
