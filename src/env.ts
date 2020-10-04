@@ -24,6 +24,9 @@ export const categories = {
 
 export const askCooldownRoleId = process.env.ASK_COOLDOWN_ROLE!;
 
+export const trustedRoleId = process.env.TRUSTED_ROLE_ID!;
+export const askHelpChannelId = process.env.ASK_HELP_CHANNEL!;
+
 export const channelNames = process.env.CHANNEL_NAMES!.split(',');
 export const dormantChannelTimeout = parseInt(
 	process.env.DORMANT_CHANNEL_TIMEOUT!,

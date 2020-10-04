@@ -20,8 +20,7 @@ export class RepModule extends Module {
 
 	MAX_REP = 3;
 
-	// all messages have to be fully lowercase
-	THANKS_REGEX = /(?:thanks|thx|cheers|thanx|ty|tks|tkx)\b/i;
+	THANKS_REGEX = /\b(?:thanks|thx|cheers|thanx|ty|tks|tkx)\b/i;
 
 	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
@@ -157,6 +156,7 @@ export class RepModule extends Module {
 		description: 'See who has the most reputation',
 	})
 	async leaderboard(msg: Message) {
+		const topEmojis = [':first_place:', ':second_place:', ':third_place:'];
 		const data = ((await RepGive.createQueryBuilder('give')
 			.select(['give.to', 'COUNT(*)'])
 			.groupBy('give.to')
@@ -172,8 +172,10 @@ export class RepModule extends Module {
 			.setDescription(
 				data
 					.map(
-						x =>
-							`:white_small_square: **<@${x.id}>** with **${x.count}** points.`,
+						(x, index) =>
+							`${
+								topEmojis[index] || ':white_small_square:'
+							} **<@${x.id}>** with **${x.count}** points.`,
 					)
 					.join('\n'),
 			);

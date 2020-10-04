@@ -21,7 +21,9 @@ import {
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
+	askHelpChannelId,
 } from '../env';
+import { isTrustedMember } from '../util/inhibitors';
 
 import { beAskerToCloseChannel, okHand, onlyRunInHelp } from './msg';
 
@@ -105,13 +107,8 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		const helpUser = new HelpUser();
-		helpUser.userId = msg.author.id;
-		helpUser.channelId = msg.channel.id;
-		await helpUser.save();
-
 		await msg.pin();
-		await msg.member.roles.add(askCooldownRoleId);
+		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
 
 		await this.ensureAskChannels(msg.guild);
@@ -149,7 +146,7 @@ export class HelpChanModule extends Module {
 		}
 
 		const owner = await HelpUser.findOne({
-			where: { channelId: msg.channel.id },
+			channelId: msg.channel.id,
 		});
 
 		if (
@@ -211,7 +208,7 @@ export class HelpChanModule extends Module {
 		await Promise.all(pinned.map(msg => msg.unpin()));
 
 		const helpUser = await HelpUser.findOne({
-			where: { channelId: channel.id },
+			channelId: channel.id,
 		});
 		if (helpUser) {
 			const member = await channel.guild.members.fetch({
@@ -247,12 +244,19 @@ export class HelpChanModule extends Module {
 		}
 	}
 
-	@command()
-	async cooldown(msg: Message, @optional user?: GuildMember) {
-		console.log('Cooldown', msg.content);
-		if (!msg.guild) return;
+	private async addCooldown(member: GuildMember, channel: TextChannel) {
+		await member.roles.add(askCooldownRoleId);
+		const helpUser = new HelpUser();
+		helpUser.userId = member.user.id;
+		helpUser.channelId = channel.id;
+		await helpUser.save();
+	}
 
-		const guildTarget = await msg.guild.members.fetch(user ?? msg.author);
+	@command({ inhibitors: [CommonInhibitors.guildsOnly] })
+	async cooldown(msg: Message, @optional member?: GuildMember) {
+		const guildTarget = await msg.guild!.members.fetch(
+			member ?? msg.author,
+		);
 
 		if (!guildTarget) return;
 
@@ -264,25 +268,76 @@ export class HelpChanModule extends Module {
 		}
 
 		const helpUser = await HelpUser.findOne({
-			where: { userId: guildTarget.id },
+			userId: guildTarget.id,
 		});
 
 		if (helpUser) {
-			const channel = msg.guild.channels.resolve(helpUser.channelId);
-			// If we don't have a channel, just remove the cooldown. This should
-			// only happen if someone deletes a help channel.
-			if (channel) {
-				await msg.channel.send(
-					`${guildTarget.displayName} has an active help channel: ${channel.name}`,
-				);
-				return;
-			}
+			return msg.channel.send(
+				`${guildTarget.displayName} has an active help channel: <#${helpUser.channelId}>`,
+			);
 		}
 
 		await guildTarget.roles.remove(askCooldownRoleId);
 		await msg.channel.send(
 			`Removed ${guildTarget.displayName}'s cooldown.`,
 		);
+	}
+
+	@command({ inhibitors: [isTrustedMember] })
+	async claim(msg: Message, member: GuildMember) {
+		const helpUser = await HelpUser.findOne({
+			userId: member.id,
+		});
+		if (helpUser) {
+			return msg.channel.send(
+				`${member.displayName} already has an open help channel: <#${helpUser.channelId}>`,
+			);
+		}
+
+		const channelMessages = await msg.channel.messages.fetch({ limit: 50 });
+		const questionMessages = channelMessages.filter(
+			questionMsg =>
+				questionMsg.author.id === member.id &&
+				questionMsg.id !== msg.id,
+		);
+
+		const msgContent = questionMessages
+			.array()
+			.slice(0, 10)
+			.map(msg => msg.content)
+			.reverse()
+			.join('\n')
+			.slice(0, 2000);
+
+		const claimedChannel = msg.guild!.channels.cache.find(
+			channel =>
+				channel.type === 'text' &&
+				channel.parentID == categories.ask &&
+				channel.name.startsWith(this.CHANNEL_PREFIX) &&
+				!this.busyChannels.has(channel.id),
+		) as TextChannel | undefined;
+
+		if (!claimedChannel) {
+			return msg.channel.send(
+				':warning: failed to claim a help channel, no available channel.',
+			);
+		}
+
+		this.busyChannels.add(claimedChannel.id);
+		const toPin = await claimedChannel.send(
+			new MessageEmbed()
+				.setAuthor(member.displayName, member.user.displayAvatarURL())
+				.setDescription(msgContent),
+		);
+		await toPin.pin();
+		await this.addCooldown(member, claimedChannel);
+		await this.moveChannel(claimedChannel, categories.ongoing);
+		await claimedChannel.send(
+			`${member.user} this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
+		);
+		await this.ensureAskChannels(msg.guild!);
+
+		this.busyChannels.delete(claimedChannel.id);
 	}
 
 	// Commands to fix race conditions
