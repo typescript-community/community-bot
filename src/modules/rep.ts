@@ -176,7 +176,7 @@ export class RepModule extends Module {
 					.map(
 						(x, index) =>
 							`${
-								topEmojis[index] || ':small_white_square:'
+								topEmojis[index] || ':white_small_square:'
 							} **<@${x.id}>** with **${x.count}** points.`,
 					)
 					.join('\n'),
