@@ -158,6 +158,7 @@ export class RepModule extends Module {
 		description: 'See who has the most reputation',
 	})
 	async leaderboard(msg: Message) {
+		const topEmojis = [':first_place:', ':second_place:', ':third_place:'];
 		const data = ((await RepGive.createQueryBuilder('give')
 			.select(['give.to', 'COUNT(*)'])
 			.groupBy('give.to')
@@ -173,8 +174,10 @@ export class RepModule extends Module {
 			.setDescription(
 				data
 					.map(
-						x =>
-							`:white_small_square: **<@${x.id}>** with **${x.count}** points.`,
+						(x, index) =>
+							`${
+								topEmojis[index] || ':small_white_square:'
+							} **<@${x.id}>** with **${x.count}** points.`,
 					)
 					.join('\n'),
 			);
