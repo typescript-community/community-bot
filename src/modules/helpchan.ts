@@ -297,9 +297,10 @@ export class HelpChanModule extends Module {
 			userId: member.id,
 		});
 		if (helpUser) {
-			return msg.channel.send(
+			await msg.channel.send(
 				`${member.displayName} already has an open help channel: <#${helpUser.channelId}>`,
 			);
+			return;
 		}
 
 		const channelMessages = await msg.channel.messages.fetch({ limit: 50 });
@@ -326,9 +327,10 @@ export class HelpChanModule extends Module {
 		) as TextChannel | undefined;
 
 		if (!claimedChannel) {
-			return msg.channel.send(
+			await msg.channel.send(
 				':warning: failed to claim a help channel, no available channel.',
 			);
+			return;
 		}
 
 		this.busyChannels.add(claimedChannel.id);
@@ -346,6 +348,8 @@ export class HelpChanModule extends Module {
 		await this.ensureAskChannels(msg.guild!);
 
 		this.busyChannels.delete(claimedChannel.id);
+
+		await msg.channel.send(`👌 successfully claimed ${claimedChannel}`);
 	}
 
 	// Commands to fix race conditions
