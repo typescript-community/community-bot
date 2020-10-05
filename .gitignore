@@ -63,5 +63,3 @@ typings/
 dist/
 
 .idea
-
-package-lock.json
