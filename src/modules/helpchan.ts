@@ -223,7 +223,7 @@ export class HelpChanModule extends Module {
 				const member = await channel.guild.members.fetch({
 					user: helpUser.userId,
 				});
-				await member?.roles.remove(askCooldownRoleId);
+				await member.roles.remove(askCooldownRoleId);
 			} catch {
 				// Do nothing, member left the guild
 			}
