@@ -1,27 +1,30 @@
-import { Message, MessageEmbed, GuildMember } from 'discord.js';
+import { Message, MessageEmbed, User } from 'discord.js';
 
 const MAX_TRACKED_MESSAGES = 1000;
 
-const messageIdToMemberId = new Map<string, string>();
+const messageToUserId = new Map<string, string>();
 
 export async function sendWithMessageOwnership(
 	message: Message,
-	toSend: string | MessageEmbed,
+	toSend: string | { embed: MessageEmbed },
 ) {
 	const sent = await message.channel.send(toSend);
-	messageIdToMemberId.set(sent.id, message.author.id);
+	addMessageOwnership(sent, message.author);
+}
 
+export function addMessageOwnership(message: Message, user: User) {
+	messageToUserId.set(message.id, user.id);
 	// Without this memory grows unboundedly... very slowly, but better to avoid the issue.
-	if (messageIdToMemberId.size > MAX_TRACKED_MESSAGES) {
+	if (messageToUserId.size > MAX_TRACKED_MESSAGES) {
 		// Keys returns an iterable in insertion order, so we remove the oldest message from the map.
-		messageIdToMemberId.delete(messageIdToMemberId.keys().next().value);
+		messageToUserId.delete(messageToUserId.keys().next().value);
 	}
 }
 
-export function ownsBotMessage(message: Message, member: GuildMember) {
-	return messageIdToMemberId.get(message.id) === member.id;
+export function ownsBotMessage(message: Message, user: User) {
+	return messageToUserId.get(message.id) === user.id;
 }
 
 export function clearMessageOwnership(message: Message) {
-	messageIdToMemberId.delete(message.id);
+	messageToUserId.delete(message.id);
 }

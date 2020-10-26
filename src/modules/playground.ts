@@ -12,6 +12,7 @@ import {
 	findCodeblockFromChannel,
 	PLAYGROUND_REGEX,
 } from '../util/findCodeblockFromChannel';
+import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 
 export class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -34,7 +35,8 @@ export class PlaygroundModule extends Module {
 				true,
 			);
 			if (!code)
-				return await msg.channel.send(
+				return sendWithMessageOwnership(
+					msg,
 					":warning: couldn't find a codeblock!",
 				);
 		}
@@ -42,7 +44,7 @@ export class PlaygroundModule extends Module {
 			.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
 			.setTitle('View in Playground')
 			.setColor(TS_BLUE);
-		await msg.channel.send({ embed });
+		await sendWithMessageOwnership(msg, { embed });
 	}
 
 	@listener({ event: 'message' })
@@ -56,8 +58,8 @@ export class PlaygroundModule extends Module {
 			.setURL(exec[0]);
 		if (exec[0] == msg.content) {
 			// Message only contained the link
+			await sendWithMessageOwnership(msg, { embed });
 			msg.delete();
-			await msg.channel.send({ embed });
 		} else {
 			// Message also contained other characters
 			const botMsg = await msg.channel.send(
@@ -65,6 +67,7 @@ export class PlaygroundModule extends Module {
 				{ embed },
 			);
 			this.editedLongLink.set(msg.id, botMsg);
+			addMessageOwnership(botMsg, msg.author);
 		}
 	}
 	@listener({ event: 'messageUpdate' })
