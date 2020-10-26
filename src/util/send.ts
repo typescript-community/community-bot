@@ -21,8 +21,8 @@ export function addMessageOwnership(message: Message, user: User) {
 	}
 }
 
-export function ownsBotMessage(message: Message, user: User) {
-	return messageToUserId.get(message.id) === user.id;
+export function ownsBotMessage(message: Message, userId: string) {
+	return messageToUserId.get(message.id) === userId;
 }
 
 export function clearMessageOwnership(message: Message) {

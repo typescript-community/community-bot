@@ -45,7 +45,7 @@ export class EtcModule extends Module {
 	async onReact(reaction: MessageReaction, member: GuildMember) {
 		if (
 			reaction.emoji.name === '❌' &&
-			ownsBotMessage(reaction.message, member)
+			ownsBotMessage(reaction.message, member.id)
 		) {
 			clearMessageOwnership(reaction.message);
 			await reaction.message.delete();
