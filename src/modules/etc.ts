@@ -48,7 +48,7 @@ export class EtcModule extends Module {
 			ownsBotMessage(reaction.message, member.id)
 		) {
 			clearMessageOwnership(reaction.message);
-			await reaction.message.delete();
+			await reaction.users.remove(member.id);
 		}
 	}
 }
