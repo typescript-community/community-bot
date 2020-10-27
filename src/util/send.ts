@@ -4,11 +4,15 @@ const MAX_TRACKED_MESSAGES = 1000;
 
 const messageToUserId = new Map<string, string>();
 
+export const DELETE_EMOJI = '🗑️';
+
 export async function sendWithMessageOwnership(
 	message: Message,
 	toSend: string | { embed: MessageEmbed },
 ) {
 	const sent = await message.channel.send(toSend);
+	await sent.react(DELETE_EMOJI);
+
 	addMessageOwnership(sent, message.author);
 }
 
