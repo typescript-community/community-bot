@@ -4,7 +4,7 @@
 	"description": "Typescript Community Bot",
 	"main": "dist/index.js",
 	"dependencies": {
-		"@typescript/twoslash": "^1.0.1",
+		"@typescript/twoslash": "^1.1.2",
 		"cookiecord": "^0.2.12",
 		"dotenv-safe": "^8.2.0",
 		"lz-string": "^1.4.4",
@@ -23,7 +23,7 @@
 		"prettier": "^2.0.5",
 		"pretty-quick": "^2.0.1",
 		"ts-node-dev": "^1.0.0-pre.60",
-		"typescript": "^4.0.2"
+		"typescript": "^4.1.3"
 	},
 	"husky": {
 		"hooks": {
