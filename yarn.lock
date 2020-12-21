@@ -96,19 +96,19 @@
   dependencies:
     "@types/node" "*"
 
-"@typescript/twoslash@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@typescript/twoslash/-/twoslash-1.0.1.tgz#218c9f51fbb1e614c8e9cc6ddaa999623cfae497"
-  integrity sha512-iJfaNl24tjAhGBerWMwuz3HwQpHg4phJAIY2lHipWu4rVtCy2hShtCn/tDwvx8Ph4vQpMAbDI1xVfgu6GOnpGQ==
+"@typescript/twoslash@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@typescript/twoslash/-/twoslash-1.1.2.tgz#429c11032a708c6ffc38fb9278167df41e6ceefd"
+  integrity sha512-U7h7wVW4aymz6G54KaOIaeS1nqkSjKMeW6hWtw1r9GWnA9hshswKS2HslkEj3Ij91kUIjjigUBcVNfPq/P2TlA==
   dependencies:
-    "@typescript/vfs" "1.2.0"
+    "@typescript/vfs" "1.3.0"
     debug "^4.1.1"
     lz-string "^1.4.4"
 
-"@typescript/vfs@1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@typescript/vfs/-/vfs-1.2.0.tgz#51ce97d0916db05c69f2ac0cc035d61718481d4b"
-  integrity sha512-3YhBC+iyngEHjEedSAWk9rbJHoBwa2cd4h/tzb2TXmZc2CUclTl3x5AQRKNoRqm7t+X9PGTc2q2/Dpray/O4mA==
+"@typescript/vfs@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@typescript/vfs/-/vfs-1.3.0.tgz#1abc69c43c85c21a58881598a6031fd3f3600153"
+  integrity sha512-Bd1LdvQpm0uU2eclcCfO8H8oAGAfEJiKn0acKy/xeZV4sARwXx9MHBMuDX0XDPLmI2JpIm+mFV9Ers65xnoaQg==
   dependencies:
     debug "^4.1.1"
 
@@ -1693,10 +1693,10 @@ typeorm@^0.2.25:
     yargonaut "^1.1.2"
     yargs "^13.2.1"
 
-typescript@^4.0.2:
-  version "4.0.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.0.2.tgz#7ea7c88777c723c681e33bf7988be5d008d05ac2"
-  integrity sha512-e4ERvRV2wb+rRZ/IQeb3jm2VxBsirQLpQhdxplZ2MEzGvDkkMmPglecnNDfSUBivMjP93vRbngYYDQqQ/78bcQ==
+typescript@^4.1.3:
+  version "4.1.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.1.3.tgz#519d582bd94cba0cf8934c7d8e8467e473f53bb7"
+  integrity sha512-B3ZIOf1IKeH2ixgHhj6la6xdwR9QrLC5d1VKeCSY4tvkqhF2eqd9O7txNlS0PO3GrBAFIdr3L1ndNwteUbZLYg==
 
 validate-npm-package-license@^3.0.1:
   version "3.0.4"
