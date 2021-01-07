@@ -33,3 +33,4 @@ export const dormantChannelTimeout = parseInt(
 );
 export const dormantChannelLoop = parseInt(process.env.DORMANT_CHANNEL_LOOP!);
 export const TS_BLUE = '#007ACC';
+export const GREEN = '#77b155';

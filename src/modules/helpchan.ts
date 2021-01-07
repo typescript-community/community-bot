@@ -17,6 +17,7 @@ import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
 	TS_BLUE,
+	GREEN,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
@@ -33,7 +34,7 @@ export class HelpChanModule extends Module {
 	CHANNEL_PREFIX = 'help-';
 
 	AVAILABLE_EMBED = new MessageEmbed()
-		.setColor('#77b155')
+		.setColor(GREEN)
 		.setDescription(
 			'✅ **Send your question here to claim the channel**\n' +
 				'This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.\n\n' +
