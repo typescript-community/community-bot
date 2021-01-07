@@ -33,16 +33,15 @@ export class HelpChanModule extends Module {
 	CHANNEL_PREFIX = 'help-';
 
 	AVAILABLE_EMBED = new MessageEmbed()
-		.setColor(TS_BLUE)
+		.setColor('#77b155')
 		.setDescription(
-			'This help channel is now **available**, which means that ' +
-				'you can claim it by typing your question into it. ' +
-				'Once claimed, the channel will move into the **Help: Ongoing** category, and ' +
-				`will be yours until it has been inactive for ${
-					dormantChannelTimeout / 60 / 60
-				} hours or is closed ` +
-				'manually with `!close`. When that happens, it will be set to **dormant** and moved into the **Help: Dormant** category.\n\n' +
-				"Try to write the best question you can by providing a detailed description and telling us what you've tried already.",
+			'✅ **Send your question here to claim the channel**\n' +
+				'This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.\n\n' +
+				'**Keep in mind:**\n' +
+				"• It's always ok to just ask your question. You don't need permission.\n" +
+				'• Explain what you expect to happen and what actually happens.\n' +
+				'• Include a code sample and error message, if you got any.\n\n' +
+				"For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.",
 		);
 
 	DORMANT_EMBED = new MessageEmbed()
