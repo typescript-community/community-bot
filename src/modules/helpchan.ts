@@ -17,6 +17,7 @@ import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
 	TS_BLUE,
+	GREEN,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
@@ -24,6 +25,24 @@ import {
 	askHelpChannelId,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
+
+const AVAILABLE_MESSAGE = `
+✅ **Send your question here to claim the channel**
+This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.
+
+**Keep in mind:**
+• It's always ok to just ask your question. You don't need permission.
+• Explain what you expect to happen and what actually happens.
+• Include a code sample and error message, if you got any.
+
+For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+`;
+
+const DORMANT_MESSAGE = `
+This help channel has been marked as **dormant**, and has been moved into the **Help: Dormant** category at the bottom of the channel list. It is no longer possible to send messages in this channel until it becomes available again.
+
+If your question wasn't answered yet, you can claim a new help channel from the **Help: Available** category by simply asking your question again. Consider rephrasing the question to maximize your chance of getting a good answer. If you're not sure how, have a look through [StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask)
+`;
 
 export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -33,28 +52,12 @@ export class HelpChanModule extends Module {
 	CHANNEL_PREFIX = 'help-';
 
 	AVAILABLE_EMBED = new MessageEmbed()
-		.setColor(TS_BLUE)
-		.setDescription(
-			'This help channel is now **available**, which means that ' +
-				'you can claim it by typing your question into it. ' +
-				'Once claimed, the channel will move into the **Help: Ongoing** category, and ' +
-				`will be yours until it has been inactive for ${
-					dormantChannelTimeout / 60 / 60
-				} hours or is closed ` +
-				'manually with `!close`. When that happens, it will be set to **dormant** and moved into the **Help: Dormant** category.\n\n' +
-				"Try to write the best question you can by providing a detailed description and telling us what you've tried already.",
-		);
+		.setColor(GREEN)
+		.setDescription(AVAILABLE_MESSAGE);
 
 	DORMANT_EMBED = new MessageEmbed()
 		.setColor(TS_BLUE)
-		.setDescription(
-			'This help channel has been marked as **dormant**, and has been moved into the **Help: Dormant** category at the ' +
-				'bottom of the channel list. It is no longer possible to send messages in this channel until it becomes available again.\n\n' +
-				"If your question wasn't answered yet, you can claim a new help channel from the **Help: Available** category" +
-				' by simply asking your question again. Consider rephrasing the question to maximize your chance of getting ' +
-				"a good answer. If you're not sure how, have a look through " +
-				"[StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask)",
-		);
+		.setDescription(DORMANT_MESSAGE);
 
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
 
