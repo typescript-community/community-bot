@@ -27,7 +27,7 @@ import {
 import { isTrustedMember } from '../util/inhibitors';
 
 const AVAILABLE_MESSAGE = `
-✅ **Send your question here to claim the channel**
+**Send your question here to claim the channel**
 This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.
 
 **Keep in mind:**
@@ -52,8 +52,14 @@ export class HelpChanModule extends Module {
 	CHANNEL_PREFIX = 'help-';
 
 	AVAILABLE_EMBED = new MessageEmbed()
+		.setTitle('✅ Available help channel')
 		.setColor(GREEN)
-		.setDescription(AVAILABLE_MESSAGE);
+		.setDescription(AVAILABLE_MESSAGE)
+		.setFooter(
+			`Closes after ${
+				dormantChannelTimeout / 60 / 60
+			} hours of inactivity or when you send !close.`,
+		);
 
 	DORMANT_EMBED = new MessageEmbed()
 		.setColor(TS_BLUE)
