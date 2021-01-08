@@ -7,7 +7,6 @@ import { AutoroleModule } from './modules/autorole';
 import { EtcModule } from './modules/etc';
 import { HelpChanModule } from './modules/helpchan';
 import { PlaygroundModule } from './modules/playground';
-import { ReminderModule } from './modules/reminders';
 import { RepModule } from './modules/rep';
 import { TwoslashModule } from './modules/twoslash';
 import { HelpModule } from './modules/help';
@@ -28,7 +27,6 @@ for (const mod of [
 	EtcModule,
 	HelpChanModule,
 	PlaygroundModule,
-	ReminderModule,
 	RepModule,
 	TwoslashModule,
 	HelpModule,
