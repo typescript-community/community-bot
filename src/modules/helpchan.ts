@@ -140,9 +140,7 @@ export class HelpChanModule extends Module {
 		)
 			return;
 
-		if (await this.checkEmptyOngoing(msg.channel)) {
-			await this.startEmptyTimeout(msg.channel);
-		}
+		await this.startEmptyTimeout(msg.channel);
 	}
 
 	async moveChannel(channel: TextChannel, category: string) {
