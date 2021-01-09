@@ -23,6 +23,7 @@ import {
 	dormantChannelTimeout,
 	dormantChannelLoop,
 	askHelpChannelId,
+	ongoingEmptyTimeout,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
@@ -66,6 +67,8 @@ export class HelpChanModule extends Module {
 		.setDescription(DORMANT_MESSAGE);
 
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
+	// a lock used to prevent multiple timeouts running on the same channel
+	ongoingEmptyTimeouts: Set<string> = new Set();
 
 	private getChannelName(guild: Guild) {
 		const takenChannelNames = guild.channels.cache
@@ -81,11 +84,66 @@ export class HelpChanModule extends Module {
 		return `${this.CHANNEL_PREFIX}${decidedChannel}`;
 	}
 
+	private getOngoingChannels() {
+		return this.client.channels.cache
+			.filter(
+				channel =>
+					(channel as TextChannel).parentID === categories.ongoing,
+			)
+			.array() as TextChannel[];
+	}
+
 	@listener({ event: 'ready' })
 	async startDormantLoop() {
 		setInterval(() => {
 			this.checkDormantPossibilities();
 		}, dormantChannelLoop);
+	}
+
+	@listener({ event: 'ready' })
+	async initialCheckEmptyOngoing() {
+		for (const channel of this.getOngoingChannels()) {
+			if (await this.checkEmptyOngoing(channel)) {
+				await this.startEmptyTimeout(channel);
+			}
+		}
+	}
+
+	// Utility function used to check if there are no messages in an ongoing channel, meaning the bot
+	// is the most recent message. This will be caused if somebody deletes their message after they
+	// claim a channel.
+	async checkEmptyOngoing(channel: TextChannel) {
+		const messages = await channel.messages.fetch();
+
+		return messages.array()[0].author.id === this.client.user?.id;
+	}
+
+	async startEmptyTimeout(channel: TextChannel) {
+		if (this.ongoingEmptyTimeouts.has(channel.id)) return;
+
+		this.ongoingEmptyTimeouts.add(channel.id);
+
+		setTimeout(async () => {
+			this.ongoingEmptyTimeouts.delete(channel.id);
+
+			if (await this.checkEmptyOngoing(channel)) {
+				await this.markChannelAsDormant(channel);
+			}
+		}, ongoingEmptyTimeout);
+	}
+
+	@listener({ event: 'messageDelete' })
+	async onMessageDeleted(msg: Message) {
+		if (
+			msg.channel.type !== 'text' ||
+			!msg.channel.parentID ||
+			msg.channel.parentID !== categories.ongoing
+		)
+			return;
+
+		if (await this.checkEmptyOngoing(msg.channel)) {
+			await this.startEmptyTimeout(msg.channel);
+		}
 	}
 
 	async moveChannel(channel: TextChannel, category: string) {
@@ -248,20 +306,13 @@ export class HelpChanModule extends Module {
 	}
 
 	private async checkDormantPossibilities() {
-		const ongoingChannels = this.client.channels.cache.filter(channel => {
-			if (channel.type === 'dm') return false;
+		for (const channel of this.getOngoingChannels()) {
+			const messages = await channel.messages.fetch();
 
-			return (channel as TextChannel).parentID === categories.ongoing;
-		});
-
-		for (const channel of ongoingChannels.array()) {
-			const messages = await (channel as TextChannel).messages.fetch();
-
-			const diff =
-				(Date.now() - messages.array()[0].createdAt.getTime()) / 1000;
+			const diff = Date.now() - messages.array()[0].createdAt.getTime();
 
 			if (diff > dormantChannelTimeout)
-				await this.markChannelAsDormant(channel as TextChannel);
+				await this.markChannelAsDormant(channel);
 		}
 	}
 
