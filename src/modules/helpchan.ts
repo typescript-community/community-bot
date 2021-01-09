@@ -67,7 +67,7 @@ export class HelpChanModule extends Module {
 		.setDescription(DORMANT_MESSAGE);
 
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
-	ongoingEmptyTimeouts: Set<string> = new Set(); // a lock used to prevent multiple timeouts running on the same channel
+	ongoingEmptyTimeouts: Map<string, NodeJS.Timeout> = new Map(); // a lock used to prevent multiple timeouts running on the same channel
 
 	private getChannelName(guild: Guild) {
 		const takenChannelNames = guild.channels.cache
@@ -118,17 +118,18 @@ export class HelpChanModule extends Module {
 	}
 
 	async startEmptyTimeout(channel: TextChannel) {
-		if (this.ongoingEmptyTimeouts.has(channel.id)) return;
+		const existingTimeout = this.ongoingEmptyTimeouts.get(channel.id);
+		if (existingTimeout) clearTimeout(existingTimeout);
 
-		this.ongoingEmptyTimeouts.add(channel.id);
-
-		setTimeout(async () => {
+		const timeout = setTimeout(async () => {
 			this.ongoingEmptyTimeouts.delete(channel.id);
 
 			if (await this.checkEmptyOngoing(channel)) {
 				await this.markChannelAsDormant(channel);
 			}
 		}, ongoingEmptyTimeout);
+
+		this.ongoingEmptyTimeouts.set(channel.id, timeout);
 	}
 
 	@listener({ event: 'messageDelete' })
