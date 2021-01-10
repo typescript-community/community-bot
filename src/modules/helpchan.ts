@@ -58,7 +58,7 @@ export class HelpChanModule extends Module {
 		.setDescription(AVAILABLE_MESSAGE)
 		.setFooter(
 			`Closes after ${
-				dormantChannelTimeout / 60 / 60
+				dormantChannelTimeout / 60 / 60 / 1000
 			} hours of inactivity or when you send !close.`,
 		);
 
