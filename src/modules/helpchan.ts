@@ -114,7 +114,13 @@ export class HelpChanModule extends Module {
 	async checkEmptyOngoing(channel: TextChannel) {
 		const messages = await channel.messages.fetch();
 
-		return messages.first()?.author.id === this.client.user?.id;
+		const embed = messages.first()?.embeds[0];
+
+		return (
+			embed &&
+			embed.description?.trim() ===
+				this.AVAILABLE_EMBED.description?.trim()
+		);
 	}
 
 	async startEmptyTimeout(channel: TextChannel) {
