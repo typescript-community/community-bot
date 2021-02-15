@@ -3,6 +3,7 @@ import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
 import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 import { needValidSymbol, noTypescriptCode } from './msg';
+import { sendWithMessageOwnership } from '../util/send';
 
 const CODEBLOCK = '```';
 
@@ -16,15 +17,14 @@ export class TwoslashModule extends Module {
 		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
 
 		if (!match) {
-			msg.channel.send(needValidSymbol);
-			return;
+			return sendWithMessageOwnership(msg, needValidSymbol);
 		}
 
 		const symbol = match[0];
 
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
-		if (!code) return msg.channel.send(noTypescriptCode);
+		if (!code) return sendWithMessageOwnership(msg, noTypescriptCode);
 
 		const ret = twoslasher(code, 'ts', {
 			defaultOptions: { noErrorValidation: true },
@@ -34,11 +34,13 @@ export class TwoslashModule extends Module {
 			i => i.targetString === symbol.trim(),
 		);
 		if (!value)
-			return msg.channel.send(
+			return sendWithMessageOwnership(
+				msg,
 				`:warning: no symbol named \`${symbol}\` in the most recent codeblock`,
 			);
 
-		return msg.channel.send(
+		await sendWithMessageOwnership(
+			msg,
 			`${CODEBLOCK}typescript\n${value.text}${CODEBLOCK}`,
 		);
 	}
@@ -50,7 +52,7 @@ export class TwoslashModule extends Module {
 	async twoslash(msg: Message) {
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
-		if (!code) return msg.channel.send(noTypescriptCode);
+		if (!code) return sendWithMessageOwnership(msg, noTypescriptCode);
 
 		return this.twoslashBlock(msg, code);
 	}
@@ -124,6 +126,9 @@ export class TwoslashModule extends Module {
 		});
 
 		const output = resultLines.join('\n');
-		return msg.channel.send(`${CODEBLOCK}ts\n${output}${CODEBLOCK}\n`);
+		return sendWithMessageOwnership(
+			msg,
+			`${CODEBLOCK}ts\n${output}${CODEBLOCK}\n`,
+		);
 	}
 }

@@ -17,15 +17,34 @@ import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
 	TS_BLUE,
+	GREEN,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
 	askHelpChannelId,
+	ongoingEmptyTimeout,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
-
 import { beAskerToCloseChannel, okHand, onlyRunInHelp } from './msg';
+
+const AVAILABLE_MESSAGE = `
+**Send your question here to claim the channel**
+This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.
+
+**Keep in mind:**
+• It's always ok to just ask your question. You don't need permission.
+• Explain what you expect to happen and what actually happens.
+• Include a code sample and error message, if you got any.
+
+For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+`;
+
+const DORMANT_MESSAGE = `
+This help channel has been marked as **dormant**, and has been moved into the **Help: Dormant** category at the bottom of the channel list. It is no longer possible to send messages in this channel until it becomes available again.
+
+If your question wasn't answered yet, you can claim a new help channel from the **Help: Available** category by simply asking your question again. Consider rephrasing the question to maximize your chance of getting a good answer. If you're not sure how, have a look through [StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask)
+`;
 
 export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -35,34 +54,25 @@ export class HelpChanModule extends Module {
 	CHANNEL_PREFIX = 'help-';
 
 	AVAILABLE_EMBED = new MessageEmbed()
-		.setColor(TS_BLUE)
-		.setDescription(
-			'This help channel is now **available**, which means that ' +
-				'you can claim it by typing your question into it. ' +
-				'Once claimed, the channel will move into the **Help: Ongoing** category, and ' +
-				`will be yours until it has been inactive for ${
-					dormantChannelTimeout / 60 / 60
-				} hours or is closed ` +
-				'manually with `!close`. When that happens, it will be set to **dormant** and moved into the **Help: Dormant** category.\n\n' +
-				"Try to write the best question you can by providing a detailed description and telling us what you've tried already.",
+		.setTitle('✅ Available help channel')
+		.setColor(GREEN)
+		.setDescription(AVAILABLE_MESSAGE)
+		.setFooter(
+			`Closes after ${
+				dormantChannelTimeout / 60 / 60 / 1000
+			} hours of inactivity or when you send !close.`,
 		);
 
 	DORMANT_EMBED = new MessageEmbed()
 		.setColor(TS_BLUE)
-		.setDescription(
-			'This help channel has been marked as **dormant**, and has been moved into the **Help: Dormant** category at the ' +
-				'bottom of the channel list. It is no longer possible to send messages in this channel until it becomes available again.\n\n' +
-				"If your question wasn't answered yet, you can claim a new help channel from the **Help: Available** category" +
-				' by simply asking your question again. Consider rephrasing the question to maximize your chance of getting ' +
-				"a good answer. If you're not sure how, have a look through " +
-				"[StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask)",
-		);
+		.setDescription(DORMANT_MESSAGE);
 
 	busyChannels: Set<string> = new Set(); // a lock to eliminate race conditions
+	ongoingEmptyTimeouts: Map<string, NodeJS.Timeout> = new Map(); // a lock used to prevent multiple timeouts running on the same channel
 
 	private getChannelName(guild: Guild) {
 		const takenChannelNames = guild.channels.cache
-			.filter(channel => channel.name.startsWith('help-'))
+			.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX))
 			.map(channel => channel.name.replace(this.CHANNEL_PREFIX, ''));
 		let decidedChannel = channelNames[0];
 
@@ -74,11 +84,71 @@ export class HelpChanModule extends Module {
 		return `${this.CHANNEL_PREFIX}${decidedChannel}`;
 	}
 
+	private getOngoingChannels() {
+		return this.client.channels.cache
+			.filter(
+				channel =>
+					(channel as TextChannel).parentID === categories.ongoing,
+			)
+			.array() as TextChannel[];
+	}
+
 	@listener({ event: 'ready' })
 	async startDormantLoop() {
 		setInterval(() => {
 			this.checkDormantPossibilities();
 		}, dormantChannelLoop);
+	}
+
+	@listener({ event: 'ready' })
+	async initialCheckEmptyOngoing() {
+		for (const channel of this.getOngoingChannels()) {
+			if (await this.checkEmptyOngoing(channel)) {
+				await this.startEmptyTimeout(channel);
+			}
+		}
+	}
+
+	// Utility function used to check if there are no messages in an ongoing channel, meaning the bot
+	// is the most recent message. This will be caused if somebody deletes their message after they
+	// claim a channel.
+	async checkEmptyOngoing(channel: TextChannel) {
+		const messages = await channel.messages.fetch();
+
+		const embed = messages.first()?.embeds[0];
+
+		return (
+			embed &&
+			embed.description?.trim() ===
+				this.AVAILABLE_EMBED.description?.trim()
+		);
+	}
+
+	async startEmptyTimeout(channel: TextChannel) {
+		const existingTimeout = this.ongoingEmptyTimeouts.get(channel.id);
+		if (existingTimeout) clearTimeout(existingTimeout);
+
+		const timeout = setTimeout(async () => {
+			this.ongoingEmptyTimeouts.delete(channel.id);
+
+			if (await this.checkEmptyOngoing(channel)) {
+				await this.markChannelAsDormant(channel);
+			}
+		}, ongoingEmptyTimeout);
+
+		this.ongoingEmptyTimeouts.set(channel.id, timeout);
+	}
+
+	@listener({ event: 'messageDelete' })
+	async onMessageDeleted(msg: Message) {
+		if (
+			msg.channel.type !== 'text' ||
+			!msg.channel.parentID ||
+			msg.channel.parentID !== categories.ongoing
+		)
+			return;
+
+		await this.startEmptyTimeout(msg.channel);
 	}
 
 	async moveChannel(channel: TextChannel, category: string) {
@@ -172,10 +242,16 @@ export class HelpChanModule extends Module {
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
 
-				const lastMessage = dormant.messages.cache
+				let lastMessage = dormant.messages.cache
 					.array()
 					.reverse()
 					.find(m => m.author.id === this.client.user?.id);
+
+				if (!lastMessage)
+					lastMessage = (await dormant.messages.fetch({ limit: 5 }))
+						.array()
+						.find(m => m.author.id === this.client.user?.id);
+
 				if (lastMessage) {
 					// If there is a last message (the dormant message) by the bot, just edit it
 					await lastMessage.edit(this.AVAILABLE_EMBED);
@@ -211,10 +287,14 @@ export class HelpChanModule extends Module {
 			channelId: channel.id,
 		});
 		if (helpUser) {
-			const member = await channel.guild.members.fetch({
-				user: helpUser.userId,
-			});
-			await member?.roles.remove(askCooldownRoleId);
+			try {
+				const member = await channel.guild.members.fetch({
+					user: helpUser.userId,
+				});
+				await member.roles.remove(askCooldownRoleId);
+			} catch {
+				// Do nothing, member left the guild
+			}
 		}
 		await HelpUser.delete({ channelId: channel.id });
 
@@ -227,20 +307,14 @@ export class HelpChanModule extends Module {
 	}
 
 	private async checkDormantPossibilities() {
-		const ongoingChannels = this.client.channels.cache.filter(channel => {
-			if (channel.type === 'dm') return false;
-
-			return (channel as TextChannel).parentID === categories.ongoing;
-		});
-
-		for (const channel of ongoingChannels.array()) {
-			const messages = await (channel as TextChannel).messages.fetch();
+		for (const channel of this.getOngoingChannels()) {
+			const messages = await channel.messages.fetch();
 
 			const diff =
-				(Date.now() - messages.array()[0].createdAt.getTime()) / 1000;
+				Date.now() - (messages.first()?.createdAt.getTime() ?? 0);
 
 			if (diff > dormantChannelTimeout)
-				await this.markChannelAsDormant(channel as TextChannel);
+				await this.markChannelAsDormant(channel);
 		}
 	}
 
@@ -289,9 +363,10 @@ export class HelpChanModule extends Module {
 			userId: member.id,
 		});
 		if (helpUser) {
-			return msg.channel.send(
+			await msg.channel.send(
 				`${member.displayName} already has an open help channel: <#${helpUser.channelId}>`,
 			);
+			return;
 		}
 
 		const channelMessages = await msg.channel.messages.fetch({ limit: 50 });
@@ -318,9 +393,10 @@ export class HelpChanModule extends Module {
 		) as TextChannel | undefined;
 
 		if (!claimedChannel) {
-			return msg.channel.send(
+			await msg.channel.send(
 				':warning: failed to claim a help channel, no available channel.',
 			);
+			return;
 		}
 
 		this.busyChannels.add(claimedChannel.id);
@@ -338,6 +414,8 @@ export class HelpChanModule extends Module {
 		await this.ensureAskChannels(msg.guild!);
 
 		this.busyChannels.delete(claimedChannel.id);
+
+		await msg.channel.send(`👌 successfully claimed ${claimedChannel}`);
 	}
 
 	// Commands to fix race conditions

@@ -4,8 +4,13 @@ import {
 	Module,
 	listener,
 } from 'cookiecord';
-import { Message } from 'discord.js';
 import { pingPong, dontAskToAsk, reactfcMsg } from './msg';
+import { Message, MessageReaction, GuildMember } from 'discord.js';
+import {
+	clearMessageOwnership,
+	DELETE_EMOJI,
+	ownsBotMessage,
+} from '../util/send';
 
 export class EtcModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -37,5 +42,19 @@ export class EtcModule extends Module {
 		await msg.react('✅');
 		await msg.react('❌');
 		await msg.react('🤷');
+	}
+
+	@listener({ event: 'messageReactionAdd' })
+	async onReact(reaction: MessageReaction, member: GuildMember) {
+		if (reaction.message.author.id !== this.client.user?.id) return;
+		if (reaction.emoji.name !== DELETE_EMOJI) return;
+		if (member.id === this.client.user?.id) return;
+
+		if (ownsBotMessage(reaction.message, member.id)) {
+			clearMessageOwnership(reaction.message);
+			await reaction.message.delete();
+		} else {
+			await reaction.users.remove(member.id);
+		}
 	}
 }

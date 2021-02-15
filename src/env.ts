@@ -28,8 +28,13 @@ export const trustedRoleId = process.env.TRUSTED_ROLE_ID!;
 export const askHelpChannelId = process.env.ASK_HELP_CHANNEL!;
 
 export const channelNames = process.env.CHANNEL_NAMES!.split(',');
+
 export const dormantChannelTimeout = parseInt(
 	process.env.DORMANT_CHANNEL_TIMEOUT!,
 );
 export const dormantChannelLoop = parseInt(process.env.DORMANT_CHANNEL_LOOP!);
+
+export const ongoingEmptyTimeout = parseInt(process.env.ONGOING_EMPTY_TIMEOUT!);
+
 export const TS_BLUE = '#007ACC';
+export const GREEN = '#77b155';
