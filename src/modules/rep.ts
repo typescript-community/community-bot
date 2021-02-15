@@ -11,7 +11,7 @@ import { TS_BLUE } from '../env';
 
 import { RepGive } from '../entities/RepGive';
 import { RepUser } from '../entities/RepUser';
-import { cannotSendRepToYou, noRepRemain, okHand } from './msg';
+import { cannotSendRepToYou, noRepRemain } from './msg';
 
 export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -109,7 +109,7 @@ export class RepModule extends Module {
 		}).save();
 
 		await msg.channel.send(
-			`${okHand} sent \`${targetMember.displayName}\` 1 rep (${
+			`:ok_hand: sent \`${targetMember.displayName}\` 1 rep (${
 				(await senderRU.sent()) + 1
 			}/${this.MAX_REP} sent)`,
 		);

@@ -1,4 +1,3 @@
-export const okHand: string = ':ok_hand:';
 export const pingPong: string = 'pong. :ping_pong:';
 export const dontAskToAsk: string = 'https://dontasktoask.com/';
 export const reactfcMsg: string =

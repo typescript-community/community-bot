@@ -26,7 +26,7 @@ import {
 	ongoingEmptyTimeout,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
-import { beAskerToCloseChannel, okHand, onlyRunInHelp } from './msg';
+import { beAskerToCloseChannel, onlyRunInHelp } from './msg';
 
 const AVAILABLE_MESSAGE = `
 **Send your question here to claim the channel**
@@ -424,7 +424,7 @@ export class HelpChanModule extends Module {
 	})
 	async removelock(msg: Message) {
 		this.busyChannels.delete(msg.channel.id);
-		await msg.channel.send(okHand);
+		await msg.channel.send(':ok_hand:');
 	}
 
 	@command({
@@ -434,6 +434,6 @@ export class HelpChanModule extends Module {
 		if (!msg.guild) return;
 
 		await this.ensureAskChannels(msg.guild);
-		await msg.channel.send(okHand);
+		await msg.channel.send(':ok_hand:');
 	}
 }
