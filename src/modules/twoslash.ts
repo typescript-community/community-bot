@@ -11,7 +11,7 @@ const CODEBLOCK = '```';
 // bad. It doesn't properly handle escaping back ticks, so we instead insert zero width spaces
 // so that users cannot escape our code block.
 function escapeCode(code: string) {
-	return code.replace(/```/g, '`\u200B`\u200B`');
+	return code.replace(/`(?=`)/g, '`\u200B');
 }
 
 export class TwoslashModule extends Module {
