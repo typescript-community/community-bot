@@ -6,6 +6,14 @@ import { sendWithMessageOwnership } from '../util/send';
 
 const CODEBLOCK = '```';
 
+// Custom escape function instead of using discord.js Util.escapeCodeBlock because this
+// produces better results with template literal types. Discord's markdown handling is pretty
+// bad. It doesn't properly handle escaping back ticks, so we instead insert zero width spaces
+// so that users cannot escape our code block.
+function escapeCode(code: string) {
+	return code.replace(/```/g, '`\u200B`\u200B`');
+}
+
 export class TwoslashModule extends Module {
 	@command({
 		single: true,
@@ -47,7 +55,7 @@ export class TwoslashModule extends Module {
 
 		await sendWithMessageOwnership(
 			msg,
-			`${CODEBLOCK}typescript\n${value.text}${CODEBLOCK}`,
+			`${CODEBLOCK}typescript\n${escapeCode(value.text)}${CODEBLOCK}`,
 		);
 	}
 
@@ -138,7 +146,7 @@ export class TwoslashModule extends Module {
 		const output = resultLines.join('\n');
 		return sendWithMessageOwnership(
 			msg,
-			`${CODEBLOCK}ts\n${output}${CODEBLOCK}\n`,
+			`${CODEBLOCK}ts\n${escapeCode(output)}${CODEBLOCK}\n`,
 		);
 	}
 }
