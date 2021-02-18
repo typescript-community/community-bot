@@ -1,6 +1,6 @@
 export const pingPong: string = 'pong. :ping_pong:';
-export const dontAskToAsk: string = 'https://dontasktoask.com/';
-export const reactfcMsg: string =
+export const dontAskToAskURL: string = 'https://dontasktoask.com/';
+export const reactfcMsgIssueURL: string =
 	'https://github.com/facebook/create-react-app/pull/8177#issue-353062710';
 export const onlyRunInHelp: string =
 	':warning: you can only run this in ongoing help channels.';

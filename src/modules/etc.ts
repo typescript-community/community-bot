@@ -4,7 +4,7 @@ import {
 	Module,
 	listener,
 } from 'cookiecord';
-import { pingPong, dontAskToAsk, reactfcMsg } from './msg';
+import { pingPong, dontAskToAskURL, reactfcMsgIssueURL } from './msg';
 import { Message, MessageReaction, GuildMember } from 'discord.js';
 import {
 	clearMessageOwnership,
@@ -24,7 +24,7 @@ export class EtcModule extends Module {
 
 	@command({ description: 'Sends a link to <https://dontasktoask.com>' })
 	async ask(msg: Message) {
-		await msg.channel.send(dontAskToAsk);
+		await msg.channel.send(dontAskToAskURL);
 	}
 
 	@command({
@@ -32,7 +32,7 @@ export class EtcModule extends Module {
 			'Sends a link to <https://github.com/facebook/create-react-app/pull/8177#issue-353062710>',
 	})
 	async reactfc(msg: Message) {
-		await msg.channel.send(reactfcMsg);
+		await msg.channel.send(reactfcMsgIssueURL);
 	}
 
 	@listener({ event: 'message' })
