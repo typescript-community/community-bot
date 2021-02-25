@@ -14,6 +14,11 @@ function escapeCode(code: string) {
 	return code.replace(/`(?=`)/g, '`\u200B');
 }
 
+// Remove `@noErrorTruncation` from the source; this can cause lag/crashes for large errors
+function redactNoErrorTruncation(code: string) {
+	return code.replace(/@noErrorTruncation/g, '');
+}
+
 export class TwoslashModule extends Module {
 	@command({
 		single: true,
@@ -40,7 +45,7 @@ export class TwoslashModule extends Module {
 				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
 			);
 
-		const ret = twoslasher(code, 'ts', {
+		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
 			defaultOptions: { noErrorValidation: true },
 		});
 
@@ -85,7 +90,7 @@ export class TwoslashModule extends Module {
 	}
 
 	private async twoslashBlock(msg: Message, code: string) {
-		const ret = twoslasher(code, 'ts', {
+		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
 			defaultOptions: {
 				noErrorValidation: true,
 				noStaticSemanticInfo: false,
