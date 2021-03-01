@@ -199,8 +199,8 @@ export class HelpChanModule extends Module {
 	}
 
 	@command({
-		aliases: ['resolve', 'done', 'close'],
-		description: 'Marks this channel as resolved',
+		aliases: ['close', 'resolve', 'done'],
+		description: 'Help Channel: Marks this channel as resolved',
 	})
 	async resolved(msg: Message) {
 		if (
@@ -329,7 +329,11 @@ export class HelpChanModule extends Module {
 		await helpUser.save();
 	}
 
-	@command({ inhibitors: [CommonInhibitors.guildsOnly] })
+	@command({
+		inhibitors: [CommonInhibitors.guildsOnly],
+		aliases: ['claimed'],
+		description: 'Help Channel: Check if a user has an open help channel',
+	})
 	async cooldown(msg: Message, @optional member?: GuildMember) {
 		const guildTarget = await msg.guild!.members.fetch(
 			member ?? msg.author,
@@ -360,7 +364,10 @@ export class HelpChanModule extends Module {
 		);
 	}
 
-	@command({ inhibitors: [isTrustedMember] })
+	@command({
+		inhibitors: [isTrustedMember],
+		description: "Help Channel: Claim a help channel for a user's question",
+	})
 	async claim(msg: Message, member: GuildMember) {
 		const helpUser = await HelpUser.findOne({
 			userId: member.id,

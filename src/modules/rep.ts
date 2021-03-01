@@ -75,7 +75,8 @@ export class RepModule extends Module {
 	}
 
 	@command({
-		description: 'See how many reputation points you have left to send',
+		description:
+			'Reputation: See how many reputation points you have left to send',
 	})
 	async remaining(msg: Message) {
 		const USED = '✅';
@@ -91,7 +92,9 @@ export class RepModule extends Module {
 		);
 	}
 
-	@command({ description: 'Give a different user some reputation points' })
+	@command({
+		description: 'Reputation: Give a different user some reputation points',
+	})
 	async rep(msg: Message, targetMember: GuildMember) {
 		if (targetMember.id === msg.member?.id)
 			return msg.channel.send(`:x: you cannot send rep to yourself`);
@@ -118,7 +121,7 @@ export class RepModule extends Module {
 
 	@command({
 		aliases: ['history'],
-		description: "View a user's reputation history",
+		description: "Reputation: View a user's reputation history",
 	})
 	async getrep(msg: Message, @optional user?: User) {
 		if (!user) user = msg.author;
@@ -153,8 +156,8 @@ export class RepModule extends Module {
 	}
 
 	@command({
-		aliases: ['lb'],
-		description: 'See who has the most reputation',
+		aliases: ['leaderboard', 'lb'],
+		description: 'Reputation: See who has the most reputation',
 	})
 	async leaderboard(msg: Message) {
 		const topEmojis = [':first_place:', ':second_place:', ':third_place:'];

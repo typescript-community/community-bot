@@ -4,8 +4,47 @@ import {
 	Module,
 	CommonInhibitors,
 	optional,
+	Command,
 } from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
+import { sendWithMessageOwnership } from '../util/send';
+
+function getCategoryHelp(cat: string, commands: Set<Command>) {
+	const out: string[] = [];
+
+	for (const cmd of commands) {
+		if (
+			cmd.description &&
+			splitCategoryDescription(cmd.description)[0] === cat
+		) {
+			out.push(
+				`\`${cmd.triggers[0]}\` ► ${cmd.description.substr(
+					cat.length + 2,
+				)}`,
+			);
+		}
+	}
+
+	return out.join('\n');
+}
+
+function splitCategoryDescription(description: string): [string, string] {
+	const split = description.split(': ', 2);
+	if (split.length !== 2) {
+		return ['Misc', description];
+	}
+	return split as [string, string];
+}
+
+function getCommandCategories(commands: Set<Command>) {
+	const categories = new Set<string>();
+
+	for (const cmd of commands) {
+		categories.add(splitCategoryDescription(cmd.description ?? '')[0]);
+	}
+
+	return [...categories].sort((a, b) => a.localeCompare(b));
+}
 
 export class HelpModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -21,7 +60,7 @@ export class HelpModule extends Module {
 		if (!msg.guild) return;
 
 		if (!cmdTrigger) {
-			let embed = new MessageEmbed()
+			const embed = new MessageEmbed()
 				.setAuthor(
 					msg.guild.name,
 					msg.guild.iconURL({ dynamic: true }) || undefined,
@@ -29,39 +68,50 @@ export class HelpModule extends Module {
 				.setTitle('Bot Usage')
 				.setDescription(
 					`Hello ${msg.author.username}! Here is a list of all commands in me! To get detailed description on any specific command, do \`help <command>\``,
-				)
-				.addField(
-					`**Misc Commands:**`,
-					`\`help\` ► View a list of all commands!\n\`ping\` ► View the latency of the bot\n\`ask\` ► Sends a message with a link for [dontasktoask.com](https://dontasktoask.com)\n\`reactfc\` ► Sends a message with a link to a [pull request removing React.FC](https://github.com/facebook/create-react-app/pull/8177#issue-353062710)\n\`playground\` ► Just enter your code and get a link with TS playground!`,
-				)
-				.addField(
-					`**Help Channel Commands:**`,
-					`\`done\` ► Close a __ongoing__ help channel opened by you!`,
-				)
-				.addField(
-					`**Reputation Commands**`,
-					`\`rep\` ► Did somebody help you? Give them a reputation point!\n\`history\` ► Check the reputation history of a user!\n\`leaderboard\` ► See the reputation leaderboard!`,
-				)
+				);
+
+			for (const cat of getCommandCategories(
+				this.client.commandManager.cmds,
+			)) {
+				embed.addField(
+					`**${cat} Commands:**`,
+					getCategoryHelp(cat, this.client.commandManager.cmds),
+				);
+			}
+
+			embed
 				.setFooter(
 					this.client.user?.username,
 					this.client.user?.displayAvatarURL(),
 				)
 				.setTimestamp();
 
-			return await msg.channel.send(embed);
-		} else {
-			const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
-			await msg.channel.send(
-				`Usage: \`${cmd?.triggers.join('|')}${
-					cmd?.args.length ? ' ' : ''
-				}${cmd?.args.map(arg =>
-					arg.optional ? `[${arg.type.name}]` : `<${arg.type.name}>`,
-				)}\`${
-					cmd?.description
-						? `\nDescription: *${cmd?.description}*`
-						: ''
-				}`,
+			return await sendWithMessageOwnership(msg, { embed });
+		}
+
+		const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
+		if (!cmd || !cmd.description) {
+			await sendWithMessageOwnership(
+				msg,
+				`:x: Command "${cmdTrigger}" not found`,
+			);
+			return;
+		}
+
+		const embed = new MessageEmbed().setTitle(`\`${cmdTrigger}\` Usage`);
+		// Get rid of duplicates, this can happen if someone adds the method name as an alias
+		const triggers = new Set(cmd.triggers);
+		if (triggers.size > 1) {
+			embed.addField(
+				'Aliases',
+				Array.from(triggers, t => `\`${t}\``).join(', '),
 			);
 		}
+		embed.addField(
+			'Description',
+			`*${splitCategoryDescription(cmd.description ?? '')[1]}*`,
+		);
+
+		await sendWithMessageOwnership(msg, { embed });
 	}
 }

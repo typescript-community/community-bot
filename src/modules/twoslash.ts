@@ -23,7 +23,7 @@ export class TwoslashModule extends Module {
 	@command({
 		single: true,
 		description:
-			'Search for a symbol and get the type of it in the latest codeblock',
+			'Twoslash: Search for a symbol and get the type of it in the latest codeblock',
 	})
 	async ts(msg: Message, content: string) {
 		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
@@ -66,7 +66,7 @@ export class TwoslashModule extends Module {
 
 	@command({
 		description:
-			'Run twoslash on the latest codeblock, returning compiler errors and queries',
+			'Twoslash: Run twoslash on the latest codeblock, returning compiler errors and queries',
 	})
 	async twoslash(msg: Message) {
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
