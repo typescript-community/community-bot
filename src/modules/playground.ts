@@ -12,6 +12,7 @@ import {
 	findCodeblockFromChannel,
 	PLAYGROUND_REGEX,
 } from '../util/findCodeblockFromChannel';
+import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 
 export class PlaygroundModule extends Module {
@@ -19,7 +20,7 @@ export class PlaygroundModule extends Module {
 		super(client);
 	}
 
-	private editedLongLink = new Map<string, Message>();
+	private editedLongLink = new LimitedSizeMap<string, Message>(1000);
 
 	@command({
 		aliases: ['pg', 'playg'],
@@ -67,9 +68,10 @@ export class PlaygroundModule extends Module {
 				{ embed },
 			);
 			this.editedLongLink.set(msg.id, botMsg);
-			addMessageOwnership(botMsg, msg.author);
+			await addMessageOwnership(botMsg, msg.author);
 		}
 	}
+
 	@listener({ event: 'messageUpdate' })
 	async onLongFix(_oldMsg: Message, msg: Message) {
 		if (msg.partial) await msg.fetch();

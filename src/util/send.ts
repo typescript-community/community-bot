@@ -1,8 +1,7 @@
 import { Message, MessageEmbed, User } from 'discord.js';
+import { LimitedSizeMap } from './limitedSizeMap';
 
-const MAX_TRACKED_MESSAGES = 1000;
-
-const messageToUserId = new Map<string, string>();
+const messageToUserId = new LimitedSizeMap<string, string>(1000);
 
 export const DELETE_EMOJI = '🗑️';
 
@@ -11,18 +10,13 @@ export async function sendWithMessageOwnership(
 	toSend: string | { embed: MessageEmbed },
 ) {
 	const sent = await message.channel.send(toSend);
-	await sent.react(DELETE_EMOJI);
-
-	addMessageOwnership(sent, message.author);
+	await addMessageOwnership(sent, message.author);
 }
 
-export function addMessageOwnership(message: Message, user: User) {
+export async function addMessageOwnership(message: Message, user: User) {
+	await message.react(DELETE_EMOJI);
+
 	messageToUserId.set(message.id, user.id);
-	// Without this memory grows unboundedly... very slowly, but better to avoid the issue.
-	if (messageToUserId.size > MAX_TRACKED_MESSAGES) {
-		// Keys returns an iterable in insertion order, so we remove the oldest message from the map.
-		messageToUserId.delete(messageToUserId.keys().next().value);
-	}
 }
 
 export function ownsBotMessage(message: Message, userId: string) {
