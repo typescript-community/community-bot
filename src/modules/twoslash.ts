@@ -2,6 +2,7 @@ import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
 import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
+import { needValidSymbol, noTypescriptCode } from './msg';
 import { sendWithMessageOwnership } from '../util/send';
 
 const CODEBLOCK = '```';
@@ -29,21 +30,14 @@ export class TwoslashModule extends Module {
 		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
 
 		if (!match) {
-			return sendWithMessageOwnership(
-				msg,
-				'You need to give me a valid symbol name to look for!',
-			);
+			return sendWithMessageOwnership(msg, needValidSymbol);
 		}
 
 		const symbol = match[0];
 
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
-		if (!code)
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
-			);
+		if (!code) return sendWithMessageOwnership(msg, noTypescriptCode);
 
 		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
 			defaultOptions: { noErrorValidation: true },
@@ -71,11 +65,7 @@ export class TwoslashModule extends Module {
 	async twoslash(msg: Message) {
 		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
-		if (!code)
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
-			);
+		if (!code) return sendWithMessageOwnership(msg, noTypescriptCode);
 
 		return this.twoslashBlock(msg, code);
 	}

@@ -11,6 +11,7 @@ import { TS_BLUE } from '../env';
 
 import { RepGive } from '../entities/RepGive';
 import { RepUser } from '../entities/RepUser';
+import { cannotSendRepToYou, noRepRemain } from './msg';
 
 export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -97,15 +98,13 @@ export class RepModule extends Module {
 	})
 	async rep(msg: Message, targetMember: GuildMember) {
 		if (targetMember.id === msg.member?.id)
-			return msg.channel.send(`:x: you cannot send rep to yourself`);
+			return msg.channel.send(cannotSendRepToYou);
 
 		const senderRU = await this.getOrMakeUser(msg.author);
 		const targetRU = await this.getOrMakeUser(targetMember.user);
 
 		if ((await senderRU.sent()) >= this.MAX_REP)
-			return await msg.channel.send(
-				':warning: no rep remaining! come back later.',
-			);
+			return await msg.channel.send(noRepRemain);
 
 		await RepGive.create({
 			from: senderRU,

@@ -26,6 +26,7 @@ import {
 	ongoingEmptyTimeout,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
+import { beAskerToCloseChannel, onlyRunInHelp } from './msg';
 
 const AVAILABLE_MESSAGE = `
 **Send your question here to claim the channel**
@@ -211,9 +212,7 @@ export class HelpChanModule extends Module {
 			return;
 
 		if (msg.channel.parentID !== categories.ongoing) {
-			return await msg.channel.send(
-				':warning: you can only run this in ongoing help channels.',
-			);
+			return await msg.channel.send(onlyRunInHelp);
 		}
 
 		const owner = await HelpUser.findOne({
@@ -226,9 +225,7 @@ export class HelpChanModule extends Module {
 		) {
 			await this.markChannelAsDormant(msg.channel);
 		} else {
-			return await msg.channel.send(
-				':warning: you have to be the asker to close the channel.',
-			);
+			return await msg.channel.send(beAskerToCloseChannel);
 		}
 	}
 
