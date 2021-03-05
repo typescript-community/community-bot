@@ -14,6 +14,7 @@ export async function getDB() {
 		synchronize: true,
 		logging: false,
 		entities: [RepUser, RepGive, HelpUser],
+		ssl: true,
 	});
 	console.log('Connected to DB');
 	return db;
