@@ -12,12 +12,14 @@ import {
 	Guild,
 	TextChannel,
 	GuildMember,
+	User,
 } from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
 	TS_BLUE,
 	GREEN,
+	HOURGLASS_ORANGE,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
@@ -32,6 +34,19 @@ const AVAILABLE_MESSAGE = `
 This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.
 
 **Keep in mind:**
+• It's always ok to just ask your question. You don't need permission.
+• Explain what you expect to happen and what actually happens.
+• Include a code sample and error message, if you got any.
+
+For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+`;
+
+const occupiedMessage = (tag: string) => `
+**This channel is claimed by @${tag}**
+
+This channel is dedicated to answering their question only (and any of their follow-up questions). Others will try to answer and help solve the issue.
+
+**To @${tag}, keep in mind:**
 • It's always ok to just ask your question. You don't need permission.
 • Explain what you expect to happen and what actually happens.
 • Include a code sample and error message, if you got any.
@@ -61,6 +76,18 @@ export class HelpChanModule extends Module {
 				dormantChannelTimeout / 60 / 60 / 1000
 			} hours of inactivity or when you send !close.`,
 		);
+
+	occupiedEmbed(asker: User) {
+		return new MessageEmbed()
+			.setTitle('⌛ Occupied Help Channel')
+			.setColor(HOURGLASS_ORANGE)
+			.setDescription(occupiedMessage(asker.tag))
+			.setFooter(
+				`Closes after ${
+					dormantChannelTimeout / 60 / 60 / 1000
+				} hours of inactivity or when ${asker.username} sends !close.`,
+			);
+	}
 
 	DORMANT_EMBED = new MessageEmbed()
 		.setColor(TS_BLUE)
