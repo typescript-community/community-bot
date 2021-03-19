@@ -41,12 +41,12 @@ This channel will be dedicated to answering your question only. Others will try 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
 
-const occupiedMessage = (tag: string) => `
-**This channel is claimed by @${tag}**
+const occupiedMessage = (asker: User) => `
+**This channel is claimed by ${asker.toString()}**
 
 This channel is dedicated to answering their question only (and any of their follow-up questions). Others will try to answer and help solve the issue.
 
-**To @${tag}, keep in mind:**
+**To ${asker.toString()}, keep in mind:**
 • It's always ok to just ask your question. You don't need permission.
 • Explain what you expect to happen and what actually happens.
 • Include a code sample and error message, if you got any.
@@ -83,11 +83,11 @@ export class HelpChanModule extends Module {
 
 	occupiedEmbed(asker: User) {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
-			.setDescription(occupiedMessage(asker.tag))
+			.setDescription(occupiedMessage(asker))
 			.setFooter(
 				`Closes after ${
 					dormantChannelTimeout / 60 / 60 / 1000
-				} hours of inactivity or when ${asker.username} sends !close.`,
+				} hours of inactivity or when ${asker.toString()} sends !close.`,
 			);
 	}
 
