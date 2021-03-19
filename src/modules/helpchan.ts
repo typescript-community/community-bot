@@ -77,10 +77,12 @@ export class HelpChanModule extends Module {
 			} hours of inactivity or when you send !close.`,
 		);
 
+	OCCUPIED_EMBED_BASE = new MessageEmbed()
+		.setTitle('⌛ Occupied Help Channel')
+		.setColor(HOURGLASS_ORANGE);
+
 	occupiedEmbed(asker: User) {
-		return new MessageEmbed()
-			.setTitle('⌛ Occupied Help Channel')
-			.setColor(HOURGLASS_ORANGE)
+		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker.tag))
 			.setFooter(
 				`Closes after ${
@@ -144,9 +146,8 @@ export class HelpChanModule extends Module {
 		const embed = messages.first()?.embeds[0];
 
 		return (
-			embed &&
-			embed.description?.trim() ===
-				this.AVAILABLE_EMBED.description?.trim()
+			embed?.title &&
+			embed.title.trim() === this.OCCUPIED_EMBED_BASE.title?.trim()
 		);
 	}
 
@@ -451,7 +452,7 @@ export class HelpChanModule extends Module {
 		);
 
 		await toPin.pin();
-		const occupied = this.updateOccupiedEmbed(msg.author);
+		const occupied = this.occupiedEmbed(msg.author);
 		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
