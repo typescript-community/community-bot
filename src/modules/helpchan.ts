@@ -203,6 +203,27 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
+		let lastMessage = msg.channel.messages.cache
+			.array()
+			.reverse()
+			.find(m => m.author.id === this.client.user?.id);
+
+		if (!lastMessage)
+			lastMessage = (await msg.channel.messages.fetch({ limit: 5 }))
+				.array()
+				.reverse()
+				.find(m => m.author.id === this.client.user?.id);
+
+		let embed = this.occupiedEmbed(msg.author);
+
+		if (lastMessage) {
+			// If there is a last message (the available message) by the bot, edit it
+			await lastMessage.edit(embed);
+		} else {
+			// Otherwise, just send a new message
+			await msg.channel.send(embed);
+		}
+
 		await msg.pin();
 		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
