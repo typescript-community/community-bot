@@ -203,27 +203,9 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		let lastMessage = msg.channel.messages.cache
-			.array()
-			.reverse()
-			.find(m => m.author.id === this.client.user?.id);
-
-		if (!lastMessage)
-			lastMessage = (await msg.channel.messages.fetch({ limit: 5 }))
-				.array()
-				.reverse()
-				.find(m => m.author.id === this.client.user?.id);
-
 		let embed = this.occupiedEmbed(msg.author);
 
-		if (lastMessage) {
-			// If there is a last message (the available message) by the bot, edit it
-			await lastMessage.edit(embed);
-		} else {
-			// Otherwise, just send a new message
-			await msg.channel.send(embed);
-		}
-
+		await this.updateStatusEmbed(msg.channel, embed);
 		await msg.pin();
 		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
@@ -292,24 +274,7 @@ export class HelpChanModule extends Module {
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
-
-				let lastMessage = dormant.messages.cache
-					.array()
-					.reverse()
-					.find(m => m.author.id === this.client.user?.id);
-
-				if (!lastMessage)
-					lastMessage = (await dormant.messages.fetch({ limit: 5 }))
-						.array()
-						.find(m => m.author.id === this.client.user?.id);
-
-				if (lastMessage) {
-					// If there is a last message (the dormant message) by the bot, just edit it
-					await lastMessage.edit(this.AVAILABLE_EMBED);
-				} else {
-					// Otherwise, just send a new message
-					await dormant.send(this.AVAILABLE_EMBED);
-				}
+				await this.updateStatusEmbed(dormant, this.AVAILABLE_EMBED);
 			} else {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
@@ -366,6 +331,27 @@ export class HelpChanModule extends Module {
 
 			if (diff > dormantChannelTimeout)
 				await this.markChannelAsDormant(channel);
+		}
+	}
+
+	private async updateStatusEmbed(channel: TextChannel, embed: MessageEmbed) {
+		let lastMessage = channel.messages.cache
+			.array()
+			.reverse()
+			.find(m => m.author.id === this.client.user?.id);
+
+		if (!lastMessage)
+			lastMessage = (await channel.messages.fetch({ limit: 5 }))
+				.array()
+				.reverse()
+				.find(m => m.author.id === this.client.user?.id);
+
+		if (lastMessage) {
+			// If there is a last message (the status message) by the bot, edit it
+			await lastMessage.edit(embed);
+		} else {
+			// Otherwise, just send a new message
+			await channel.send(embed);
 		}
 	}
 
@@ -463,7 +449,10 @@ export class HelpChanModule extends Module {
 				.setAuthor(member.displayName, member.user.displayAvatarURL())
 				.setDescription(msgContent),
 		);
+
 		await toPin.pin();
+		const occupied = this.updateOccupiedEmbed(msg.author);
+		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
 		await claimedChannel.send(
