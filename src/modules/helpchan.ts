@@ -92,6 +92,7 @@ export class HelpChanModule extends Module {
 	}
 
 	DORMANT_EMBED = new MessageEmbed()
+		.setTitle('💤 Dormant Help Channel')
 		.setColor(TS_BLUE)
 		.setDescription(DORMANT_MESSAGE);
 
@@ -336,16 +337,25 @@ export class HelpChanModule extends Module {
 	}
 
 	private async updateStatusEmbed(channel: TextChannel, embed: MessageEmbed) {
+		const isStatusEmbed = (embed: MessageEmbed) =>
+			[
+				this.AVAILABLE_EMBED.title,
+				this.OCCUPIED_EMBED_BASE.title,
+				this.DORMANT_EMBED.title,
+			].includes(embed.title);
+
 		let lastMessage = channel.messages.cache
 			.array()
 			.reverse()
-			.find(m => m.author.id === this.client.user?.id);
+			.filter(m => m.author.id === this.client.user?.id)
+			.find(m => m.embeds.some(isStatusEmbed));
 
 		if (!lastMessage)
 			lastMessage = (await channel.messages.fetch({ limit: 5 }))
 				.array()
 				.reverse()
-				.find(m => m.author.id === this.client.user?.id);
+				.filter(m => m.author.id === this.client.user?.id)
+				.find(m => m.embeds.some(isStatusEmbed));
 
 		if (lastMessage) {
 			// If there is a last message (the status message) by the bot, edit it
