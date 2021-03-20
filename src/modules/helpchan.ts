@@ -46,7 +46,7 @@ const occupiedMessage = (asker: User) => `
 
 This channel is dedicated to answering their question only (and any of their follow-up questions). Others will try to answer and help solve the issue.
 
-**To ${asker.toString()}, keep in mind:**
+**${asker.toString()}, keep in mind:**
 • It's always ok to just ask your question. You don't need permission.
 • Explain what you expect to happen and what actually happens.
 • Include a code sample and error message, if you got any.
@@ -87,7 +87,7 @@ export class HelpChanModule extends Module {
 			.setFooter(
 				`Closes after ${
 					dormantChannelTimeout / 60 / 60 / 1000
-				} hours of inactivity or when ${asker.toString()} sends !close.`,
+				} hours of inactivity or when ${asker.username} sends !close.`,
 			);
 	}
 
