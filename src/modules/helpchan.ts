@@ -346,14 +346,12 @@ export class HelpChanModule extends Module {
 
 		let lastMessage = channel.messages.cache
 			.array()
-			.reverse()
 			.filter(m => m.author.id === this.client.user?.id)
 			.find(m => m.embeds.some(isStatusEmbed));
 
 		if (!lastMessage)
 			lastMessage = (await channel.messages.fetch({ limit: 5 }))
 				.array()
-				.reverse()
 				.filter(m => m.author.id === this.client.user?.id)
 				.find(m => m.embeds.some(isStatusEmbed));
 
