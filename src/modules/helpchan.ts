@@ -346,12 +346,16 @@ export class HelpChanModule extends Module {
 				this.DORMANT_EMBED.title,
 			].includes(embed.title);
 
+		// The message cache does not have a stable order (at least with respect
+		// to creation date), so sorting is needed to find the latest embed.
 		let lastMessage = channel.messages.cache
 			.array()
 			.filter(m => m.author.id === this.client.user?.id)
+			.sort((m1, m2) => m2.createdTimestamp - m1.createdTimestamp)
 			.find(m => m.embeds.some(isStatusEmbed));
 
 		if (!lastMessage)
+			// Fetch has a stable order, with recent messages first
 			lastMessage = (await channel.messages.fetch({ limit: 5 }))
 				.array()
 				.filter(m => m.author.id === this.client.user?.id)
