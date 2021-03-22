@@ -26,6 +26,7 @@ import {
 	dormantChannelLoop,
 	askHelpChannelId,
 	ongoingEmptyTimeout,
+	trustedRoleId,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
@@ -42,14 +43,15 @@ For more tips, check out StackOverflow's guide on **[asking good questions](http
 `;
 
 const occupiedMessage = (asker: User) => `
-**This channel is claimed by ${asker.toString()}**
+**This channel is claimed by ${asker.toString()}.**
+It is dedicated to answering their questions only.
 
-This channel is dedicated to answering their question only (and any of their follow-up questions). Others will try to answer and help solve the issue.
+**${asker.toString()} You'll get better and faster answers if you:**
+• Describe the context. What are you trying to accomplish?
+• Copy-paste a short snippet (5-15 lines) that includes the problem. Start code blocks with \`\\\`\`ts for syntax highlighting.
+• Try to reproduce your problem in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
 
-**${asker.toString()}, keep in mind:**
-• It's always ok to just ask your question. You don't need permission.
-• Explain what you expect to happen and what actually happens.
-• Include a code sample and error message, if you got any.
+Usually someone will try to answer and help solve the issue within a few hours. If not, and you have followed the bullets above, you may ping the <@&${trustedRoleId}> role.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
