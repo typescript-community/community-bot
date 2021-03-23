@@ -472,7 +472,7 @@ export class HelpChanModule extends Module {
 		);
 
 		await toPin.pin();
-		const occupied = this.occupiedEmbed(msg.author);
+		const occupied = this.occupiedEmbed(member.user);
 		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
