@@ -42,14 +42,20 @@ This channel will be dedicated to answering your question only. Others will try 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
 
+// The "empty" line has a braille pattern blank unicode character, in order to
+// achieve a leading newline, since normally whitespace is stripped. This is a
+// hack, but it works even on a system without the fonts to display Discord
+// emoji, so it should work everywhere. https://www.compart.com/en/unicode/U+2800
 const occupiedMessage = (asker: User) => `
-**This channel is claimed by ${asker.toString()}.**
-It is dedicated to answering their questions only.
+⠀
+**This channel is claimed by ${asker}.**
+It is dedicated to answering their questions only. More info: <#${askHelpChannelId}>
 
-**${asker.toString()} You'll get better and faster answers if you:**
+**${asker} You'll get better and faster answers if you:**
 • Describe the context. What are you trying to accomplish?
-• Copy-paste a short snippet (5-15 lines) that includes the problem. Start code blocks with \`\\\`\`ts for syntax highlighting.
-• Try to reproduce your problem in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
+• Include any error messages, and the code that produce them (5-15 lines).
+• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
+• Also reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
 
 Usually someone will try to answer and help solve the issue within a few hours. If not, and you have followed the bullets above, you may ping the <@&${trustedRoleId}> role.
 
