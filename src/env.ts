@@ -38,3 +38,5 @@ export const ongoingEmptyTimeout = parseInt(process.env.ONGOING_EMPTY_TIMEOUT!);
 
 export const TS_BLUE = '#007ACC';
 export const GREEN = '#77b155';
+// Picked from Discord's "hourglass" emoji (in ⌛ | Occupied Help Channels)
+export const HOURGLASS_ORANGE = '#ffa647';

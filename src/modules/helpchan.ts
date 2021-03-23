@@ -12,18 +12,21 @@ import {
 	Guild,
 	TextChannel,
 	GuildMember,
+	User,
 } from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
 import {
 	categories,
 	TS_BLUE,
 	GREEN,
+	HOURGLASS_ORANGE,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
 	dormantChannelLoop,
 	askHelpChannelId,
 	ongoingEmptyTimeout,
+	trustedRoleId,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
@@ -35,6 +38,26 @@ This channel will be dedicated to answering your question only. Others will try 
 • It's always ok to just ask your question. You don't need permission.
 • Explain what you expect to happen and what actually happens.
 • Include a code sample and error message, if you got any.
+
+For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+`;
+
+// The "empty" line has a braille pattern blank unicode character, in order to
+// achieve a leading newline, since normally whitespace is stripped. This is a
+// hack, but it works even on a system without the fonts to display Discord
+// emoji, so it should work everywhere. https://www.compart.com/en/unicode/U+2800
+const occupiedMessage = (asker: User) => `
+⠀
+**This channel is claimed by ${asker}.**
+It is dedicated to answering their questions only. More info: <#${askHelpChannelId}>
+
+**${asker} You'll get better and faster answers if you:**
+• Describe the context. What are you trying to accomplish?
+• Include any error messages, and the code that produce them (5-15 lines).
+• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
+• Also reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
+
+Usually someone will try to answer and help solve the issue within a few hours. If not, and you have followed the bullets above, you may ping the <@&${trustedRoleId}> role.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
@@ -62,7 +85,22 @@ export class HelpChanModule extends Module {
 			} hours of inactivity or when you send !close.`,
 		);
 
+	OCCUPIED_EMBED_BASE = new MessageEmbed()
+		.setTitle('⌛ Occupied Help Channel')
+		.setColor(HOURGLASS_ORANGE);
+
+	occupiedEmbed(asker: User) {
+		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
+			.setDescription(occupiedMessage(asker))
+			.setFooter(
+				`Closes after ${
+					dormantChannelTimeout / 60 / 60 / 1000
+				} hours of inactivity or when ${asker.username} sends !close.`,
+			);
+	}
+
 	DORMANT_EMBED = new MessageEmbed()
+		.setTitle('💤 Dormant Help Channel')
 		.setColor(TS_BLUE)
 		.setDescription(DORMANT_MESSAGE);
 
@@ -117,9 +155,8 @@ export class HelpChanModule extends Module {
 		const embed = messages.first()?.embeds[0];
 
 		return (
-			embed &&
-			embed.description?.trim() ===
-				this.AVAILABLE_EMBED.description?.trim()
+			embed?.title &&
+			embed.title.trim() === this.OCCUPIED_EMBED_BASE.title?.trim()
 		);
 	}
 
@@ -176,6 +213,9 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
+		let embed = this.occupiedEmbed(msg.author);
+
+		await this.updateStatusEmbed(msg.channel, embed);
 		await msg.pin();
 		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
@@ -244,24 +284,7 @@ export class HelpChanModule extends Module {
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
-
-				let lastMessage = dormant.messages.cache
-					.array()
-					.reverse()
-					.find(m => m.author.id === this.client.user?.id);
-
-				if (!lastMessage)
-					lastMessage = (await dormant.messages.fetch({ limit: 5 }))
-						.array()
-						.find(m => m.author.id === this.client.user?.id);
-
-				if (lastMessage) {
-					// If there is a last message (the dormant message) by the bot, just edit it
-					await lastMessage.edit(this.AVAILABLE_EMBED);
-				} else {
-					// Otherwise, just send a new message
-					await dormant.send(this.AVAILABLE_EMBED);
-				}
+				await this.updateStatusEmbed(dormant, this.AVAILABLE_EMBED);
 			} else {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
@@ -318,6 +341,38 @@ export class HelpChanModule extends Module {
 
 			if (diff > dormantChannelTimeout)
 				await this.markChannelAsDormant(channel);
+		}
+	}
+
+	private async updateStatusEmbed(channel: TextChannel, embed: MessageEmbed) {
+		const isStatusEmbed = (embed: MessageEmbed) =>
+			[
+				this.AVAILABLE_EMBED.title,
+				this.OCCUPIED_EMBED_BASE.title,
+				this.DORMANT_EMBED.title,
+			].includes(embed.title);
+
+		// The message cache does not have a stable order (at least with respect
+		// to creation date), so sorting is needed to find the latest embed.
+		let lastMessage = channel.messages.cache
+			.array()
+			.filter(m => m.author.id === this.client.user?.id)
+			.sort((m1, m2) => m2.createdTimestamp - m1.createdTimestamp)
+			.find(m => m.embeds.some(isStatusEmbed));
+
+		if (!lastMessage)
+			// Fetch has a stable order, with recent messages first
+			lastMessage = (await channel.messages.fetch({ limit: 5 }))
+				.array()
+				.filter(m => m.author.id === this.client.user?.id)
+				.find(m => m.embeds.some(isStatusEmbed));
+
+		if (lastMessage) {
+			// If there is a last message (the status message) by the bot, edit it
+			await lastMessage.edit(embed);
+		} else {
+			// Otherwise, just send a new message
+			await channel.send(embed);
 		}
 	}
 
@@ -415,7 +470,10 @@ export class HelpChanModule extends Module {
 				.setAuthor(member.displayName, member.user.displayAvatarURL())
 				.setDescription(msgContent),
 		);
+
 		await toPin.pin();
+		const occupied = this.occupiedEmbed(member.user);
+		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
 		await claimedChannel.send(
