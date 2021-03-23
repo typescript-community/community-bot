@@ -6,7 +6,10 @@ import {
 	optional,
 } from 'cookiecord';
 import { Message, MessageEmbed, TextChannel } from 'discord.js';
-import { compressToEncodedURIComponent } from 'lz-string';
+import {
+	compressToEncodedURIComponent,
+	decompressFromEncodedURIComponent,
+} from 'lz-string';
 import { TS_BLUE } from '../env';
 import {
 	findCodeblockFromChannel,
@@ -56,6 +59,7 @@ export class PlaygroundModule extends Module {
 			.setColor(TS_BLUE)
 			.setTitle('Shortened Playground link')
 			.setAuthor(msg.author.tag, msg.author.displayAvatarURL())
+			.setDescription(extractOneLinerFromURL(exec[0]))
 			.setURL(exec[0]);
 		if (exec[0] == msg.content) {
 			// Message only contained the link
@@ -82,3 +86,11 @@ export class PlaygroundModule extends Module {
 		this.editedLongLink.delete(msg.id);
 	}
 }
+
+export const extractOneLinerFromURL = (url: string) => {
+	if (url.includes('#code/')) {
+		const zipped = url.split('#code/')[1];
+		const unzipped = decompressFromEncodedURIComponent(zipped);
+		return unzipped?.split('\n')[0] + '...';
+	}
+};
