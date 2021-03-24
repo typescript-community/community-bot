@@ -55,11 +55,12 @@ export class PlaygroundModule extends Module {
 	}
 
 	@listener({ event: 'message' })
-	async onLongPGLink(msg: Message) {
-		const exec = PLAYGROUND_REGEX.exec(msg.content);
-		if (msg.author.bot || !exec || !exec[0]) return;
-		const embed = createEmbed(msg.author, exec[0]);
-		if (exec[0] === msg.content) {
+	async onPlaygroundLinkMessage(msg: Message) {
+		if (msg.author.bot) return;
+		const url = extractPlaygroundLink(msg.content);
+		if (!url) return;
+		const embed = createPlaygroundEmbed(msg.author, url);
+		if (url === msg.content) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, { embed });
 			await msg.delete();
@@ -75,29 +76,40 @@ export class PlaygroundModule extends Module {
 	}
 
 	@listener({ event: 'message' })
-	async onPGLinkAttachment(msg: Message) {
+	async onPlaygroundLinkAttachment(msg: Message) {
+		if (msg.author.bot) return;
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
 		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
-		const exec = PLAYGROUND_REGEX.exec(content);
-		if (!exec?.[0]) return;
-		const shortened = await shortenPGLink(exec[0]);
-		const embed = createEmbed(msg.author, exec[0], shortened);
-		await msg.channel.send(embed);
+		const originalUrl = extractPlaygroundLink(content);
+		if (!originalUrl || originalUrl !== content) return;
+		const shortenedUrl = await shortenPlaygroundLink(originalUrl);
+		const embed = createPlaygroundEmbed(
+			msg.author,
+			originalUrl,
+			shortenedUrl,
+		);
+		await sendWithMessageOwnership(msg, { embed });
+		if (!msg.content) await msg.delete();
 	}
 
 	@listener({ event: 'messageUpdate' })
 	async onLongFix(_oldMsg: Message, msg: Message) {
 		if (msg.partial) await msg.fetch();
-		const exec = PLAYGROUND_REGEX.exec(msg.content);
-		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
+		const url = extractPlaygroundLink(msg.content);
+		if (msg.author.bot || !this.editedLongLink.has(msg.id) || url) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		await botMsg?.edit('');
 		this.editedLongLink.delete(msg.id);
 	}
 }
 
-function createEmbed(
+function extractPlaygroundLink(content: string) {
+	const exec = PLAYGROUND_REGEX.exec(content);
+	return exec?.[0] ?? null;
+}
+
+function createPlaygroundEmbed(
 	author: User,
 	originalUrl: string,
 	processedUrl: string = originalUrl,
@@ -110,7 +122,7 @@ function createEmbed(
 		.setURL(processedUrl);
 }
 
-async function shortenPGLink(url: string) {
+async function shortenPlaygroundLink(url: string) {
 	const response = await fetch(LINK_SHORTENER_ENDPOINT, {
 		method: 'post',
 		body: JSON.stringify({ url, createdOn: 'api', expires: false }),
