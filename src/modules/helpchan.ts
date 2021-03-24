@@ -32,36 +32,42 @@ import {
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
+// The indents are made with a braille pattern blank unicode character, since
+// leading whitespace is stripped. https://www.compart.com/en/unicode/U+2800
+// This is a hack, but it works even on a system without the fonts to display
+// Discord emoji, so it should work everywhere.
 const AVAILABLE_MESSAGE = `
-**Send your question here to claim the channel**
-This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.
+Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
 
-**Keep in mind:**
-• It's always ok to just ask your question. You don't need permission.
-• Explain what you expect to happen and what actually happens.
-• Include a code sample and error message, if you got any.
+**Send your question here to reserve this channel.**
+It's always ok to just ask your question; you don't need permission.
+
+**Please help others help you:** for better and faster answers…
+• Describe the broader context. What are you trying to accomplish and why?
+• Include what you tried (5-15 lines) and any error messages. Say which line they're on.
+⠀• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
+• Reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
+⠀• Paste the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
 
-// The "empty" line has a braille pattern blank unicode character, in order to
-// achieve a leading newline, since normally whitespace is stripped. This is a
-// hack, but it works even on a system without the fonts to display Discord
-// emoji, so it should work everywhere. https://www.compart.com/en/unicode/U+2800
 const occupiedMessage = (asker: User) => `
-⠀
-**This channel is claimed by ${asker}.**
-It is dedicated to answering their questions only. More info: <#${askHelpChannelId}>
+Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
 
-**${asker} You'll get better and faster answers if you:**
-• Describe the context. What are you trying to accomplish?
-• Include any error messages, and the code that produce them (5-15 lines).
-• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
-• Also reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
+**This channel is reserved by ${asker}.**
+Please help answer their questions, if you can. Thanks!
 
-Usually someone will try to answer and help solve the issue within a few hours. If not, and you have followed the bullets above, you may ping the <@&${trustedRoleId}> role.
+**${asker} Please help others help you:** For better and faster answers…
+• Describe the broader context. What are you trying to accomplish and why?
+• Include what you tried (5-15 lines) and any error messages. Say which line they're on.
+⠀• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
+• Reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
+⠀• Paste the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+
+Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role (please allow extra time at night in America/Europe).
 `;
 
 const DORMANT_MESSAGE = `
