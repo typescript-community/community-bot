@@ -54,8 +54,9 @@ It is dedicated to answering their questions only. More info: <#${askHelpChannel
 **${asker} You'll get better and faster answers if you:**
 • Describe the context. What are you trying to accomplish?
 • Include any error messages, and the code that produce them (5-15 lines).
-• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
+⠀• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
 • Also reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
+⠀• Do not use a link shortener; paste the full url in its own message.
 
 Usually someone will try to answer and help solve the issue within a few hours. If not, and you have followed the bullets above, you may ping the <@&${trustedRoleId}> role.
 
