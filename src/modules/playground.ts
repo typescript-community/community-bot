@@ -99,7 +99,7 @@ export class PlaygroundModule extends Module {
 	private async shortenPGLink(url: string) {
 		const response = await fetch(LINK_SHORTENER_ENDPOINT, {
 			method: 'post',
-			body: JSON.stringify({ url }),
+			body: JSON.stringify({ url, createdOn: 'api', expires: false }),
 			headers: {
 				'Content-Type': 'application/json',
 			},
