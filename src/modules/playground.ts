@@ -69,7 +69,7 @@ export class PlaygroundModule extends Module {
 			: originalUrl;
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
-			.setTitle('Shortened Playground link')
+			.setTitle('Shortened Playground Link')
 			.setAuthor(msg.author.tag, msg.author.displayAvatarURL())
 			.setDescription(extractOneLinerFromURL(originalUrl))
 			.setURL(processedUrl);
