@@ -17,6 +17,9 @@ import {
 } from '../util/findCodeblockFromChannel';
 import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
+import fetch from 'node-fetch';
+
+const LINK_SHORTENER_ENDPOINT = 'https://tsplay.dev/api/short';
 
 export class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -52,19 +55,28 @@ export class PlaygroundModule extends Module {
 	}
 
 	@listener({ event: 'message' })
-	async onLongPGLink(msg: Message) {
-		const exec = PLAYGROUND_REGEX.exec(msg.content);
+	async onLongPGLink(
+		msg: Message,
+		content = msg.content,
+		noDelete = false,
+		shorten = false,
+	) {
+		const exec = PLAYGROUND_REGEX.exec(content);
 		if (msg.author.bot || !exec || !exec[0]) return;
+		const [originalUrl] = exec;
+		const processedUrl = shorten
+			? await this.shortenPGLink(originalUrl)
+			: originalUrl;
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
 			.setTitle('Shortened Playground link')
 			.setAuthor(msg.author.tag, msg.author.displayAvatarURL())
-			.setDescription(extractOneLinerFromURL(exec[0]))
-			.setURL(exec[0]);
-		if (exec[0] == msg.content) {
+			.setDescription(extractOneLinerFromURL(originalUrl))
+			.setURL(processedUrl);
+		if (!noDelete && originalUrl === content) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, { embed });
-			msg.delete();
+			await msg.delete();
 		} else {
 			// Message also contained other characters
 			const botMsg = await msg.channel.send(
@@ -74,6 +86,30 @@ export class PlaygroundModule extends Module {
 			this.editedLongLink.set(msg.id, botMsg);
 			await addMessageOwnership(botMsg, msg.author);
 		}
+	}
+
+	@listener({ event: 'message' })
+	async onPGLinkAttachment(msg: Message) {
+		const attachment = msg.attachments.find(a => a.name === 'message.txt');
+		if (!attachment) return;
+		const content = await fetch(attachment.url).then(r => r.text());
+		await this.onLongPGLink(msg, content, !!msg.content, true);
+	}
+
+	private async shortenPGLink(url: string) {
+		const response = await fetch(LINK_SHORTENER_ENDPOINT, {
+			method: 'post',
+			body: JSON.stringify({ url }),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+		const { shortened } = await response.json();
+		if (typeof shortened !== 'string')
+			throw new Error(
+				'Received invalid api response from link shortener',
+			);
+		return shortened;
 	}
 
 	@listener({ event: 'messageUpdate' })
