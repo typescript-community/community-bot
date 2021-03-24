@@ -5,7 +5,7 @@ import {
 	Module,
 	optional,
 } from 'cookiecord';
-import { Message, MessageEmbed, TextChannel } from 'discord.js';
+import { Message, MessageEmbed, TextChannel, User } from 'discord.js';
 import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
@@ -55,25 +55,11 @@ export class PlaygroundModule extends Module {
 	}
 
 	@listener({ event: 'message' })
-	async onLongPGLink(
-		msg: Message,
-		content = msg.content,
-		noDelete = false,
-		shorten = false,
-	) {
-		const exec = PLAYGROUND_REGEX.exec(content);
+	async onLongPGLink(msg: Message) {
+		const exec = PLAYGROUND_REGEX.exec(msg.content);
 		if (msg.author.bot || !exec || !exec[0]) return;
-		const [originalUrl] = exec;
-		const processedUrl = shorten
-			? await this.shortenPGLink(originalUrl)
-			: originalUrl;
-		const embed = new MessageEmbed()
-			.setColor(TS_BLUE)
-			.setTitle('Shortened Playground Link')
-			.setAuthor(msg.author.tag, msg.author.displayAvatarURL())
-			.setDescription(extractOneLinerFromURL(originalUrl))
-			.setURL(processedUrl);
-		if (!noDelete && originalUrl === content) {
+		const embed = createEmbed(msg.author, exec[0]);
+		if (exec[0] === msg.content) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, { embed });
 			await msg.delete();
@@ -91,25 +77,13 @@ export class PlaygroundModule extends Module {
 	@listener({ event: 'message' })
 	async onPGLinkAttachment(msg: Message) {
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
-		if (!attachment) return;
+		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
-		await this.onLongPGLink(msg, content, !!msg.content, true);
-	}
-
-	private async shortenPGLink(url: string) {
-		const response = await fetch(LINK_SHORTENER_ENDPOINT, {
-			method: 'post',
-			body: JSON.stringify({ url, createdOn: 'api', expires: false }),
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
-		const { shortened } = await response.json();
-		if (typeof shortened !== 'string')
-			throw new Error(
-				'Received invalid api response from link shortener',
-			);
-		return shortened;
+		const exec = PLAYGROUND_REGEX.exec(content);
+		if (!exec?.[0]) return;
+		const shortened = await shortenPGLink(exec[0]);
+		const embed = createEmbed(msg.author, exec[0], shortened);
+		await msg.channel.send(embed);
 	}
 
 	@listener({ event: 'messageUpdate' })
@@ -121,6 +95,33 @@ export class PlaygroundModule extends Module {
 		await botMsg?.edit('');
 		this.editedLongLink.delete(msg.id);
 	}
+}
+
+function createEmbed(
+	author: User,
+	originalUrl: string,
+	processedUrl: string = originalUrl,
+) {
+	return new MessageEmbed()
+		.setColor(TS_BLUE)
+		.setTitle('Shortened Playground Link')
+		.setAuthor(author.tag, author.displayAvatarURL())
+		.setDescription(extractOneLinerFromURL(originalUrl))
+		.setURL(processedUrl);
+}
+
+async function shortenPGLink(url: string) {
+	const response = await fetch(LINK_SHORTENER_ENDPOINT, {
+		method: 'post',
+		body: JSON.stringify({ url, createdOn: 'api', expires: false }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+	const { shortened } = await response.json();
+	if (typeof shortened !== 'string')
+		throw new Error('Received invalid api response from link shortener');
+	return shortened;
 }
 
 export const extractOneLinerFromURL = (url: string) => {
