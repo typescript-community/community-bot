@@ -40,3 +40,6 @@ export const TS_BLUE = '#007ACC';
 export const GREEN = '#77b155';
 // Picked from Discord's "hourglass" emoji (in ⌛ | Occupied Help Channels)
 export const HOURGLASS_ORANGE = '#ffa647';
+// Picked from Discord's blockquote line
+export const BLOCKQUOTE_GREY = '#4f545c';
+export const BLOCKQUOTE_GREY_NUMBER = 0x4f545c;

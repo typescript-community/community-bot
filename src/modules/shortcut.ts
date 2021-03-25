@@ -8,7 +8,7 @@ import { Message, MessageEmbed, User } from 'discord.js';
 import { send } from 'process';
 import { BaseEntity, DeepPartial, ObjectType } from 'typeorm';
 import { Shortcut } from '../entities/Shortcut';
-import { TS_BLUE } from '../env';
+import { BLOCKQUOTE_GREY, BLOCKQUOTE_GREY_NUMBER, TS_BLUE } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 
 // https://stackoverflow.com/a/3809435
@@ -96,6 +96,7 @@ export class ShortcutModule extends Module {
 				...base,
 				title,
 				description,
+				color: BLOCKQUOTE_GREY_NUMBER,
 			};
 		else if (referencedEmbed)
 			data = {
