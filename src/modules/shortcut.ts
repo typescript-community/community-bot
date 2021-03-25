@@ -72,7 +72,7 @@ export class ShortcutModule extends Module {
 		if (existingShortcut && existingShortcut.owner !== msg.author.id)
 			return await sendWithMessageOwnership(
 				msg,
-				":x: Cannot edit another's shortcut",
+				":x: Cannot edit another user's shortcut",
 			);
 
 		const referencedMessage = await msg.channel.messages.fetch(
@@ -190,12 +190,12 @@ export class ShortcutModule extends Module {
 		if (!shortcut)
 			return await sendWithMessageOwnership(
 				msg,
-				':x: No shortcut with that id',
+				':x: No shortcut found with that id',
 			);
 		if (shortcut.owner !== msg.author.id)
 			return await sendWithMessageOwnership(
 				msg,
-				":x: Cannot delete another's shortcut",
+				":x: Cannot delete another user's shortcut",
 			);
 		await shortcut.remove();
 		sendWithMessageOwnership(msg, ':white_check_mark: Deleted shortcut');
