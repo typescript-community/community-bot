@@ -4,11 +4,10 @@ import {
 	Module,
 	listener,
 } from 'cookiecord';
-import { Message, MessageEmbed, User } from 'discord.js';
-import { send } from 'process';
-import { BaseEntity, DeepPartial, ObjectType } from 'typeorm';
+import { GuildMember, Message, MessageEmbed } from 'discord.js';
+import { BaseEntity } from 'typeorm';
 import { Shortcut } from '../entities/Shortcut';
-import { BLOCKQUOTE_GREY, BLOCKQUOTE_GREY_NUMBER, TS_BLUE } from '../env';
+import { BLOCKQUOTE_GREY, TS_BLUE } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 
 // https://stackoverflow.com/a/3809435
@@ -52,6 +51,8 @@ export class ShortcutModule extends Module {
 		description: 'Shortcut: Create or edit a shortcut',
 	})
 	async shortcut(msg: Message, arg: string) {
+		if (!msg.member) return;
+
 		const [name, ...titleParts] = arg.split(' ');
 		const title = titleParts?.join(' ') ?? '';
 
@@ -64,12 +65,24 @@ export class ShortcutModule extends Module {
 
 		const sanitizeIdPart = (part: string) =>
 			part.toLowerCase().replace(/[^\w-]/g, '');
-		const id = `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(
-			name,
-		)}`;
+		const id = name.startsWith(':')
+			? `:${sanitizeIdPart(name.slice(1))}`
+			: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(name)}`;
 		const existingShortcut = await this.getShortcut(id);
 
-		if (existingShortcut && existingShortcut.owner !== msg.author.id)
+		const globalShortcut = id.startsWith(':');
+
+		if (globalShortcut && !this.isMod(msg.member))
+			return await sendWithMessageOwnership(
+				msg,
+				":x: You don't have permission to create a global shortcut",
+			);
+
+		if (
+			!this.isMod(msg.member) &&
+			existingShortcut &&
+			existingShortcut.owner !== msg.author.id
+		)
 			return await sendWithMessageOwnership(
 				msg,
 				":x: Cannot edit another user's shortcut",
@@ -103,7 +116,7 @@ export class ShortcutModule extends Module {
 				...base,
 				title,
 				description,
-				color: BLOCKQUOTE_GREY_NUMBER,
+				color: parseInt(BLOCKQUOTE_GREY.slice(1), 16),
 			};
 		else if (referencedEmbed)
 			data = {
@@ -186,18 +199,23 @@ export class ShortcutModule extends Module {
 		description: 'Shortcut: Delete a shortcut you own',
 	})
 	async deleteShortcut(msg: Message, id: string) {
+		if (!msg.member) return;
 		const shortcut = await this.getShortcut(id);
 		if (!shortcut)
 			return await sendWithMessageOwnership(
 				msg,
 				':x: No shortcut found with that id',
 			);
-		if (shortcut.owner !== msg.author.id)
+		if (!this.isMod(msg.member) && shortcut.owner !== msg.author.id)
 			return await sendWithMessageOwnership(
 				msg,
 				":x: Cannot delete another user's shortcut",
 			);
 		await shortcut.remove();
 		sendWithMessageOwnership(msg, ':white_check_mark: Deleted shortcut');
+	}
+
+	private isMod(member: GuildMember | null) {
+		return member?.hasPermission('MANAGE_MESSAGES') ?? false;
 	}
 }
