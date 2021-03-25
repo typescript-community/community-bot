@@ -81,6 +81,9 @@ export class PlaygroundModule extends Module {
 		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
 		const originalUrl = extractPlaygroundLink(content);
+		// By default, if you write a message in the box and then paste a long
+		// playground link, it will only put the paste in message.txt and will
+		// put the rest of the message in msg.content
 		if (!originalUrl || originalUrl !== content) return;
 		const shortenedUrl = await shortenPlaygroundLink(originalUrl);
 		const embed = createPlaygroundEmbed(
