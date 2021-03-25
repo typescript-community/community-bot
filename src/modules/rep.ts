@@ -165,11 +165,14 @@ export class RepModule extends Module {
 			.select(['give.to', 'COUNT(*)'])
 			.groupBy('give.to')
 			.orderBy('COUNT(*)', 'DESC')
-			.limit(10)
-			.getRawMany()) as { toId: string; count: string }[]).map(x => ({
-			id: x.toId,
-			count: parseInt(x.count, 10),
-		}));
+			.limit(11)
+			.getRawMany()) as { toId: string; count: string }[])
+			.filter(x => x.toId !== this.client.user?.id)
+			.slice(0, 10)
+			.map(x => ({
+				id: x.toId,
+				count: parseInt(x.count, 10),
+			}));
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
 			.setTitle('Top 10 Reputation')
