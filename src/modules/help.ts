@@ -84,20 +84,18 @@ export class HelpModule extends Module {
 			return await sendWithMessageOwnership(msg, { embed });
 		}
 
-		const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
-		if (!cmd || !cmd.description) {
+		let cmd: { description?: string; triggers?: string[] } =
+			this.client.commandManager.getByTrigger(cmdTrigger) ?? {};
+		if (!cmd.description) {
 			const shortcut = await Shortcut.findOne(cmdTrigger);
-			if (shortcut)
-				await sendWithMessageOwnership(msg, {
-					embed: new MessageEmbed()
-						.setTitle(`\`${cmdTrigger}\` Usage`)
-						.addField(
-							'Description',
-							`*A custom shortcut created by <@${shortcut.owner}>*`,
-						),
-				});
-			else await sendWithMessageOwnership(msg, `:x: Command not found`);
-			return;
+			if (!shortcut) {
+				await sendWithMessageOwnership(msg, `:x: Command not found`);
+				return;
+			}
+			cmd = {
+				triggers: [cmdTrigger],
+				description: `A custom shortcut created by <@${shortcut.owner}>`,
+			};
 		}
 
 		const embed = new MessageEmbed().setTitle(`\`${cmdTrigger}\` Usage`);
