@@ -77,7 +77,6 @@ export class PlaygroundModule extends Module {
 
 	@listener({ event: 'message' })
 	async onPlaygroundLinkAttachment(msg: Message) {
-		if (msg.author.bot) return;
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
 		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
