@@ -7,6 +7,7 @@ import {
 	Command,
 } from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
+import { Shortcut } from '../entities/Shortcut';
 import { sendWithMessageOwnership } from '../util/send';
 
 function getCategoryHelp(cat: string, commands: Set<Command>) {
@@ -85,7 +86,17 @@ export class HelpModule extends Module {
 
 		const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
 		if (!cmd || !cmd.description) {
-			await sendWithMessageOwnership(msg, `:x: Command not found`);
+			const shortcut = await Shortcut.findOne(cmdTrigger);
+			if (shortcut)
+				await sendWithMessageOwnership(msg, {
+					embed: new MessageEmbed()
+						.setTitle(`\`${cmdTrigger}\` Usage`)
+						.addField(
+							'Description',
+							`*A custom shortcut created by <@${shortcut.owner}>*`,
+						),
+				});
+			else await sendWithMessageOwnership(msg, `:x: Command not found`);
 			return;
 		}
 

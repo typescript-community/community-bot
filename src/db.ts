@@ -3,6 +3,7 @@ import { dbUrl } from './env';
 import { RepUser } from './entities/RepUser';
 import { RepGive } from './entities/RepGive';
 import { HelpUser } from './entities/HelpUser';
+import { Shortcut } from './entities/Shortcut';
 
 let db: Connection | undefined;
 export async function getDB() {
@@ -26,7 +27,7 @@ export async function getDB() {
 		url: dbUrl,
 		synchronize: true,
 		logging: false,
-		entities: [RepUser, RepGive, HelpUser],
+		entities: [RepUser, RepGive, HelpUser, Shortcut],
 		...extraOpts,
 	});
 	console.log('Connected to DB');
