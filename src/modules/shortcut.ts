@@ -21,10 +21,13 @@ export class ShortcutModule extends Module {
 
 	@listener({ event: 'message' })
 	async runShortcut(msg: Message) {
-		const { content } = msg;
-		const commandPart = content.split(' ')[0];
-		if (!commandPart.startsWith('!')) return;
-		const id = commandPart.slice(1);
+		const commandPart = msg.content.split(' ')[0];
+		const prefixes = await this.client.getPrefix(msg);
+		const matchingPrefix = [prefixes]
+			.flat()
+			.find(x => msg.content.startsWith(x));
+		if (!matchingPrefix) return;
+		const id = commandPart.slice(matchingPrefix.length);
 		if (this.client.commandManager.getByTrigger(id)) return;
 		const shortcut = await this.getShortcut(id);
 		if (!shortcut) return;
