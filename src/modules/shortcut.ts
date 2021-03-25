@@ -62,7 +62,11 @@ export class ShortcutModule extends Module {
 			);
 		}
 
-		const id = this.getId(msg.author, name);
+		const sanitizeIdPart = (part: string) =>
+			part.toLowerCase().replace(/[^\w-]/g, '');
+		const id = `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(
+			name,
+		)}`;
 		const existingShortcut = await this.getShortcut(id);
 
 		if (existingShortcut && existingShortcut.owner !== msg.author.id)
@@ -195,11 +199,5 @@ export class ShortcutModule extends Module {
 			);
 		await shortcut.remove();
 		sendWithMessageOwnership(msg, ':white_check_mark: Deleted shortcut');
-	}
-
-	private getId(user: User, name: string) {
-		const sanitize = (part: string) =>
-			part.toLowerCase().replace(/[^\w-]/g, '');
-		return `${sanitize(user.username)}:${sanitize(name)}`;
 	}
 }
