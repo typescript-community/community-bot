@@ -32,6 +32,9 @@ export class ShortcutModule extends Module {
 		let command = commandPart.slice(matchingPrefix.length);
 		if (this.client.commandManager.getByTrigger(command)) return;
 
+		if (command === '*') return;
+		if (command === 'shortcuts') command = '*';
+
 		const limit = 20;
 		if (/[^\w*:]/.test(command)) return;
 		const matches = (await Shortcut.createQueryBuilder()
@@ -43,7 +46,7 @@ export class ShortcutModule extends Module {
 			.getRawMany()) as { id: string; uses: string }[];
 
 		if (!matches.length) {
-			if (command.includes(':'))
+			if (command.includes(':') || command.includes('*'))
 				await sendWithMessageOwnership(
 					msg,
 					':x: No matching shortcuts found',
