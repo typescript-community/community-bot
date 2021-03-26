@@ -86,14 +86,10 @@ export class ShortcutModule extends Module {
 	}
 
 	@command({
-		single: true,
 		description: 'Shortcut: Create or edit a shortcut',
 	})
-	async shortcut(msg: Message, arg: string) {
+	async shortcut(msg: Message, name: string) {
 		if (!msg.member) return;
-
-		const [name, ...titleParts] = arg.split(' ');
-		const title = titleParts?.join(' ') ?? '';
 
 		if (!name) {
 			return await sendWithMessageOwnership(
@@ -144,6 +140,8 @@ export class ShortcutModule extends Module {
 			owner: msg.author.id,
 		};
 
+		const title = `\`!${id}\`:`;
+
 		let data: Omit<Shortcut, keyof BaseEntity> | undefined;
 		if (LINK_REGEX.exec(description)?.[0] === description)
 			data = {
@@ -160,10 +158,9 @@ export class ShortcutModule extends Module {
 		else if (referencedEmbed)
 			data = {
 				...base,
-				title:
-					referencedEmbed.title && title
-						? `${title}: ${referencedEmbed.title}`
-						: referencedEmbed.title || title,
+				title: referencedEmbed
+					? `${title} ${referencedEmbed.title}`
+					: title,
 				description: referencedEmbed.description,
 				color: referencedEmbed.color,
 				image: referencedEmbed.image?.url,
