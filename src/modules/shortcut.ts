@@ -5,7 +5,13 @@ import {
 	listener,
 	optional,
 } from 'cookiecord';
-import { GuildMember, Message, MessageEmbed, TextChannel } from 'discord.js';
+import {
+	GuildMember,
+	Message,
+	MessageEmbed,
+	TextChannel,
+	User,
+} from 'discord.js';
 import { BaseEntity } from 'typeorm';
 import { Shortcut } from '../entities/Shortcut';
 import { BLOCKQUOTE_GREY } from '../env';
@@ -32,54 +38,25 @@ export class ShortcutModule extends Module {
 		let command = commandPart.slice(matchingPrefix.length);
 		if (this.client.commandManager.getByTrigger(command)) return;
 
-		if (command === '*') return;
-		if (command === 'shortcuts') command = '*';
+		if (!command) return;
+		if (command.includes('*') && !command.includes(':')) return [];
 
-		if (command.startsWith(':'))
-			command = sanitizeIdPart(msg.author.username) + command;
+		const [match] = await interpretSpecifier(msg.author, command, 1);
 
-		const limit = 20;
-		if (/[^\w*:]/.test(command)) return;
-		const matches = (await Shortcut.createQueryBuilder()
-			.select(['id', 'uses'])
-			.where('id like :filter')
-			.orderBy('uses', 'DESC')
-			.limit(limit + 1)
-			.setParameters({ filter: command.replace(/\*/g, '%') })
-			.getRawMany()) as { id: string; uses: string }[];
+		if (!match) return;
 
-		if (!matches.length) {
-			if (command.includes(':') || command.includes('*'))
-				await sendWithMessageOwnership(
-					msg,
-					':x: No matching shortcuts found',
-				);
-			return;
-		}
-		if (matches.length > 1)
-			return await sendWithMessageOwnership(msg, {
-				embed: new MessageEmbed()
-					.setColor(BLOCKQUOTE_GREY)
-					.setTitle(
-						`${
-							matches.length > limit
-								? `${limit}+`
-								: matches.length
-						} Matches Found`,
-					)
-					.setDescription(
-						matches
-							.slice(0, limit)
-							.map(s => `- \`${s.id}\` with **${s.uses}** uses`),
-					),
-			});
-
-		const id = matches[0].id;
 		// We already know there's a shortcut under this id from the search
-		const shortcut = (await this.getShortcut(id))!;
+		const shortcut = (await this.getShortcut(match.id))!;
+
+		await addShortcutUses(match.id);
+		const onDelete = () => addShortcutUses(match.id, -1);
 
 		if (shortcut.content)
-			return await sendWithMessageOwnership(msg, shortcut.content);
+			return await sendWithMessageOwnership(
+				msg,
+				shortcut.content,
+				onDelete,
+			);
 
 		const owner = await this.client.users.fetch(shortcut.owner);
 		const embed = new MessageEmbed({
@@ -87,14 +64,37 @@ export class ShortcutModule extends Module {
 			// image is in an incompatible format, so we have to set it later
 			image: undefined,
 		});
-		if (id.includes(':'))
+		if (match.id.includes(':'))
 			embed.setAuthor(owner.tag, owner.displayAvatarURL());
 		if (shortcut.image) embed.setImage(shortcut.image);
-		await sendWithMessageOwnership(msg, { embed });
-		await Shortcut.createQueryBuilder()
-			.update()
-			.set({ uses: () => 'uses + 1' })
-			.execute();
+		await sendWithMessageOwnership(msg, { embed }, onDelete);
+	}
+
+	@command({
+		description: 'Shortcut: List shortcuts matching an optional filter',
+		aliases: ['shortcuts'],
+	})
+	async listShortcuts(msg: Message, @optional specifier: string = '*') {
+		const limit = 20;
+		const matches = await interpretSpecifier(
+			msg.author,
+			specifier,
+			limit + 1,
+		);
+		return await sendWithMessageOwnership(msg, {
+			embed: new MessageEmbed()
+				.setColor(BLOCKQUOTE_GREY)
+				.setTitle(
+					`${
+						matches.length > limit ? `${limit}+` : matches.length
+					} Matches Found`,
+				)
+				.setDescription(
+					matches
+						.slice(0, limit)
+						.map(s => `- \`${s.id}\` with **${s.uses}** uses`),
+				),
+		});
 	}
 
 	@command({
@@ -247,3 +247,40 @@ export class ShortcutModule extends Module {
 
 const sanitizeIdPart = (part: string) =>
 	part.toLowerCase().replace(/[^\w-]/g, '');
+
+const interpretSpecifier = async (
+	sender: User,
+	specifier: string,
+	limit: number,
+): Promise<ShortcutInfo[]> => {
+	specifier = specifier.replace(/\\/g, '');
+	if (/[^\w:*%]/.test(specifier)) return [];
+	// `%` is SQL's /.*/g for LIKE
+	specifier = specifier.replace(/\*/g, '%');
+	const baseQuery = () =>
+		Shortcut.createQueryBuilder()
+			.select(['id', 'owner', 'uses'])
+			.where('id like :specifier')
+			.orderBy('uses', 'DESC')
+			.setParameters({ specifier: specifier, owner: sender.id })
+			.limit(limit);
+	if (specifier.startsWith(':')) {
+		specifier = '%' + specifier;
+		const matches = await baseQuery()
+			.andWhere('owner = :owner')
+			.getRawMany();
+		if (matches.length) return matches;
+	}
+	return await baseQuery().getRawMany();
+};
+
+const addShortcutUses = async (id: string, amount = 1) => {
+	await Shortcut.createQueryBuilder()
+		.update()
+		.where('id = :id')
+		.set({ uses: () => 'uses + :amount' })
+		.setParameters({ id, amount })
+		.execute();
+};
+
+type ShortcutInfo = Pick<Shortcut, 'id' | 'uses'>;

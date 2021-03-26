@@ -86,22 +86,17 @@ export class HelpModule extends Module {
 
 		let cmd: { description?: string; triggers?: string[] } =
 			this.client.commandManager.getByTrigger(cmdTrigger) ?? {};
-		if (
-			!cmd.description &&
-			cmdTrigger.includes(':') &&
-			cmdTrigger.includes(':')
-		) {
-			if (cmdTrigger.includes('*'))
+		if (!cmd.description && cmdTrigger.includes(':')) {
+			const shortcut = await Shortcut.findOne(cmdTrigger);
+			if (shortcut)
 				cmd = {
-					description: `Search for shortcuts matching that pattern`,
+					description: `A custom shortcut created by <@${shortcut.owner}>`,
 				};
-			else {
-				const shortcut = await Shortcut.findOne(cmdTrigger);
-				if (shortcut)
-					cmd = {
-						description: `A custom shortcut created by <@${shortcut.owner}>`,
-					};
-			}
+			else
+				cmd = {
+					description:
+						'Run the first shortcut that matches that pattern',
+				};
 		}
 
 		if (!cmd.description)
