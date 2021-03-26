@@ -91,10 +91,7 @@ export class HelpModule extends Module {
 
 		const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
 		if (!cmd || !cmd.description) {
-			await sendWithMessageOwnership(
-				msg,
-				`:x: Command "${cmdTrigger}" not found`,
-			);
+			await sendWithMessageOwnership(msg, `:x: Command not found`);
 			return;
 		}
 
