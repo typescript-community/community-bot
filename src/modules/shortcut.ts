@@ -29,11 +29,11 @@ export class ShortcutModule extends Module {
 			.flat()
 			.find(x => msg.content.startsWith(x));
 		if (!matchingPrefix) return;
-		const command = commandPart.slice(matchingPrefix.length);
+		let command = commandPart.slice(matchingPrefix.length);
 		if (this.client.commandManager.getByTrigger(command)) return;
 
 		const limit = 20;
-		if (!command.includes(':') || /[^\w*:]/.test(command)) return;
+		if (/[^\w*:]/.test(command)) return;
 		const matches = (await Shortcut.createQueryBuilder()
 			.select(['id', 'uses'])
 			.where('id like :filter')
@@ -42,11 +42,14 @@ export class ShortcutModule extends Module {
 			.setParameters({ filter: command.replace(/\*/g, '%') })
 			.getRawMany()) as { id: string; uses: string }[];
 
-		if (!matches.length)
-			return await sendWithMessageOwnership(
-				msg,
-				':x: No matching shortcuts found',
-			);
+		if (!matches.length) {
+			if (command.includes(':'))
+				await sendWithMessageOwnership(
+					msg,
+					':x: No matching shortcuts found',
+				);
+			return;
+		}
 		if (matches.length > 1)
 			return await sendWithMessageOwnership(msg, {
 				embed: new MessageEmbed()
@@ -78,7 +81,7 @@ export class ShortcutModule extends Module {
 			// image is in an incompatible format, so we have to set it later
 			image: undefined,
 		});
-		if (!id.startsWith(':'))
+		if (id.includes(':'))
 			embed.setAuthor(owner.tag, owner.displayAvatarURL());
 		if (shortcut.image) embed.setImage(shortcut.image);
 		await sendWithMessageOwnership(msg, { embed });
@@ -113,12 +116,12 @@ export class ShortcutModule extends Module {
 
 		const sanitizeIdPart = (part: string) =>
 			part.toLowerCase().replace(/[^\w-]/g, '');
-		const id = name.startsWith(':')
-			? `:${sanitizeIdPart(name.slice(1))}`
+		const id = name.startsWith('!')
+			? `${sanitizeIdPart(name.slice(1))}`
 			: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(name)}`;
 		const existingShortcut = await this.getShortcut(id);
 
-		const globalShortcut = id.startsWith(':');
+		const globalShortcut = !id.includes(':');
 
 		if (globalShortcut && !this.isMod(msg.member))
 			return await sendWithMessageOwnership(
