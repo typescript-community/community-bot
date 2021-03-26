@@ -7,7 +7,7 @@ import {
 	Command,
 } from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
-import { Shortcut } from '../entities/Shortcut';
+import { Snippet } from '../entities/Snippet';
 import { sendWithMessageOwnership } from '../util/send';
 
 function getCategoryHelp(cat: string, commands: Set<Command>) {
@@ -87,15 +87,15 @@ export class HelpModule extends Module {
 		let cmd: { description?: string; triggers?: string[] } =
 			this.client.commandManager.getByTrigger(cmdTrigger) ?? {};
 		if (!cmd.description && cmdTrigger.includes(':')) {
-			const shortcut = await Shortcut.findOne(cmdTrigger);
-			if (shortcut)
+			const snippet = await Snippet.findOne(cmdTrigger);
+			if (snippet)
 				cmd = {
-					description: `A custom shortcut created by <@${shortcut.owner}>`,
+					description: `A custom snippet created by <@${snippet.owner}>`,
 				};
 			else
 				cmd = {
 					description:
-						'Run the first shortcut that matches that pattern',
+						'Run the first snippet that matches that pattern',
 				};
 		}
 

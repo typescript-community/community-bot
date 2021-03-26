@@ -1,7 +1,7 @@
 import { BaseEntity, Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()
-export class Shortcut extends BaseEntity {
+export class Snippet extends BaseEntity {
 	@PrimaryColumn()
 	id!: string;
 

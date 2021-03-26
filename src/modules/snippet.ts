@@ -13,7 +13,7 @@ import {
 	User,
 } from 'discord.js';
 import { BaseEntity } from 'typeorm';
-import { Shortcut } from '../entities/Shortcut';
+import { Snippet } from '../entities/Snippet';
 import { BLOCKQUOTE_GREY } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 
@@ -22,13 +22,13 @@ const LINK_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9
 
 const DISCORD_MESSAGE_LINK_REGEX_ANCHORED = /^https:\/\/discord.com\/channels\/(\d+)\/(\d+)\/(\d+)$/;
 
-export class ShortcutModule extends Module {
+export class SnippetModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
 
 	@listener({ event: 'message' })
-	async runShortcut(msg: Message) {
+	async runSnippet(msg: Message) {
 		const [commandPart] = msg.content.split(' ');
 		const prefixes = await this.client.getPrefix(msg);
 		const matchingPrefix = [prefixes]
@@ -45,36 +45,36 @@ export class ShortcutModule extends Module {
 
 		if (!match) return;
 
-		// We already know there's a shortcut under this id from the search
-		const shortcut = (await this.getShortcut(match.id))!;
+		// We already know there's a snippet under this id from the search
+		const snippet = (await this.getSnippet(match.id))!;
 
-		await addShortcutUses(match.id);
-		const onDelete = () => addShortcutUses(match.id, -1);
+		await addSnippetUses(match.id);
+		const onDelete = () => addSnippetUses(match.id, -1);
 
-		if (shortcut.content)
+		if (snippet.content)
 			return await sendWithMessageOwnership(
 				msg,
-				shortcut.content,
+				snippet.content,
 				onDelete,
 			);
 
-		const owner = await this.client.users.fetch(shortcut.owner);
+		const owner = await this.client.users.fetch(snippet.owner);
 		const embed = new MessageEmbed({
-			...shortcut,
+			...snippet,
 			// image is in an incompatible format, so we have to set it later
 			image: undefined,
 		});
 		if (match.id.includes(':'))
 			embed.setAuthor(owner.tag, owner.displayAvatarURL());
-		if (shortcut.image) embed.setImage(shortcut.image);
+		if (snippet.image) embed.setImage(snippet.image);
 		await sendWithMessageOwnership(msg, { embed }, onDelete);
 	}
 
 	@command({
-		description: 'Shortcut: List shortcuts matching an optional filter',
-		aliases: ['shortcuts'],
+		description: 'Snippet: List snippets matching an optional filter',
+		aliases: ['snippets'],
 	})
-	async listShortcuts(msg: Message, @optional specifier: string = '*') {
+	async listSnippets(msg: Message, @optional specifier: string = '*') {
 		const limit = 20;
 		const matches = await interpretSpecifier(
 			msg.author,
@@ -98,9 +98,9 @@ export class ShortcutModule extends Module {
 	}
 
 	@command({
-		description: 'Shortcut: Create or edit a shortcut',
+		description: 'Snippet: Create or edit a snippet',
 	})
-	async shortcut(msg: Message, name: string, @optional messageLink?: string) {
+	async snippet(msg: Message, name: string, @optional messageLink?: string) {
 		if (!msg.member) return;
 
 		const linkedMessage =
@@ -123,24 +123,24 @@ export class ShortcutModule extends Module {
 		const id = name.startsWith('!')
 			? `${sanitizeIdPart(name.slice(1))}`
 			: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(name)}`;
-		const existingShortcut = await this.getShortcut(id);
+		const existingSnippet = await this.getSnippet(id);
 
-		const globalShortcut = !id.includes(':');
+		const globalSnippet = !id.includes(':');
 
-		if (globalShortcut && !this.isMod(msg.member))
+		if (globalSnippet && !this.isMod(msg.member))
 			return await sendWithMessageOwnership(
 				msg,
-				":x: You don't have permission to create a global shortcut",
+				":x: You don't have permission to create a global snippet",
 			);
 
 		if (
 			!this.isMod(msg.member) &&
-			existingShortcut &&
-			existingShortcut.owner !== msg.author.id
+			existingSnippet &&
+			existingSnippet.owner !== msg.author.id
 		)
 			return await sendWithMessageOwnership(
 				msg,
-				":x: Cannot edit another user's shortcut",
+				":x: Cannot edit another user's snippet",
 			);
 
 		const sourceMessage =
@@ -150,20 +150,20 @@ export class ShortcutModule extends Module {
 		if (!sourceMessage)
 			return await sendWithMessageOwnership(
 				msg,
-				':x: You have to reply or link to a comment to make it a shortcut',
+				':x: You have to reply or link to a comment to make it a snippet',
 			);
 
 		const description = sourceMessage.content;
 		const referencedEmbed = sourceMessage.embeds[0];
 		const base = {
 			id,
-			uses: existingShortcut?.uses ?? 0,
+			uses: existingSnippet?.uses ?? 0,
 			owner: msg.author.id,
 		};
 
 		const title = `\`!${id}\`:`;
 
-		let data: Omit<Shortcut, keyof BaseEntity> | undefined;
+		let data: Omit<Snippet, keyof BaseEntity> | undefined;
 		if (LINK_REGEX.exec(description)?.[0] === description)
 			data = {
 				...base,
@@ -191,41 +191,41 @@ export class ShortcutModule extends Module {
 		if (!data)
 			return await sendWithMessageOwnership(
 				msg,
-				':x: Cannot generate a shortcut from that message',
+				':x: Cannot generate a snippet from that message',
 			);
 
-		await existingShortcut?.remove();
-		await Shortcut.create(data).save();
+		await existingSnippet?.remove();
+		await Snippet.create(data).save();
 		await sendWithMessageOwnership(
 			msg,
 			`:white_check_mark: ${
-				existingShortcut ? 'Edited' : 'Created'
-			} shortcut \`${id}\``,
+				existingSnippet ? 'Edited' : 'Created'
+			} snippet \`${id}\``,
 		);
 	}
 
-	private async getShortcut(id: string) {
-		return await Shortcut.findOne(id);
+	private async getSnippet(id: string) {
+		return await Snippet.findOne(id);
 	}
 
 	@command({
-		description: 'Shortcut: Delete a shortcut you own',
+		description: 'Snippet: Delete a snippet you own',
 	})
-	async deleteShortcut(msg: Message, id: string) {
+	async deleteSnippet(msg: Message, id: string) {
 		if (!msg.member) return;
-		const shortcut = await this.getShortcut(id);
-		if (!shortcut)
+		const snippet = await this.getSnippet(id);
+		if (!snippet)
 			return await sendWithMessageOwnership(
 				msg,
-				':x: No shortcut found with that id',
+				':x: No snippet found with that id',
 			);
-		if (!this.isMod(msg.member) && shortcut.owner !== msg.author.id)
+		if (!this.isMod(msg.member) && snippet.owner !== msg.author.id)
 			return await sendWithMessageOwnership(
 				msg,
-				":x: Cannot delete another user's shortcut",
+				":x: Cannot delete another user's snippet",
 			);
-		await shortcut.remove();
-		sendWithMessageOwnership(msg, ':white_check_mark: Deleted shortcut');
+		await snippet.remove();
+		sendWithMessageOwnership(msg, ':white_check_mark: Deleted snippet');
 	}
 
 	private isMod(member: GuildMember | null) {
@@ -252,13 +252,13 @@ const interpretSpecifier = async (
 	sender: User,
 	specifier: string,
 	limit: number,
-): Promise<ShortcutInfo[]> => {
+): Promise<SnippetInfo[]> => {
 	specifier = specifier.replace(/\\/g, '');
 	if (/[^\w:*%]/.test(specifier)) return [];
 	// `%` is SQL's /.*/g for LIKE
 	specifier = specifier.replace(/\*/g, '%');
 	const baseQuery = () =>
-		Shortcut.createQueryBuilder()
+		Snippet.createQueryBuilder()
 			.select(['id', 'owner', 'uses'])
 			.where('id like :specifier')
 			.orderBy('uses', 'DESC')
@@ -274,8 +274,8 @@ const interpretSpecifier = async (
 	return await baseQuery().getRawMany();
 };
 
-const addShortcutUses = async (id: string, amount = 1) => {
-	await Shortcut.createQueryBuilder()
+const addSnippetUses = async (id: string, amount = 1) => {
+	await Snippet.createQueryBuilder()
 		.update()
 		.where('id = :id')
 		.set({ uses: () => 'uses + :amount' })
@@ -283,4 +283,4 @@ const addShortcutUses = async (id: string, amount = 1) => {
 		.execute();
 };
 
-type ShortcutInfo = Pick<Shortcut, 'id' | 'uses'>;
+type SnippetInfo = Pick<Snippet, 'id' | 'uses'>;
