@@ -50,6 +50,7 @@ export class ShortcutModule extends Module {
 		if (matches.length > 1)
 			return await sendWithMessageOwnership(msg, {
 				embed: new MessageEmbed()
+					.setColor(BLOCKQUOTE_GREY)
 					.setTitle(
 						`${
 							matches.length > limit

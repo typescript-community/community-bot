@@ -42,4 +42,3 @@ export const GREEN = '#77b155';
 export const HOURGLASS_ORANGE = '#ffa647';
 // Picked from Discord's blockquote line
 export const BLOCKQUOTE_GREY = '#4f545c';
-export const BLOCKQUOTE_GREY_NUMBER = 0x4f545c;
