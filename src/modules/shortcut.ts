@@ -1,18 +1,20 @@
-import { id } from 'common-tags';
 import {
 	command,
 	default as CookiecordClient,
 	Module,
 	listener,
+	optional,
 } from 'cookiecord';
-import { GuildMember, Message, MessageEmbed } from 'discord.js';
+import { GuildMember, Message, MessageEmbed, TextChannel } from 'discord.js';
 import { BaseEntity } from 'typeorm';
 import { Shortcut } from '../entities/Shortcut';
-import { BLOCKQUOTE_GREY, TS_BLUE } from '../env';
+import { BLOCKQUOTE_GREY } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 
 // https://stackoverflow.com/a/3809435
 const LINK_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+
+const DISCORD_MESSAGE_LINK_REGEX_ANCHORED = /^https:\/\/discord.com\/channels\/(\d+)\/(\d+)\/(\d+)$/;
 
 export class ShortcutModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -88,8 +90,18 @@ export class ShortcutModule extends Module {
 	@command({
 		description: 'Shortcut: Create or edit a shortcut',
 	})
-	async shortcut(msg: Message, name: string) {
+	async shortcut(msg: Message, name: string, @optional messageLink?: string) {
 		if (!msg.member) return;
+
+		const linkedMessage =
+			messageLink === undefined
+				? undefined
+				: await this.getMessageFromLink(messageLink);
+		if (messageLink && !linkedMessage)
+			return await sendWithMessageOwnership(
+				msg,
+				':x: Second argument must be a valid link to a discord message',
+			);
 
 		if (!name) {
 			return await sendWithMessageOwnership(
@@ -123,17 +135,18 @@ export class ShortcutModule extends Module {
 				":x: Cannot edit another user's shortcut",
 			);
 
-		const referencedMessage = await msg.channel.messages.fetch(
-			msg.reference?.messageID!,
-		);
-		if (!referencedMessage)
+		const sourceMessage =
+			linkedMessage ??
+			(msg.reference?.messageID != null &&
+				(await msg.channel.messages.fetch(msg.reference?.messageID!)));
+		if (!sourceMessage)
 			return await sendWithMessageOwnership(
 				msg,
-				':x: You have to reply to a comment to make it a shortcut',
+				':x: You have to reply or link to a comment to make it a shortcut',
 			);
 
-		const description = referencedMessage.content;
-		const referencedEmbed = referencedMessage.embeds[0];
+		const description = sourceMessage.content;
+		const referencedEmbed = sourceMessage.embeds[0];
 		const base = {
 			id,
 			uses: existingShortcut?.uses ?? 0,
@@ -209,5 +222,17 @@ export class ShortcutModule extends Module {
 
 	private isMod(member: GuildMember | null) {
 		return member?.hasPermission('MANAGE_MESSAGES') ?? false;
+	}
+
+	private async getMessageFromLink(messageLink: string) {
+		const messageLinkExec = DISCORD_MESSAGE_LINK_REGEX_ANCHORED.exec(
+			messageLink || '',
+		);
+		if (!messageLinkExec) return;
+		const guild = this.client.guilds.cache.get(messageLinkExec[1]);
+		const channel = guild?.channels.cache.get(messageLinkExec[2]);
+		if (!channel || !(channel instanceof TextChannel)) return;
+		const message = await channel.messages.fetch(messageLinkExec[3]);
+		return message;
 	}
 }
