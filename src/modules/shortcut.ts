@@ -35,6 +35,9 @@ export class ShortcutModule extends Module {
 		if (command === '*') return;
 		if (command === 'shortcuts') command = '*';
 
+		if (command.startsWith(':'))
+			command = sanitizeIdPart(msg.author.username) + command;
+
 		const limit = 20;
 		if (/[^\w*:]/.test(command)) return;
 		const matches = (await Shortcut.createQueryBuilder()
@@ -117,8 +120,6 @@ export class ShortcutModule extends Module {
 			);
 		}
 
-		const sanitizeIdPart = (part: string) =>
-			part.toLowerCase().replace(/[^\w-]/g, '');
 		const id = name.startsWith('!')
 			? `${sanitizeIdPart(name.slice(1))}`
 			: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(name)}`;
@@ -243,3 +244,6 @@ export class ShortcutModule extends Module {
 		return message;
 	}
 }
+
+const sanitizeIdPart = (part: string) =>
+	part.toLowerCase().replace(/[^\w-]/g, '');
