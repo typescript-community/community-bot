@@ -1,3 +1,4 @@
+import { id } from 'common-tags';
 import {
 	command,
 	default as CookiecordClient,
@@ -20,24 +21,62 @@ export class ShortcutModule extends Module {
 
 	@listener({ event: 'message' })
 	async runShortcut(msg: Message) {
-		const commandPart = msg.content.split(' ')[0];
+		const [commandPart] = msg.content.split(' ');
 		const prefixes = await this.client.getPrefix(msg);
 		const matchingPrefix = [prefixes]
 			.flat()
 			.find(x => msg.content.startsWith(x));
 		if (!matchingPrefix) return;
-		const id = commandPart.slice(matchingPrefix.length);
-		if (this.client.commandManager.getByTrigger(id)) return;
-		const shortcut = await this.getShortcut(id);
-		if (!shortcut) return;
+		const command = commandPart.slice(matchingPrefix.length);
+		if (this.client.commandManager.getByTrigger(command)) return;
+
+		const limit = 20;
+		if (!command.includes(':') || /[^\w*:]/.test(command)) return;
+		const matches = (await Shortcut.createQueryBuilder()
+			.select(['id', 'uses'])
+			.where('id like :filter')
+			.orderBy('uses', 'DESC')
+			.limit(limit + 1)
+			.setParameters({ filter: command.replace(/\*/g, '%') })
+			.getRawMany()) as { id: string; uses: string }[];
+
+		if (!matches.length)
+			return await sendWithMessageOwnership(
+				msg,
+				':x: No matching shortcuts found',
+			);
+		if (matches.length > 1)
+			return await sendWithMessageOwnership(msg, {
+				embed: new MessageEmbed()
+					.setTitle(
+						`${
+							matches.length > limit
+								? `${limit}+`
+								: matches.length
+						} Matches Found`,
+					)
+					.setDescription(
+						matches
+							.slice(0, limit)
+							.map(s => `- \`${s.id}\` with **${s.uses}** uses`),
+					),
+			});
+
+		const id = matches[0].id;
+		// We already know there's a shortcut under this id from the search
+		const shortcut = (await this.getShortcut(id))!;
+
 		if (shortcut.content)
 			return await sendWithMessageOwnership(msg, shortcut.content);
+
 		const owner = await this.client.users.fetch(shortcut.owner);
 		const embed = new MessageEmbed({
 			...shortcut,
+			// image is in an incompatible format, so we have to set it later
 			image: undefined,
 		});
-		embed.setAuthor(owner.tag, owner.displayAvatarURL());
+		if (!id.startsWith(':'))
+			embed.setAuthor(owner.tag, owner.displayAvatarURL());
 		if (shortcut.image) embed.setImage(shortcut.image);
 		await sendWithMessageOwnership(msg, { embed });
 		await Shortcut.createQueryBuilder()
@@ -149,50 +188,6 @@ export class ShortcutModule extends Module {
 
 	private async getShortcut(id: string) {
 		return await Shortcut.findOne(id);
-	}
-
-	@command({
-		aliases: ['ls'],
-		description: 'Shortcut: List the most used shortcuts',
-	})
-	async listShortcuts(msg: Message) {
-		const shortcuts: Shortcut[] = await Shortcut.createQueryBuilder()
-			.select(['id', 'uses'])
-			.orderBy('uses', 'DESC')
-			.limit(10)
-			.getRawMany();
-		await sendWithMessageOwnership(msg, {
-			embed: new MessageEmbed()
-				.setTitle('Top 10 Shortcuts')
-				.setColor(TS_BLUE)
-				.setDescription(
-					shortcuts.map(
-						shortcut =>
-							`- \`${shortcut.id}\` with **${shortcut.uses}** uses.`,
-					),
-				),
-		});
-	}
-
-	@command({
-		aliases: ['lsm'],
-		description: 'Shortcut: List shortcuts owned by you',
-	})
-	async listMyShortcuts(msg: Message) {
-		const shortcuts: Shortcut[] = await Shortcut.createQueryBuilder()
-			.select(['id', 'owner', 'uses'])
-			.where('owner = :userId')
-			.orderBy('id', 'DESC')
-			.setParameters({ userId: msg.author.id })
-			.getRawMany();
-		await sendWithMessageOwnership(msg, {
-			embed: new MessageEmbed()
-				.setTitle('Your Shortcuts')
-				.setColor(TS_BLUE)
-				.setDescription(
-					shortcuts.map(shortcut => `- \`${shortcut.id}\``),
-				),
-		});
 	}
 
 	@command({

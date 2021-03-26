@@ -86,21 +86,30 @@ export class HelpModule extends Module {
 
 		let cmd: { description?: string; triggers?: string[] } =
 			this.client.commandManager.getByTrigger(cmdTrigger) ?? {};
-		if (!cmd.description) {
-			const shortcut = await Shortcut.findOne(cmdTrigger);
-			if (!shortcut) {
-				await sendWithMessageOwnership(msg, `:x: Command not found`);
-				return;
+		if (
+			!cmd.description &&
+			cmdTrigger.includes(':') &&
+			cmdTrigger.includes(':')
+		) {
+			if (cmdTrigger.includes('*'))
+				cmd = {
+					description: `Search for shortcuts matching that pattern`,
+				};
+			else {
+				const shortcut = await Shortcut.findOne(cmdTrigger);
+				if (shortcut)
+					cmd = {
+						description: `A custom shortcut created by <@${shortcut.owner}>`,
+					};
 			}
-			cmd = {
-				triggers: [cmdTrigger],
-				description: `A custom shortcut created by <@${shortcut.owner}>`,
-			};
 		}
+
+		if (!cmd.description)
+			return await sendWithMessageOwnership(msg, `:x: Command not found`);
 
 		const embed = new MessageEmbed().setTitle(`\`${cmdTrigger}\` Usage`);
 		// Get rid of duplicates, this can happen if someone adds the method name as an alias
-		const triggers = new Set(cmd.triggers);
+		const triggers = new Set(cmd.triggers ?? [cmdTrigger]);
 		if (triggers.size > 1) {
 			embed.addField(
 				'Aliases',
