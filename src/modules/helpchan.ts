@@ -13,6 +13,8 @@ import {
 	TextChannel,
 	GuildMember,
 	User,
+	ChannelData,
+	CategoryChannel,
 } from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
 import {
@@ -189,12 +191,16 @@ export class HelpChanModule extends Module {
 
 	async moveChannel(channel: TextChannel, category: string) {
 		const parent = channel.guild.channels.resolve(category);
-		if (parent == null) return;
-		const data = {
+		if (parent == null || !(parent instanceof CategoryChannel)) return;
+		const data: ChannelData = {
 			parentID: parent.id,
 			permissionOverwrites: parent.permissionOverwrites,
 		};
-		await channel.edit(data);
+		channel = await channel.edit(data);
+		channel = await channel.fetch();
+		await channel.setPosition(
+			(await channel.parent!.fetch()).children.size - 1,
+		);
 	}
 
 	@listener({ event: 'message' })
