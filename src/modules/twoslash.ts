@@ -1,6 +1,6 @@
 import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
-import { twoslasher } from '@typescript/twoslash';
+import { twoslasher } from '../util/twoslasher';
 import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
 import { sendWithMessageOwnership } from '../util/send';
 
@@ -46,7 +46,7 @@ export class TwoslashModule extends Module {
 
 		const symbols = [...new Set(content.trim().split(/\s+/g))];
 
-		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
+		const ret = await twoslasher(redactNoErrorTruncation(code), 'ts', {
 			defaultOptions: { noErrorValidation: true },
 		});
 
@@ -93,7 +93,7 @@ export class TwoslashModule extends Module {
 	}
 
 	private async twoslashBlock(msg: Message, code: string) {
-		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
+		const ret = await twoslasher(redactNoErrorTruncation(code), 'ts', {
 			defaultOptions: {
 				noErrorValidation: true,
 				noStaticSemanticInfo: false,
