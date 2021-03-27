@@ -23,61 +23,64 @@ export class TwoslashModule extends Module {
 	@command({
 		single: true,
 		description:
-			'Twoslash: Search for a symbol and get the type of it in the latest codeblock',
+			'Twoslash: Run twoslash on the latest codeblock, optionally returning the quickinfos of specified symbols',
+		aliases: ['ts'],
 	})
-	async ts(msg: Message, content: string) {
-		const match = /^[_$a-zA-Z][_$0-9a-zA-Z]*/.exec(content);
+	async twoslash(msg: Message, content: string) {
+		const code = await findCodeFromChannel(msg.channel as TextChannel);
 
-		if (!match) {
+		if (!code)
+			return await sendWithMessageOwnership(
+				msg,
+				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
+			);
+
+		if (!content) return await this.twoslashBlock(msg, code);
+
+		if (!/^\s*([_$a-zA-Z][_$0-9a-zA-Z]*\b\s*)+/.test(content)) {
 			return sendWithMessageOwnership(
 				msg,
 				'You need to give me a valid symbol name to look for!',
 			);
 		}
 
-		const symbol = match[0];
-
-		const code = await findCodeFromChannel(msg.channel as TextChannel);
-
-		if (!code)
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
-			);
+		const symbols = [...new Set(content.trim().split(/\s+/g))];
 
 		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
 			defaultOptions: { noErrorValidation: true },
 		});
 
-		const value = ret.staticQuickInfos.find(
-			i => i.targetString === symbol.trim(),
-		);
-		if (!value)
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: no symbol named \`${symbol}\` in the most recent codeblock`,
-			);
+		const blocks = [];
+
+		for (const symbol of symbols) {
+			const block = [];
+			const matches: Record<string, Set<string>> = {};
+			for (const quickInfo of ret.staticQuickInfos) {
+				if (quickInfo.targetString !== symbol) continue;
+				(matches[quickInfo.text] =
+					matches[quickInfo.text] ?? new Set()).add(
+					`${quickInfo.line + 1}:${quickInfo.character + 1}`,
+				);
+			}
+			if (!Object.entries(matches).length)
+				block.push(`/* No symbol named \`${symbol}\` found */`);
+			for (const [info, locSet] of Object.entries(matches)) {
+				block.push(`${info} /* ${[...locSet].join(', ')} */`);
+			}
+			blocks.push(block);
+		}
 
 		await sendWithMessageOwnership(
 			msg,
-			`${CODEBLOCK}typescript\n${escapeCode(value.text)}${CODEBLOCK}`,
+			blocks
+				.map(
+					block =>
+						`${CODEBLOCK}typescript\n${escapeCode(
+							block.join('\n'),
+						)}${CODEBLOCK}`,
+				)
+				.join(''),
 		);
-	}
-
-	@command({
-		description:
-			'Twoslash: Run twoslash on the latest codeblock, returning compiler errors and queries',
-	})
-	async twoslash(msg: Message) {
-		const code = await findCodeFromChannel(msg.channel as TextChannel);
-
-		if (!code)
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
-			);
-
-		return this.twoslashBlock(msg, code);
 	}
 
 	@listener({ event: 'message' })
