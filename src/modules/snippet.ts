@@ -101,22 +101,10 @@ export class SnippetModule extends Module {
 		description: 'Snippet: Create or edit a snippet',
 		aliases: ['snip', 'snippet'],
 	})
-	async createSnippet(
-		msg: Message,
-		name: string,
-		@optional messageLink?: string,
-	) {
+	async createSnippet(msg: Message, name: string, @optional source?: string) {
 		if (!msg.member) return;
 
-		const linkedMessage =
-			messageLink === undefined
-				? undefined
-				: await this.getMessageFromLink(messageLink);
-		if (messageLink && !linkedMessage)
-			return await sendWithMessageOwnership(
-				msg,
-				':x: Second argument must be a valid link to a discord message',
-			);
+		const linkedMessage = await this.getMessageFromLink(source);
 
 		if (!name) {
 			return await sendWithMessageOwnership(
@@ -130,9 +118,7 @@ export class SnippetModule extends Module {
 			: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(name)}`;
 		const existingSnippet = await this.getSnippet(id);
 
-		const globalSnippet = !id.includes(':');
-
-		if (globalSnippet && !this.isMod(msg.member))
+		if (!id.includes(':') && !this.isMod(msg.member))
 			return await sendWithMessageOwnership(
 				msg,
 				":x: You don't have permission to create a global snippet",
@@ -148,50 +134,66 @@ export class SnippetModule extends Module {
 				":x: Cannot edit another user's snippet",
 			);
 
-		const sourceMessage =
-			linkedMessage ??
-			(msg.reference?.messageID != null &&
-				(await msg.channel.messages.fetch(msg.reference?.messageID!)));
-		if (!sourceMessage)
-			return await sendWithMessageOwnership(
-				msg,
-				':x: You have to reply or link to a comment to make it a snippet',
-			);
-
-		const description = sourceMessage.content;
-		const referencedEmbed = sourceMessage.embeds[0];
+		const title = `\`!${id}\`: `;
 		const base = {
 			id,
 			uses: existingSnippet?.uses ?? 0,
 			owner: msg.author.id,
+			title,
 		};
-
-		const title = `\`!${id}\`:`;
-
 		let data: Omit<Snippet, keyof BaseEntity> | undefined;
-		if (LINK_REGEX.exec(description)?.[0] === description)
+
+		if (source && !linkedMessage) {
+			const referencedSnippet = await this.getSnippet(source);
+			if (!referencedSnippet)
+				return await sendWithMessageOwnership(
+					msg,
+					':x: Second argument must be a valid discord message link or snippet id',
+				);
 			data = {
+				...referencedSnippet,
 				...base,
-				content: description,
+				title:
+					base.title +
+					referencedSnippet.title?.split(': ').slice(1).join(': '),
 			};
-		else if (description)
-			data = {
-				...base,
-				title,
-				description,
-				color: parseInt(BLOCKQUOTE_GREY.slice(1), 16),
-			};
-		else if (referencedEmbed)
-			data = {
-				...base,
-				title: referencedEmbed
-					? `${title} ${referencedEmbed.title}`
-					: title,
-				description: referencedEmbed.description,
-				color: referencedEmbed.color,
-				image: referencedEmbed.image?.url,
-				url: referencedEmbed.url,
-			};
+		} else {
+			const sourceMessage =
+				linkedMessage ??
+				(msg.reference?.messageID != null &&
+					(await msg.channel.messages.fetch(
+						msg.reference?.messageID!,
+					)));
+			if (!sourceMessage)
+				return await sendWithMessageOwnership(
+					msg,
+					':x: You have to reply or link to a comment to make it a snippet',
+				);
+
+			const description = sourceMessage.content;
+			const referencedEmbed = sourceMessage.embeds[0];
+
+			if (LINK_REGEX.exec(description)?.[0] === description)
+				data = {
+					...base,
+					content: description,
+				};
+			else if (description)
+				data = {
+					...base,
+					description,
+					color: parseInt(BLOCKQUOTE_GREY.slice(1), 16),
+				};
+			else if (referencedEmbed)
+				data = {
+					...base,
+					title: title + (referencedEmbed.title || ''),
+					description: referencedEmbed.description,
+					color: referencedEmbed.color,
+					image: referencedEmbed.image?.url,
+					url: referencedEmbed.url,
+				};
+		}
 
 		if (!data)
 			return await sendWithMessageOwnership(
@@ -238,9 +240,9 @@ export class SnippetModule extends Module {
 		return member?.hasPermission('MANAGE_MESSAGES') ?? false;
 	}
 
-	private async getMessageFromLink(messageLink: string) {
+	private async getMessageFromLink(messageLink: string | undefined) {
 		const messageLinkExec = DISCORD_MESSAGE_LINK_REGEX_ANCHORED.exec(
-			messageLink || '',
+			messageLink ?? '',
 		);
 		if (!messageLinkExec) return;
 		const guild = this.client.guilds.cache.get(messageLinkExec[1]);
