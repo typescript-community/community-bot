@@ -13,16 +13,10 @@ function getCategoryHelp(cat: string, commands: Set<Command>) {
 	const out: string[] = [];
 
 	for (const cmd of commands) {
-		if (
-			cmd.description &&
-			splitCategoryDescription(cmd.description)[0] === cat
-		) {
-			out.push(
-				`\`${cmd.triggers[0]}\` ► ${cmd.description.substr(
-					cat.length + 2,
-				)}`,
-			);
-		}
+		if (!cmd.description) continue;
+		const [cat2, description] = splitCategoryDescription(cmd.description);
+		if (cat !== cat2) continue;
+		out.push(`\`${cmd.triggers[0]}\` ► ${description}`);
 	}
 
 	return out.join('\n');
