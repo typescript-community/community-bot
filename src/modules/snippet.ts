@@ -72,7 +72,7 @@ export class SnippetModule extends Module {
 
 	@command({
 		description: 'Snippet: List snippets matching an optional filter',
-		aliases: ['snippets'],
+		aliases: ['snippets', 'snips'],
 	})
 	async listSnippets(msg: Message, @optional specifier: string = '*') {
 		const limit = 20;
@@ -99,8 +99,13 @@ export class SnippetModule extends Module {
 
 	@command({
 		description: 'Snippet: Create or edit a snippet',
+		aliases: ['snip', 'snippet'],
 	})
-	async snippet(msg: Message, name: string, @optional messageLink?: string) {
+	async createSnippet(
+		msg: Message,
+		name: string,
+		@optional messageLink?: string,
+	) {
 		if (!msg.member) return;
 
 		const linkedMessage =
@@ -210,6 +215,7 @@ export class SnippetModule extends Module {
 
 	@command({
 		description: 'Snippet: Delete a snippet you own',
+		aliases: ['deleteSnip'],
 	})
 	async deleteSnippet(msg: Message, id: string) {
 		if (!msg.member) return;
