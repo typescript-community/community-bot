@@ -12,7 +12,6 @@ import {
 	Guild,
 	TextChannel,
 	GuildMember,
-	User,
 	ChannelData,
 	CategoryChannel,
 } from 'discord.js';
@@ -52,7 +51,7 @@ It's always ok to just ask your question; you don't need permission.
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
 
-const occupiedMessage = (asker: User) => `
+const occupiedMessage = (asker: GuildMember) => `
 Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
 
 **This channel is reserved by ${asker}.**
@@ -97,13 +96,15 @@ export class HelpChanModule extends Module {
 		.setTitle('⌛ Occupied Help Channel')
 		.setColor(HOURGLASS_ORANGE);
 
-	occupiedEmbed(asker: User) {
+	occupiedEmbed(asker: GuildMember) {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
 			.setFooter(
 				`Closes after ${
 					dormantChannelTimeout / 60 / 60 / 1000
-				} hours of inactivity or when ${asker.username} sends !close.`,
+				} hours of inactivity or when ${
+					asker.displayName
+				} sends !close.`,
 			);
 	}
 
@@ -225,7 +226,7 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		let embed = this.occupiedEmbed(msg.author);
+		let embed = this.occupiedEmbed(msg.member);
 
 		await this.updateStatusEmbed(msg.channel, embed);
 		await msg.pin();
@@ -484,7 +485,7 @@ export class HelpChanModule extends Module {
 		);
 
 		await toPin.pin();
-		const occupied = this.occupiedEmbed(member.user);
+		const occupied = this.occupiedEmbed(member);
 		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
