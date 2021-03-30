@@ -226,14 +226,13 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		let embed = this.occupiedEmbed(msg.member);
+		const occupied = this.occupiedEmbed(msg.member);
 
-		await this.updateStatusEmbed(msg.channel, embed);
-		await msg.pin();
+		await this.updateStatusEmbed(msg.channel, occupied);
 		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
-
 		await this.ensureAskChannels(msg.guild);
+
 		this.busyChannels.delete(msg.channel.id);
 	}
 
@@ -244,7 +243,8 @@ export class HelpChanModule extends Module {
 			msg.channel.type !== 'text' ||
 			!(
 				msg.channel.parentID == categories.ask ||
-				msg.channel.parentID == categories.ongoing
+				msg.channel.parentID == categories.ongoing ||
+				msg.channel.parentID == categories.dormant
 			)
 		)
 			return;
@@ -297,7 +297,13 @@ export class HelpChanModule extends Module {
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
-				await this.updateStatusEmbed(dormant, this.AVAILABLE_EMBED);
+				const msg = await this.updateStatusEmbed(
+					dormant,
+					this.AVAILABLE_EMBED,
+				);
+				// Temporary -- on first deploy, old statuses won't be pinned,
+				// so the update will create a new one instead; pin it!
+				if (!msg.pinned) await msg.pin();
 			} else {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
@@ -311,7 +317,7 @@ export class HelpChanModule extends Module {
 
 				// Channel should already be in ask, but sync the permissions.
 				await this.moveChannel(chan, categories.ask);
-				await chan.send(this.AVAILABLE_EMBED);
+				await chan.send(this.AVAILABLE_EMBED).then(msg => msg.pin());
 			}
 		}
 	}
@@ -339,7 +345,7 @@ export class HelpChanModule extends Module {
 
 		await this.moveChannel(channel, categories.dormant);
 
-		await channel.send(this.DORMANT_EMBED);
+		await channel.send(this.DORMANT_EMBED).then(msg => msg.pin());
 
 		await this.ensureAskChannels(channel.guild);
 		this.busyChannels.delete(channel.id);
@@ -365,28 +371,19 @@ export class HelpChanModule extends Module {
 				this.DORMANT_EMBED.title,
 			].includes(embed.title);
 
-		// The message cache does not have a stable order (at least with respect
-		// to creation date), so sorting is needed to find the latest embed.
-		let lastMessage = channel.messages.cache
+		// There should be only one pinned message, the latest status message.
+		// However, to transition to this new behavior, and just in case someone
+		// accidentally pins a message, we sort & find the most recent status.
+		const lastMessage = (await channel.messages.fetchPinned())
 			.array()
 			.filter(m => m.author && m.author.id === this.client.user?.id)
 			.sort((m1, m2) => m2.createdTimestamp - m1.createdTimestamp)
 			.find(m => m.embeds.some(isStatusEmbed));
 
-		if (!lastMessage)
-			// Fetch has a stable order, with recent messages first
-			lastMessage = (await channel.messages.fetch({ limit: 5 }))
-				.array()
-				.filter(m => m.author && m.author.id === this.client.user?.id)
-				.find(m => m.embeds.some(isStatusEmbed));
-
-		if (lastMessage) {
-			// If there is a last message (the status message) by the bot, edit it
-			await lastMessage.edit(embed);
-		} else {
-			// Otherwise, just send a new message
-			await channel.send(embed);
-		}
+		// If there is a last status message, edit it. Otherwise, send a new message.
+		return lastMessage
+			? await lastMessage.edit(embed)
+			: await channel.send(embed);
 	}
 
 	private async addCooldown(member: GuildMember, channel: TextChannel) {
@@ -478,13 +475,12 @@ export class HelpChanModule extends Module {
 		}
 
 		this.busyChannels.add(claimedChannel.id);
-		const toPin = await claimedChannel.send(
+
+		await claimedChannel.send(
 			new MessageEmbed()
 				.setAuthor(member.displayName, member.user.displayAvatarURL())
 				.setDescription(msgContent),
 		);
-
-		await toPin.pin();
 		const occupied = this.occupiedEmbed(member);
 		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
