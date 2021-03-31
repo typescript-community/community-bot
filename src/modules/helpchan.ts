@@ -21,6 +21,7 @@ import {
 	TS_BLUE,
 	GREEN,
 	HOURGLASS_ORANGE,
+	BALLOT_BOX_BLUE,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
@@ -69,6 +70,14 @@ For more tips, check out StackOverflow's guide on **[asking good questions](http
 Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role (please allow extra time at night in America/Europe).
 `;
 
+const closedMessage = (next: Message, asker?: GuildMember) => `
+Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
+
+This channel is no longer reserved for ${asker ?? '<User not found>'}.
+
+[Jump to the next question](${next.url})
+`;
+
 const DORMANT_MESSAGE = `
 This help channel has been marked as **dormant**, and has been moved into the **Help: Dormant** category at the bottom of the channel list. It is no longer possible to send messages in this channel until it becomes available again.
 
@@ -106,6 +115,16 @@ export class HelpChanModule extends Module {
 					asker.displayName
 				} sends !close.`,
 			);
+	}
+
+	CLOSED_EMBED_BASE = new MessageEmbed()
+		.setTitle('☑ Question Closed')
+		.setColor(BALLOT_BOX_BLUE);
+
+	closedEmbed(next: Message, asker?: GuildMember) {
+		return new MessageEmbed(this.CLOSED_EMBED_BASE).setDescription(
+			closedMessage(next, asker),
+		);
 	}
 
 	DORMANT_EMBED = new MessageEmbed()
@@ -325,15 +344,13 @@ export class HelpChanModule extends Module {
 	private async markChannelAsDormant(channel: TextChannel) {
 		this.busyChannels.add(channel.id);
 
-		const pinned = await channel.messages.fetchPinned();
-		await Promise.all(pinned.map(msg => msg.unpin()));
-
 		const helpUser = await HelpUser.findOne({
 			channelId: channel.id,
 		});
+		let member;
 		if (helpUser) {
 			try {
-				const member = await channel.guild.members.fetch({
+				member = await channel.guild.members.fetch({
 					user: helpUser.userId,
 				});
 				await member.roles.remove(askCooldownRoleId);
@@ -345,7 +362,12 @@ export class HelpChanModule extends Module {
 
 		await this.moveChannel(channel, categories.dormant);
 
-		await channel.send(this.DORMANT_EMBED).then(msg => msg.pin());
+		const newStatus = await channel.send(this.DORMANT_EMBED);
+		const closed = this.closedEmbed(newStatus, member);
+		const pinned = (await channel.messages.fetchPinned()).array();
+		await this.updateStatusEmbed(channel, closed, pinned);
+		await Promise.all(pinned.map(msg => msg.unpin()));
+		await newStatus.pin();
 
 		await this.ensureAskChannels(channel.guild);
 		this.busyChannels.delete(channel.id);
@@ -363,7 +385,11 @@ export class HelpChanModule extends Module {
 		}
 	}
 
-	private async updateStatusEmbed(channel: TextChannel, embed: MessageEmbed) {
+	private async updateStatusEmbed(
+		channel: TextChannel,
+		embed: MessageEmbed,
+		pinned?: Message[],
+	) {
 		const isStatusEmbed = (embed: MessageEmbed) =>
 			[
 				this.AVAILABLE_EMBED.title,
@@ -371,11 +397,12 @@ export class HelpChanModule extends Module {
 				this.DORMANT_EMBED.title,
 			].includes(embed.title);
 
+		if (!pinned) pinned = (await channel.messages.fetchPinned()).array();
+
 		// There should be only one pinned message, the latest status message.
 		// However, to transition to this new behavior, and just in case someone
 		// accidentally pins a message, we sort & find the most recent status.
-		const lastMessage = (await channel.messages.fetchPinned())
-			.array()
+		const lastMessage = pinned
 			.filter(m => m.author && m.author.id === this.client.user?.id)
 			.sort((m1, m2) => m2.createdTimestamp - m1.createdTimestamp)
 			.find(m => m.embeds.some(isStatusEmbed));
