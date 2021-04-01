@@ -37,45 +37,37 @@ import { isTrustedMember } from '../util/inhibitors';
 // This is a hack, but it works even on a system without the fonts to display
 // Discord emoji, so it should work everywhere.
 const AVAILABLE_MESSAGE = `
-Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
-
-**Send your question here to reserve this channel.**
+Each help channel is reserved for one person at a time. See <#${askHelpChannelId}>
+**Nobody is using this channel. Send your question here to reserve it.**
 It's always ok to just ask your question; you don't need permission.
 
-**Please help others help you:** for better and faster answers…
-• Describe the broader context. What are you trying to accomplish and why?
-• Include what you tried (5-15 lines) and any error messages. Say which line they're on.
-⠀• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
-• Reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
-⠀• Paste the full link in its own message. Do not use a link shortener.
+**For better & faster answers:**
+• Explain what you want to happen and why…
+⠀• …and what actually happens, and your best guess at why.
+• Include a short code sample and error messages, if you got any.
+⠀• Text is better than screenshots. Start code blocks with ${'```ts'}.
+• If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
+⠀• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
 
 const occupiedMessage = (asker: GuildMember) => `
-Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
+Each help channel is reserved for one person at a time. See <#${askHelpChannelId}>
+**${asker} is using this channel. Please try to help them, if you can!**
+If you want help, please ask in an available channel instead.
 
-**This channel is reserved by ${asker}.**
-Please help answer their questions, if you can. Thanks!
-
-**${asker} Please help others help you:** For better and faster answers…
-• Describe the broader context. What are you trying to accomplish and why?
-• Include what you tried (5-15 lines) and any error messages. Say which line they're on.
-⠀• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
-• Reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
-⠀• Paste the full link in its own message. Do not use a link shortener.
+**For better & faster answers:**
+• Explain what you want to happen and why…
+⠀• …and what actually happens, and your best guess at why.
+• Include a short code sample and error messages, if you got any.
+⠀• Text is better than screenshots. Start code blocks with ${'```ts'}.
+• If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
+⠀• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 
-Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role (please allow extra time at night in America/Europe).
-`;
-
-const closedMessage = (next: Message, asker?: GuildMember) => `
-Each help channel is dedicated to helping one person at a time. Details: <#${askHelpChannelId}>
-
-This channel is no longer reserved for ${asker ?? '<User not found>'}.
-
-[Jump to the next question](${next.url})
+Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role. Please allow extra time at night in America/Europe.
 `;
 
 const DORMANT_MESSAGE = `
@@ -121,9 +113,9 @@ export class HelpChanModule extends Module {
 		.setTitle('☑ Question Closed')
 		.setColor(BALLOT_BOX_BLUE);
 
-	closedEmbed(next: Message, asker?: GuildMember) {
+	closedEmbed(next: Message) {
 		return new MessageEmbed(this.CLOSED_EMBED_BASE).setDescription(
-			closedMessage(next, asker),
+			`[Jump to the next question](${next.url})`,
 		);
 	}
 
@@ -370,7 +362,7 @@ export class HelpChanModule extends Module {
 			Promise.all<unknown>([
 				this.updateStatusEmbed(
 					channel,
-					this.closedEmbed(newStatus, member),
+					this.closedEmbed(newStatus),
 					pinned.array(),
 				),
 				...pinned
