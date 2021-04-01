@@ -344,30 +344,43 @@ export class HelpChanModule extends Module {
 	private async markChannelAsDormant(channel: TextChannel) {
 		this.busyChannels.add(channel.id);
 
-		const helpUser = await HelpUser.findOne({
+		const memberPromise = HelpUser.findOneOrFail({
 			channelId: channel.id,
-		});
-		let member;
-		if (helpUser) {
-			try {
-				member = await channel.guild.members.fetch({
+		})
+			.then(helpUser =>
+				channel.guild.members.fetch({
 					user: helpUser.userId,
-				});
-				await member.roles.remove(askCooldownRoleId);
-			} catch {
-				// Do nothing, member left the guild
-			}
-		}
-		await HelpUser.delete({ channelId: channel.id });
+				}),
+			)
+			// Do nothing, member left the guild
+			.catch(() => undefined);
 
-		await this.moveChannel(channel, categories.dormant);
+		const pinnedPromise = channel.messages.fetchPinned();
 
-		const newStatus = await channel.send(this.DORMANT_EMBED);
-		const closed = this.closedEmbed(newStatus, member);
-		const pinned = (await channel.messages.fetchPinned()).array();
-		await this.updateStatusEmbed(channel, closed, pinned);
-		await Promise.all(pinned.map(msg => msg.unpin()));
-		await newStatus.pin();
+		const newStatusPromise = this.moveChannel(
+			channel,
+			categories.dormant,
+		).then(() => channel.send(this.DORMANT_EMBED));
+
+		await Promise.all([
+			memberPromise,
+			pinnedPromise,
+			newStatusPromise,
+		]).then(([member, pinned, newStatus]) =>
+			Promise.all<unknown>([
+				this.updateStatusEmbed(
+					channel,
+					this.closedEmbed(newStatus, member),
+					pinned.array(),
+				),
+				...pinned
+					.filter(m => m.id !== newStatus.id)
+					.map(msg => msg.unpin()),
+				newStatus.pin(),
+				HelpUser.delete({ channelId: channel.id }),
+				member?.roles.remove(askCooldownRoleId),
+			]),
+		);
 
 		await this.ensureAskChannels(channel.guild);
 		this.busyChannels.delete(channel.id);
