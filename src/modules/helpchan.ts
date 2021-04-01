@@ -32,10 +32,12 @@ import {
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
-// The indents are made with a braille pattern blank unicode character, since
-// leading whitespace is stripped. https://www.compart.com/en/unicode/U+2800
-// This is a hack, but it works even on a system without the fonts to display
-// Discord emoji, so it should work everywhere.
+// Embeds trim empty lines, and each line trims whitespace. However, sometimes
+// we want those (e.g. to indent) => A braille pattern blank won't be trimmed.
+// This is a hack, but it should work everywhere; it was tested on a system
+// without even the fonts to display regular Discord emoji.
+const u2800 = '⠀'; // https://www.compart.com/en/unicode/U+2800
+
 const AVAILABLE_MESSAGE = `
 Each help channel is reserved for one person at a time. See <#${askHelpChannelId}>
 **Nobody is using this channel. Send your question here to reserve it.**
@@ -43,11 +45,11 @@ It's always ok to just ask your question; you don't need permission.
 
 **For better & faster answers:**
 • Explain what you want to happen and why…
-⠀• …and what actually happens, and your best guess at why.
+${u2800}• …and what actually happens, and your best guess at why.
 • Include a short code sample and error messages, if you got any.
-⠀• Text is better than screenshots. Start code blocks with ${'```ts'}.
+${u2800}• Text is better than screenshots. Start code blocks with ${'```ts'}.
 • If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
-⠀• Send the full link in its own message. Do not use a link shortener.
+${u2800}• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
@@ -59,11 +61,11 @@ If you want help, please ask in an available channel instead.
 
 **For better & faster answers:**
 • Explain what you want to happen and why…
-⠀• …and what actually happens, and your best guess at why.
+${u2800}• …and what actually happens, and your best guess at why.
 • Include a short code sample and error messages, if you got any.
-⠀• Text is better than screenshots. Start code blocks with ${'```ts'}.
+${u2800}• Text is better than screenshots. Start code blocks with ${'```ts'}.
 • If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
-⠀• Send the full link in its own message. Do not use a link shortener.
+${u2800}• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 
