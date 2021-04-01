@@ -310,10 +310,11 @@ export class HelpChanModule extends Module {
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
-				const msg = await this.updateStatusEmbed(
-					dormant,
-					this.AVAILABLE_EMBED,
-				);
+				const msg =
+					(await this.updateStatusEmbed(
+						dormant,
+						this.AVAILABLE_EMBED,
+					)) ?? (await dormant.send(this.AVAILABLE_EMBED));
 				// Temporary -- on first deploy, old statuses won't be pinned,
 				// so the update will create a new one instead; pin it!
 				if (!msg.pinned) await msg.pin();
@@ -415,9 +416,7 @@ export class HelpChanModule extends Module {
 			.find(m => m.embeds.some(isStatusEmbed));
 
 		// If there is a last status message, edit it. Otherwise, send a new message.
-		return lastMessage
-			? await lastMessage.edit(embed)
-			: await channel.send(embed);
+		return await lastMessage?.edit(embed);
 	}
 
 	private async addCooldown(member: GuildMember, channel: TextChannel) {
