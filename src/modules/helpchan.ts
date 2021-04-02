@@ -323,7 +323,7 @@ export class HelpChanModule extends Module {
 					this.getChannelName(guild),
 					{
 						type: 'text',
-						topic: 'Ask your questions here!',
+						topic: `One person may ask questions at a time. The current status is pinned. Details: <#${askHelpChannelId}>`,
 						reason: 'maintain help channel goal',
 						parent: categories.ask,
 					},
