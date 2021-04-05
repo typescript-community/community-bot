@@ -7,6 +7,7 @@ import {
 	Command,
 } from 'cookiecord';
 import { Message, MessageEmbed } from 'discord.js';
+import { Snippet } from '../entities/Snippet';
 import { sendWithMessageOwnership } from '../util/send';
 
 function getCategoryHelp(cat: string, commands: Set<Command>) {
@@ -83,15 +84,27 @@ export class HelpModule extends Module {
 			return await sendWithMessageOwnership(msg, { embed });
 		}
 
-		const cmd = this.client.commandManager.getByTrigger(cmdTrigger);
-		if (!cmd || !cmd.description) {
-			await sendWithMessageOwnership(msg, `:x: Command not found`);
-			return;
+		let cmd: { description?: string; triggers?: string[] } =
+			this.client.commandManager.getByTrigger(cmdTrigger) ?? {};
+		if (!cmd.description && cmdTrigger.includes(':')) {
+			const snippet = await Snippet.findOne(cmdTrigger);
+			if (snippet)
+				cmd = {
+					description: `A custom snippet created by <@${snippet.owner}>`,
+				};
+			else
+				cmd = {
+					description:
+						'Run the first snippet that matches that pattern',
+				};
 		}
+
+		if (!cmd.description)
+			return await sendWithMessageOwnership(msg, `:x: Command not found`);
 
 		const embed = new MessageEmbed().setTitle(`\`${cmdTrigger}\` Usage`);
 		// Get rid of duplicates, this can happen if someone adds the method name as an alias
-		const triggers = new Set(cmd.triggers);
+		const triggers = new Set(cmd.triggers ?? [cmdTrigger]);
 		if (triggers.size > 1) {
 			embed.addField(
 				'Aliases',
