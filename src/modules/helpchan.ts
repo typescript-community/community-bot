@@ -13,6 +13,8 @@ import {
 	TextChannel,
 	GuildMember,
 	User,
+	ChannelData,
+	CategoryChannel,
 } from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
 import {
@@ -189,12 +191,16 @@ export class HelpChanModule extends Module {
 
 	async moveChannel(channel: TextChannel, category: string) {
 		const parent = channel.guild.channels.resolve(category);
-		if (parent == null) return;
-		const data = {
+		if (parent == null || !(parent instanceof CategoryChannel)) return;
+		const data: ChannelData = {
 			parentID: parent.id,
 			permissionOverwrites: parent.permissionOverwrites,
 		};
-		await channel.edit(data);
+		channel = await channel.edit(data);
+		channel = await channel.fetch();
+		await channel.setPosition(
+			(await channel.parent!.fetch()).children.size - 1,
+		);
 	}
 
 	@listener({ event: 'message' })
@@ -356,7 +362,7 @@ export class HelpChanModule extends Module {
 		// to creation date), so sorting is needed to find the latest embed.
 		let lastMessage = channel.messages.cache
 			.array()
-			.filter(m => m.author.id === this.client.user?.id)
+			.filter(m => m.author && m.author.id === this.client.user?.id)
 			.sort((m1, m2) => m2.createdTimestamp - m1.createdTimestamp)
 			.find(m => m.embeds.some(isStatusEmbed));
 
@@ -364,7 +370,7 @@ export class HelpChanModule extends Module {
 			// Fetch has a stable order, with recent messages first
 			lastMessage = (await channel.messages.fetch({ limit: 5 }))
 				.array()
-				.filter(m => m.author.id === this.client.user?.id)
+				.filter(m => m.author && m.author.id === this.client.user?.id)
 				.find(m => m.embeds.some(isStatusEmbed));
 
 		if (lastMessage) {
