@@ -48,6 +48,11 @@ export class HandbookModule extends Module {
 			},
 		]);
 		const hit = data.results[0].hits[0];
+		if (!hit)
+			return await sendWithMessageOwnership(
+				msg,
+				':x: No results found for that query',
+			);
 		const hierarchyParts = [0, 1, 2, 3, 4, 5, 6]
 			.map(i => hit.hierarchy[`lvl${i}`])
 			.filter(x => x);
