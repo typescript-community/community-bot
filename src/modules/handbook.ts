@@ -7,8 +7,6 @@ import { TS_BLUE } from '../env';
 const ALGOLIA_APP_ID = 'BH4D9OD16A';
 const ALGOLIA_API_KEY = '3c2db2aef0c7ff26e8911267474a9b2c';
 const ALGOLIA_INDEX_NAME = 'typescriptlang';
-const HANDBOOK_LOCATION =
-	'https://www.typescriptlang.org/docs/handbook/intro.html';
 
 const algolia = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY, {});
 
@@ -22,13 +20,21 @@ export class HandbookModule extends Module {
 		super(client);
 	}
 
+	HANDBOOK_EMBED = new MessageEmbed()
+		.setColor(TS_BLUE)
+		.setTitle('The TypeScript Handbook')
+		.setURL('https://www.typescriptlang.org/docs/handbook/intro.html')
+		.setFooter('You can search with `!handbook <query>`');
+
 	@command({
 		description: 'Search the TypeScript Handbook',
 		single: true,
 	})
 	async handbook(msg: Message, text: string) {
 		if (!text)
-			return await sendWithMessageOwnership(msg, HANDBOOK_LOCATION);
+			return await sendWithMessageOwnership(msg, {
+				embed: this.HANDBOOK_EMBED,
+			});
 		const data = await algolia.search<AlgoliaResult>([
 			{
 				indexName: ALGOLIA_INDEX_NAME,
