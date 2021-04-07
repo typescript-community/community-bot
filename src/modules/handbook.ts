@@ -28,6 +28,7 @@ export class HandbookModule extends Module {
 
 	@command({
 		description: 'Search the TypeScript Handbook',
+		aliases: ['hb'],
 		single: true,
 	})
 	async handbook(msg: Message, text: string) {
