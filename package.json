@@ -5,6 +5,7 @@
 	"main": "dist/index.js",
 	"dependencies": {
 		"@typescript/twoslash": "^1.1.2",
+		"algoliasearch": "^4.8.6",
 		"cookiecord": "^0.2.12",
 		"dotenv-safe": "^8.2.0",
 		"lz-string": "^1.4.4",
