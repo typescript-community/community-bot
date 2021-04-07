@@ -3,6 +3,7 @@ import { Message, MessageEmbed } from 'discord.js';
 import algoliasearch from 'algoliasearch/lite';
 import { sendWithMessageOwnership } from '../util/send';
 import { TS_BLUE } from '../env';
+import { decode } from 'html-entities';
 
 const ALGOLIA_APP_ID = 'BH4D9OD16A';
 const ALGOLIA_API_KEY = '3c2db2aef0c7ff26e8911267474a9b2c';
@@ -52,8 +53,8 @@ export class HandbookModule extends Module {
 			.filter(x => x);
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
-			.setTitle(hierarchyParts[hierarchyParts.length - 1])
-			.setAuthor(hierarchyParts.slice(0, -1).join(' / '))
+			.setTitle(decode(hierarchyParts[hierarchyParts.length - 1]))
+			.setAuthor(decode(hierarchyParts.slice(0, -1).join(' / ')))
 			.setURL(hit.url);
 		await sendWithMessageOwnership(msg, { embed });
 	}

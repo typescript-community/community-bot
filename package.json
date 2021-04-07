@@ -8,6 +8,7 @@
 		"algoliasearch": "^4.8.6",
 		"cookiecord": "^0.2.12",
 		"dotenv-safe": "^8.2.0",
+		"html-entities": "^2.3.2",
 		"lz-string": "^1.4.4",
 		"node-fetch": "^2.6.1",
 		"parse-duration": "^0.4.4",
