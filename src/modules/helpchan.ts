@@ -31,6 +31,7 @@ import {
 	askHelpChannelId,
 	ongoingEmptyTimeout,
 	trustedRoleId,
+	dormantChannelTimeoutHours,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
@@ -81,7 +82,7 @@ Help channels work a little differently on this server. So that people aren't ta
 • Someone will (hopefully!) come along and help you.
 • When your question(s) are resolved, type \`!close\`.
 
-Help channels will be automatically closed after 18 hours of inactivity. When a channel is closed, it moves into the ":zzz: | Dormant Help Channels" category to eventually be recycled back into the ":white_check_mark: | Available Help Channels" category.
+Help channels will be automatically closed after ${dormantChannelTimeoutHours} hours of inactivity. When a channel is closed, it moves into the ":zzz: | Dormant Help Channels" category to eventually be recycled back into the ":white_check_mark: | Available Help Channels" category.
 `;
 
 export class HelpChanModule extends Module {
@@ -96,9 +97,7 @@ export class HelpChanModule extends Module {
 		.setColor(GREEN)
 		.setDescription(AVAILABLE_MESSAGE)
 		.setFooter(
-			`Closes after ${
-				dormantChannelTimeout / 60 / 60 / 1000
-			} hours of inactivity or when you send !close.`,
+			`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when you send !close.`,
 		);
 
 	OCCUPIED_EMBED_BASE = new MessageEmbed()
@@ -109,9 +108,7 @@ export class HelpChanModule extends Module {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
 			.setFooter(
-				`Closes after ${
-					dormantChannelTimeout / 60 / 60 / 1000
-				} hours of inactivity or when ${asker.username} sends !close.`,
+				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker.username} sends !close.`,
 			);
 	}
 
