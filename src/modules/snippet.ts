@@ -262,7 +262,7 @@ const interpretSpecifier = async (
 	limit: number,
 ): Promise<SnippetInfo[]> => {
 	specifier = specifier.replace(/\\/g, '');
-	if (/[^\w:*%]/.test(specifier)) return [];
+	if (/[^\w:*%-]/.test(specifier)) return [];
 	// `%` is SQL's /.*/g for LIKE
 	specifier = specifier.replace(/\*/g, '%');
 	const baseQuery = () =>

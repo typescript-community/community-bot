@@ -11,6 +11,7 @@ import { RepModule } from './modules/rep';
 import { TwoslashModule } from './modules/twoslash';
 import { HelpModule } from './modules/help';
 import { SnippetModule } from './modules/snippet';
+import { HandbookModule } from './modules/handbook';
 
 const client = new CookiecordClient(
 	{
@@ -32,6 +33,7 @@ for (const mod of [
 	TwoslashModule,
 	HelpModule,
 	SnippetModule,
+	HandbookModule,
 ]) {
 	client.registerModule(mod);
 }
