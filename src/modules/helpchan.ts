@@ -244,6 +244,7 @@ export class HelpChanModule extends Module {
 		await this.updateStatusEmbed(msg.channel, occupied);
 		await this.addCooldown(msg.member, msg.channel);
 		await this.moveChannel(msg.channel, categories.ongoing);
+		await msg.pin();
 		await this.ensureAskChannels(msg.guild);
 
 		this.busyChannels.delete(msg.channel.id);
@@ -509,7 +510,7 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(claimedChannel.id);
 
-		await claimedChannel.send(
+		const newMsg = await claimedChannel.send(
 			new MessageEmbed()
 				.setAuthor(member.displayName, member.user.displayAvatarURL())
 				.setDescription(msgContent),
@@ -518,6 +519,7 @@ export class HelpChanModule extends Module {
 		await this.updateStatusEmbed(claimedChannel, occupied);
 		await this.addCooldown(member, claimedChannel);
 		await this.moveChannel(claimedChannel, categories.ongoing);
+		await newMsg.pin();
 		await claimedChannel.send(
 			`${member.user} this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
 		);
