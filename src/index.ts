@@ -21,6 +21,7 @@ const client = new CookiecordClient(
 	{
 		ws: { intents: Intents.NON_PRIVILEGED },
 		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],
+		disableMentions: 'everyone',
 	},
 );
 

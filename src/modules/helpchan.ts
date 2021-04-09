@@ -404,9 +404,7 @@ export class HelpChanModule extends Module {
 		if (!guildTarget) return;
 
 		if (!guildTarget.roles.cache.has(askCooldownRoleId)) {
-			await msg.channel.send(
-				`${guildTarget.displayName} doesn't have a cooldown.`,
-			);
+			await msg.channel.send(`${guildTarget} doesn't have a cooldown.`);
 			return;
 		}
 
@@ -416,14 +414,12 @@ export class HelpChanModule extends Module {
 
 		if (helpUser) {
 			return msg.channel.send(
-				`${guildTarget.displayName} has an active help channel: <#${helpUser.channelId}>`,
+				`${guildTarget} has an active help channel: <#${helpUser.channelId}>`,
 			);
 		}
 
 		await guildTarget.roles.remove(askCooldownRoleId);
-		await msg.channel.send(
-			`Removed ${guildTarget.displayName}'s cooldown.`,
-		);
+		await msg.channel.send(`Removed ${guildTarget}'s cooldown.`);
 	}
 
 	@command({
