@@ -6,7 +6,7 @@
 	"dependencies": {
 		"@typescript/twoslash": "^1.1.2",
 		"algoliasearch": "^4.8.6",
-		"cookiecord": "^0.2.12",
+		"cookiecord": "^0.5.18",
 		"dotenv-safe": "^8.2.0",
 		"html-entities": "^2.3.2",
 		"lz-string": "^1.4.4",

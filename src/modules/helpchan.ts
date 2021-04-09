@@ -14,6 +14,8 @@ import {
 	GuildMember,
 	ChannelData,
 	CategoryChannel,
+	GuildManager,
+	Channel,
 } from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
 import {
@@ -29,6 +31,7 @@ import {
 	askHelpChannelId,
 	ongoingEmptyTimeout,
 	trustedRoleId,
+	dormantChannelTimeoutHours,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
@@ -78,6 +81,18 @@ This help channel has been marked as **dormant**, and has been moved into the **
 If your question wasn't answered yet, you can claim a new help channel from the **Help: Available** category by simply asking your question again. Consider rephrasing the question to maximize your chance of getting a good answer. If you're not sure how, have a look through [StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask)
 `;
 
+const helpMessage = (channels: Channel[]) => `
+Help channels work a little differently on this server. So that people aren't talking over each other, only one person may ask for help in a channel at a time.
+• Send a message to a help channel in the ":white_check_mark: | Available Help Channels" category (**currently ${channels.join(
+	' and ',
+)}**).
+• Our bot will move your channel to ":hourglass: | Occupied Help Channels".
+• Someone will (hopefully!) come along and help you.
+• When your question(s) are resolved, type \`!close\`.
+
+Help channels will be automatically closed after ${dormantChannelTimeoutHours} hours of inactivity. When a channel is closed, it moves into the ":zzz: | Dormant Help Channels" category to eventually be recycled back into the ":white_check_mark: | Available Help Channels" category.
+`;
+
 export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
@@ -90,9 +105,7 @@ export class HelpChanModule extends Module {
 		.setColor(GREEN)
 		.setDescription(AVAILABLE_MESSAGE)
 		.setFooter(
-			`Closes after ${
-				dormantChannelTimeout / 60 / 60 / 1000
-			} hours of inactivity or when you send !close.`,
+			`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when you send !close.`,
 		);
 
 	OCCUPIED_EMBED_BASE = new MessageEmbed()
@@ -102,13 +115,7 @@ export class HelpChanModule extends Module {
 	occupiedEmbed(asker: GuildMember) {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
-			.setFooter(
-				`Closes after ${
-					dormantChannelTimeout / 60 / 60 / 1000
-				} hours of inactivity or when ${
-					asker.displayName
-				} sends !close.`,
-			);
+			.setFooter(`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker.username} sends !close.`);
 	}
 
 	CLOSED_EMBED_BASE = new MessageEmbed()
@@ -217,9 +224,10 @@ export class HelpChanModule extends Module {
 			permissionOverwrites: parent.permissionOverwrites,
 		};
 		channel = await channel.edit(data);
-		channel = await channel.fetch();
+		channel = (await channel.fetch()) as TextChannel;
 		await channel.setPosition(
-			(await channel.parent!.fetch()).children.size - 1,
+			((await channel.parent!.fetch()) as CategoryChannel).children.size -
+				1,
 		);
 	}
 
@@ -299,13 +307,14 @@ export class HelpChanModule extends Module {
 		}
 	}
 
+	getAvailableChannels(guild: Guild) {
+		return guild.channels.cache
+			.filter(channel => channel.parentID == categories.ask)
+			.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX));
+	}
+
 	async ensureAskChannels(guild: Guild) {
-		while (
-			guild.channels.cache
-				.filter(channel => channel.parentID == categories.ask)
-				.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX))
-				.size !== 2
-		) {
+		while (this.getAvailableChannels(guild).size !== 2) {
 			const dormant = guild.channels.cache.find(
 				x => x.parentID == categories.dormant,
 			);
@@ -335,6 +344,20 @@ export class HelpChanModule extends Module {
 				await chan.send(this.AVAILABLE_EMBED).then(msg => msg.pin());
 			}
 		}
+		await this.updateHelpMessage(guild);
+	}
+
+	async updateHelpMessage(guild: Guild) {
+		const askHelpChannel = guild.channels.cache.get(askHelpChannelId);
+		if (!askHelpChannel || !(askHelpChannel instanceof TextChannel)) return;
+		const availableChannels = this.getAvailableChannels(guild).array();
+		const newMessageText = helpMessage(availableChannels);
+		const lastMessage =
+			askHelpChannel.lastMessage ??
+			(await askHelpChannel.messages.fetch({ limit: 1 })).array()[0];
+		if (lastMessage?.author.id === this.client.user!.id)
+			lastMessage.edit(newMessageText);
+		else askHelpChannel.send(newMessageText);
 	}
 
 	private async markChannelAsDormant(channel: TextChannel) {
@@ -441,9 +464,7 @@ export class HelpChanModule extends Module {
 		if (!guildTarget) return;
 
 		if (!guildTarget.roles.cache.has(askCooldownRoleId)) {
-			await msg.channel.send(
-				`${guildTarget.displayName} doesn't have a cooldown.`,
-			);
+			await msg.channel.send(`${guildTarget} doesn't have a cooldown.`);
 			return;
 		}
 
@@ -453,14 +474,12 @@ export class HelpChanModule extends Module {
 
 		if (helpUser) {
 			return msg.channel.send(
-				`${guildTarget.displayName} has an active help channel: <#${helpUser.channelId}>`,
+				`${guildTarget} has an active help channel: <#${helpUser.channelId}>`,
 			);
 		}
 
 		await guildTarget.roles.remove(askCooldownRoleId);
-		await msg.channel.send(
-			`Removed ${guildTarget.displayName}'s cooldown.`,
-		);
+		await msg.channel.send(`Removed ${guildTarget}'s cooldown.`);
 	}
 
 	@command({

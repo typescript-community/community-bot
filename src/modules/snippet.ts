@@ -188,10 +188,10 @@ export class SnippetModule extends Module {
 				data = {
 					...base,
 					title: title + (referencedEmbed.title || ''),
-					description: referencedEmbed.description,
-					color: referencedEmbed.color,
+					description: referencedEmbed.description!,
+					color: referencedEmbed.color!,
 					image: referencedEmbed.image?.url,
-					url: referencedEmbed.url,
+					url: referencedEmbed.url!,
 				};
 		}
 
