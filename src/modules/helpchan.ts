@@ -247,12 +247,12 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		const occupied = this.occupiedEmbed(msg.member);
-
-		await this.updateStatusEmbed(msg.channel, occupied);
-		await this.addCooldown(msg.member, msg.channel);
-		await this.moveChannel(msg.channel, categories.ongoing);
-		await msg.pin();
+		await Promise.all([
+			this.updateStatusEmbed(msg.channel, this.occupiedEmbed(msg.member)),
+			this.addCooldown(msg.member, msg.channel),
+			this.moveChannel(msg.channel, categories.ongoing),
+			msg.pin(),
+		]);
 		await this.ensureAskChannels(msg.guild);
 
 		this.busyChannels.delete(msg.channel.id);
@@ -529,16 +529,16 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(claimedChannel.id);
 
-		const newMsg = await claimedChannel.send(
-			new MessageEmbed()
-				.setAuthor(member.displayName, member.user.displayAvatarURL())
-				.setDescription(msgContent),
-		);
-		const occupied = this.occupiedEmbed(member);
-		await this.updateStatusEmbed(claimedChannel, occupied);
-		await this.addCooldown(member, claimedChannel);
-		await this.moveChannel(claimedChannel, categories.ongoing);
-		await newMsg.pin();
+		const questionEmbed = new MessageEmbed()
+			.setAuthor(member.displayName, member.user.displayAvatarURL())
+			.setDescription(msgContent);
+
+		await Promise.all([
+			claimedChannel.send(questionEmbed).then(m => m.pin()),
+			this.updateStatusEmbed(claimedChannel, this.occupiedEmbed(member)),
+			this.addCooldown(member, claimedChannel),
+			await this.moveChannel(claimedChannel, categories.ongoing),
+		]);
 		await claimedChannel.send(
 			`${member.user} this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
 		);
