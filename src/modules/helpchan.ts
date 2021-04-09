@@ -208,9 +208,10 @@ export class HelpChanModule extends Module {
 			permissionOverwrites: parent.permissionOverwrites,
 		};
 		channel = await channel.edit(data);
-		channel = await channel.fetch();
+		channel = (await channel.fetch()) as TextChannel;
 		await channel.setPosition(
-			(await channel.parent!.fetch()).children.size - 1,
+			((await channel.parent!.fetch()) as CategoryChannel).children.size -
+				1,
 		);
 	}
 
