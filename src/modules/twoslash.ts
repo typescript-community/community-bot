@@ -85,7 +85,9 @@ export class TwoslashModule extends Module {
 
 	@listener({ event: 'message' })
 	async onTwoslashCodeBlock(msg: Message) {
-		const match = msg.content.match(/^```ts twoslash\n([\s\S]+)```$/im);
+		const match = msg.content.match(
+			/^```(?:ts |typescript )?twoslash\n([\s\S]+)```$/im,
+		);
 		if (!msg.author.bot && match) {
 			await this.twoslashBlock(msg, match[1]);
 			await msg.delete();
