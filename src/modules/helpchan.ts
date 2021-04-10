@@ -115,7 +115,9 @@ export class HelpChanModule extends Module {
 	occupiedEmbed(asker: GuildMember) {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
-			.setFooter(`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker.username} sends !close.`);
+			.setFooter(
+				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker} sends !close.`,
+			);
 	}
 
 	CLOSED_EMBED_BASE = new MessageEmbed()
