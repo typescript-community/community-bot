@@ -12,7 +12,6 @@ import {
 	Guild,
 	TextChannel,
 	GuildMember,
-	User,
 	ChannelData,
 	CategoryChannel,
 	GuildManager,
@@ -24,6 +23,7 @@ import {
 	TS_BLUE,
 	GREEN,
 	HOURGLASS_ORANGE,
+	BALLOT_BOX_BLUE,
 	askCooldownRoleId,
 	channelNames,
 	dormantChannelTimeout,
@@ -35,36 +35,44 @@ import {
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
-const AVAILABLE_MESSAGE = `
-**Send your question here to claim the channel**
-This channel will be dedicated to answering your question only. Others will try to answer and help you solve the issue.
+// Embeds trim empty lines, and each line trims whitespace. However, sometimes
+// we want those (e.g. to indent) => A braille pattern blank won't be trimmed.
+// This is a hack, but it should work everywhere; it was tested on a system
+// without even the fonts to display regular Discord emoji.
+const u2800 = '⠀'; // https://www.compart.com/en/unicode/U+2800
 
-**Keep in mind:**
-• It's always ok to just ask your question. You don't need permission.
-• Explain what you expect to happen and what actually happens.
-• Include a code sample and error message, if you got any.
+const AVAILABLE_MESSAGE = `
+Each help channel is reserved for one person at a time. See <#${askHelpChannelId}>
+**Nobody is using this channel. Send your question here to reserve it.**
+It's always ok to just ask your question; you don't need permission.
+
+**For better & faster answers:**
+• Explain what you want to happen and why…
+${u2800}• …and what actually happens, and your best guess at why.
+• Include a short code sample and error messages, if you got any.
+${u2800}• Text is better than screenshots. Start code blocks with ${'```ts'}.
+• If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
+${u2800}• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `;
 
-// The "empty" line has a braille pattern blank unicode character, in order to
-// achieve a leading newline, since normally whitespace is stripped. This is a
-// hack, but it works even on a system without the fonts to display Discord
-// emoji, so it should work everywhere. https://www.compart.com/en/unicode/U+2800
-const occupiedMessage = (asker: User) => `
-⠀
-**This channel is claimed by ${asker}.**
-It is dedicated to answering their questions only. More info: <#${askHelpChannelId}>
+const occupiedMessage = (asker: GuildMember) => `
+Each help channel is reserved for one person at a time. See <#${askHelpChannelId}>
+**${asker} is using this channel. Please try to help them, if you can!**
+If you want help, please ask in an available channel instead.
 
-**${asker} You'll get better and faster answers if you:**
-• Describe the context. What are you trying to accomplish?
-• Include any error messages, and the code that produce them (5-15 lines).
-• Use code blocks, not screenshots. Start with ${'```ts'} for syntax highlighting.
-• Also reproduce the issue in the **[TypeScript Playground](https://www.typescriptlang.org/play)**, if possible.
-
-Usually someone will try to answer and help solve the issue within a few hours. If not, and you have followed the bullets above, you may ping the <@&${trustedRoleId}> role.
+**For better & faster answers:**
+• Explain what you want to happen and why…
+${u2800}• …and what actually happens, and your best guess at why.
+• Include a short code sample and error messages, if you got any.
+${u2800}• Text is better than screenshots. Start code blocks with ${'```ts'}.
+• If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
+${u2800}• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+
+Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role. Please allow extra time at night in America/Europe.
 `;
 
 const DORMANT_MESSAGE = `
@@ -104,12 +112,22 @@ export class HelpChanModule extends Module {
 		.setTitle('⌛ Occupied Help Channel')
 		.setColor(HOURGLASS_ORANGE);
 
-	occupiedEmbed(asker: User) {
+	occupiedEmbed(asker: GuildMember) {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
 			.setFooter(
-				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker.username} sends !close.`,
+				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker} sends !close.`,
 			);
+	}
+
+	CLOSED_EMBED_BASE = new MessageEmbed()
+		.setTitle('☑ Question Closed')
+		.setColor(BALLOT_BOX_BLUE);
+
+	closedEmbed(next: Message) {
+		return new MessageEmbed(this.CLOSED_EMBED_BASE).setDescription(
+			`[Jump to the next question](${next.url})`,
+		);
 	}
 
 	DORMANT_EMBED = new MessageEmbed()
@@ -231,14 +249,14 @@ export class HelpChanModule extends Module {
 
 		this.busyChannels.add(msg.channel.id);
 
-		let embed = this.occupiedEmbed(msg.author);
-
-		await this.updateStatusEmbed(msg.channel, embed);
-		await msg.pin();
-		await this.addCooldown(msg.member, msg.channel);
-		await this.moveChannel(msg.channel, categories.ongoing);
-
+		await Promise.all([
+			this.updateStatusEmbed(msg.channel, this.occupiedEmbed(msg.member)),
+			this.addCooldown(msg.member, msg.channel),
+			this.moveChannel(msg.channel, categories.ongoing),
+			msg.pin(),
+		]);
 		await this.ensureAskChannels(msg.guild);
+
 		this.busyChannels.delete(msg.channel.id);
 	}
 
@@ -249,7 +267,8 @@ export class HelpChanModule extends Module {
 			msg.channel.type !== 'text' ||
 			!(
 				msg.channel.parentID == categories.ask ||
-				msg.channel.parentID == categories.ongoing
+				msg.channel.parentID == categories.ongoing ||
+				msg.channel.parentID == categories.dormant
 			)
 		)
 			return;
@@ -303,13 +322,20 @@ export class HelpChanModule extends Module {
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
-				await this.updateStatusEmbed(dormant, this.AVAILABLE_EMBED);
+				const msg =
+					(await this.updateStatusEmbed(
+						dormant,
+						this.AVAILABLE_EMBED,
+					)) ?? (await dormant.send(this.AVAILABLE_EMBED));
+				// Temporary -- on first deploy, old statuses won't be pinned,
+				// so the update will create a new one instead; pin it!
+				if (!msg.pinned) await msg.pin();
 			} else {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
 					{
 						type: 'text',
-						topic: 'Ask your questions here!',
+						topic: `One person may ask questions at a time. The current status is pinned. Details: <#${askHelpChannelId}>`,
 						reason: 'maintain help channel goal',
 						parent: categories.ask,
 					},
@@ -317,7 +343,7 @@ export class HelpChanModule extends Module {
 
 				// Channel should already be in ask, but sync the permissions.
 				await this.moveChannel(chan, categories.ask);
-				await chan.send(this.AVAILABLE_EMBED);
+				await chan.send(this.AVAILABLE_EMBED).then(msg => msg.pin());
 			}
 		}
 		await this.updateHelpMessage(guild);
@@ -339,27 +365,43 @@ export class HelpChanModule extends Module {
 	private async markChannelAsDormant(channel: TextChannel) {
 		this.busyChannels.add(channel.id);
 
-		const pinned = await channel.messages.fetchPinned();
-		await Promise.all(pinned.map(msg => msg.unpin()));
-
-		const helpUser = await HelpUser.findOne({
+		const memberPromise = HelpUser.findOneOrFail({
 			channelId: channel.id,
-		});
-		if (helpUser) {
-			try {
-				const member = await channel.guild.members.fetch({
+		})
+			.then(helpUser =>
+				channel.guild.members.fetch({
 					user: helpUser.userId,
-				});
-				await member.roles.remove(askCooldownRoleId);
-			} catch {
-				// Do nothing, member left the guild
-			}
-		}
-		await HelpUser.delete({ channelId: channel.id });
+				}),
+			)
+			// Do nothing, member left the guild
+			.catch(() => undefined);
 
-		await this.moveChannel(channel, categories.dormant);
+		const pinnedPromise = channel.messages.fetchPinned();
 
-		await channel.send(this.DORMANT_EMBED);
+		const newStatusPromise = this.moveChannel(
+			channel,
+			categories.dormant,
+		).then(() => channel.send(this.DORMANT_EMBED));
+
+		await Promise.all([
+			memberPromise,
+			pinnedPromise,
+			newStatusPromise,
+		]).then(([member, pinned, newStatus]) =>
+			Promise.all<unknown>([
+				this.updateStatusEmbed(
+					channel,
+					this.closedEmbed(newStatus),
+					pinned.array(),
+				),
+				...pinned
+					.filter(m => m.id !== newStatus.id)
+					.map(msg => msg.unpin()),
+				newStatus.pin(),
+				HelpUser.delete({ channelId: channel.id }),
+				member?.roles.remove(askCooldownRoleId),
+			]),
+		);
 
 		await this.ensureAskChannels(channel.guild);
 		this.busyChannels.delete(channel.id);
@@ -377,7 +419,11 @@ export class HelpChanModule extends Module {
 		}
 	}
 
-	private async updateStatusEmbed(channel: TextChannel, embed: MessageEmbed) {
+	private async updateStatusEmbed(
+		channel: TextChannel,
+		embed: MessageEmbed,
+		pinned?: Message[],
+	) {
 		const isStatusEmbed = (embed: MessageEmbed) =>
 			[
 				this.AVAILABLE_EMBED.title,
@@ -385,28 +431,18 @@ export class HelpChanModule extends Module {
 				this.DORMANT_EMBED.title,
 			].includes(embed.title);
 
-		// The message cache does not have a stable order (at least with respect
-		// to creation date), so sorting is needed to find the latest embed.
-		let lastMessage = channel.messages.cache
-			.array()
+		if (!pinned) pinned = (await channel.messages.fetchPinned()).array();
+
+		// There should be only one pinned message, the latest status message.
+		// However, to transition to this new behavior, and just in case someone
+		// accidentally pins a message, we sort & find the most recent status.
+		const lastMessage = pinned
 			.filter(m => m.author && m.author.id === this.client.user?.id)
 			.sort((m1, m2) => m2.createdTimestamp - m1.createdTimestamp)
 			.find(m => m.embeds.some(isStatusEmbed));
 
-		if (!lastMessage)
-			// Fetch has a stable order, with recent messages first
-			lastMessage = (await channel.messages.fetch({ limit: 5 }))
-				.array()
-				.filter(m => m.author && m.author.id === this.client.user?.id)
-				.find(m => m.embeds.some(isStatusEmbed));
-
-		if (lastMessage) {
-			// If there is a last message (the status message) by the bot, edit it
-			await lastMessage.edit(embed);
-		} else {
-			// Otherwise, just send a new message
-			await channel.send(embed);
-		}
+		// If there is a last status message, edit it. Otherwise, send a new message.
+		return await lastMessage?.edit(embed);
 	}
 
 	private async addCooldown(member: GuildMember, channel: TextChannel) {
@@ -494,17 +530,17 @@ export class HelpChanModule extends Module {
 		}
 
 		this.busyChannels.add(claimedChannel.id);
-		const toPin = await claimedChannel.send(
-			new MessageEmbed()
-				.setAuthor(member.displayName, member.user.displayAvatarURL())
-				.setDescription(msgContent),
-		);
 
-		await toPin.pin();
-		const occupied = this.occupiedEmbed(member.user);
-		await this.updateStatusEmbed(claimedChannel, occupied);
-		await this.addCooldown(member, claimedChannel);
-		await this.moveChannel(claimedChannel, categories.ongoing);
+		const questionEmbed = new MessageEmbed()
+			.setAuthor(member.displayName, member.user.displayAvatarURL())
+			.setDescription(msgContent);
+
+		await Promise.all([
+			claimedChannel.send(questionEmbed).then(m => m.pin()),
+			this.updateStatusEmbed(claimedChannel, this.occupiedEmbed(member)),
+			this.addCooldown(member, claimedChannel),
+			await this.moveChannel(claimedChannel, categories.ongoing),
+		]);
 		await claimedChannel.send(
 			`${member.user} this channel has been claimed for your question. Please review <#${askHelpChannelId}> for how to get help.`,
 		);
