@@ -3,7 +3,7 @@ import { decompressFromEncodedURIComponent } from 'lz-string';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript)?\n([\s\S]+)```/;
 
-export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?typescriptlang\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*#code\/([\w-+_]+={0,4})/;
+export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?typescriptlang\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*)#code\/([\w\-+_]+={0,4})/;
 
 export async function findCodeblockFromChannel(
 	channel: TextChannel,
@@ -31,20 +31,20 @@ export async function findCodeFromChannel(channel: TextChannel) {
 	for (const { author, content, embeds } of msgs) {
 		if (!author.bot) {
 			const match = content.match(CODEBLOCK_REGEX);
-			if (match && match[1].length) {
-				return match[1];
+			if (match && match[2].length) {
+				return match[2];
 			}
 		}
 
 		const match = content.match(PLAYGROUND_REGEX);
 		if (match) {
-			return decompressFromEncodedURIComponent(match[1]);
+			return decompressFromEncodedURIComponent(match[2]);
 		}
 
 		for (const embed of embeds) {
 			const match = embed.url?.match(PLAYGROUND_REGEX);
 			if (match) {
-				return decompressFromEncodedURIComponent(match[1]);
+				return decompressFromEncodedURIComponent(match[2]);
 			}
 		}
 	}
