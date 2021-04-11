@@ -11,10 +11,7 @@ import {
 	decompressFromEncodedURIComponent,
 } from 'lz-string';
 import { TS_BLUE } from '../env';
-import {
-	findCodeblockFromChannel,
-	PLAYGROUND_REGEX,
-} from '../util/findCodeblockFromChannel';
+import { findCodeblockFromChannel, PLAYGROUND_REGEX } from '../util/codeBlocks';
 import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 import fetch from 'node-fetch';

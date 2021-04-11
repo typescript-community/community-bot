@@ -1,10 +1,7 @@
 import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
-import {
-	makeCodeBlock,
-	findCodeFromChannel,
-} from '../util/findCodeblockFromChannel';
+import { makeCodeBlock, findCodeFromChannel } from '../util/codeBlocks';
 import { sendWithMessageOwnership } from '../util/send';
 
 // Remove `@noErrorTruncation` from the source; this can cause lag/crashes for large errors
