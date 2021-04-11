@@ -3,7 +3,7 @@ import { decompressFromEncodedURIComponent } from 'lz-string';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript)?\n([\s\S]+)```/;
 
-export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?typescriptlang\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*)#code\/([\w\-+_]+={0,4})/;
+export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*)#code\/([\w\-+_]+={0,4})/;
 
 export async function findCodeblockFromChannel(
 	channel: TextChannel,
