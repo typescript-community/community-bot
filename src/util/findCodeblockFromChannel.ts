@@ -49,3 +49,28 @@ export async function findCodeFromChannel(channel: TextChannel) {
 		}
 	}
 }
+
+const CODEBLOCK = '```';
+// 2048 is the most characters Discord allows in a message/embed
+const MAX_CODE_LENGTH = 2048 - `${CODEBLOCK}ts\n${CODEBLOCK}`.length;
+
+export function makeCodeBlock(code: string) {
+	return `${CODEBLOCK}ts\n${truncate(
+		escapeCode(code),
+		MAX_CODE_LENGTH,
+	)}${CODEBLOCK}`;
+}
+
+// Note: If str.length === cutoff, the string fits! No need to truncate.
+// (This is an easy off-by-one error to make)
+export function truncate(str: string, max: number) {
+	return str.length <= max ? str : str.slice(0, max - 1) + '…';
+}
+
+// Custom escape function instead of using discord.js Util.escapeCodeBlock because this
+// produces better results with template literal types. Discord's markdown handling is pretty
+// bad. It doesn't properly handle escaping back ticks, so we instead insert zero width spaces
+// so that users cannot escape our code block.
+function escapeCode(code: string) {
+	return code.replace(/`(?=`)/g, '`\u200B');
+}
