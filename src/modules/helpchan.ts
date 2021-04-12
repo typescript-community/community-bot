@@ -116,7 +116,7 @@ export class HelpChanModule extends Module {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
 			.setFooter(
-				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker} sends !close.`,
+				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker.displayName} sends !close.`,
 			);
 	}
 
