@@ -10,16 +10,22 @@ import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
 } from 'lz-string';
+import { format } from 'prettier';
+import { URLSearchParams } from 'url';
 import { TS_BLUE } from '../env';
 import {
+	makeCodeBlock,
 	findCodeblockFromChannel,
 	PLAYGROUND_REGEX,
-} from '../util/findCodeblockFromChannel';
+	truncate,
+} from '../util/codeBlocks';
 import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 import fetch from 'node-fetch';
 
 const LINK_SHORTENER_ENDPOINT = 'https://tsplay.dev/api/short';
+const MAX_EMBED_LENGTH = 512;
+const DEFAULT_EMBED_LENGTH = 256;
 
 export class PlaygroundModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -57,10 +63,11 @@ export class PlaygroundModule extends Module {
 	@listener({ event: 'message' })
 	async onPlaygroundLinkMessage(msg: Message) {
 		if (msg.author.bot) return;
-		const url = extractPlaygroundLink(msg.content);
-		if (!url) return;
-		const embed = createPlaygroundEmbed(msg.author, url);
-		if (url === msg.content) {
+		if (msg.content[0] === '!') return;
+		const exec = PLAYGROUND_REGEX.exec(msg.content);
+		if (!exec) return;
+		const embed = createPlaygroundEmbed(msg.author, exec);
+		if (exec[0] === msg.content) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, { embed });
 			await msg.delete();
@@ -80,17 +87,13 @@ export class PlaygroundModule extends Module {
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
 		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
-		const originalUrl = extractPlaygroundLink(content);
+		const exec = PLAYGROUND_REGEX.exec(content);
 		// By default, if you write a message in the box and then paste a long
 		// playground link, it will only put the paste in message.txt and will
 		// put the rest of the message in msg.content
-		if (!originalUrl || originalUrl !== content) return;
-		const shortenedUrl = await shortenPlaygroundLink(originalUrl);
-		const embed = createPlaygroundEmbed(
-			msg.author,
-			originalUrl,
-			shortenedUrl,
-		);
+		if (!exec || exec[0] !== content) return;
+		const shortenedUrl = await shortenPlaygroundLink(exec[0]);
+		const embed = createPlaygroundEmbed(msg.author, exec, shortenedUrl);
 		await sendWithMessageOwnership(msg, { embed });
 		if (!msg.content) await msg.delete();
 	}
@@ -98,30 +101,74 @@ export class PlaygroundModule extends Module {
 	@listener({ event: 'messageUpdate' })
 	async onLongFix(_oldMsg: Message, msg: Message) {
 		if (msg.partial) await msg.fetch();
-		const url = extractPlaygroundLink(msg.content);
-		if (msg.author.bot || !this.editedLongLink.has(msg.id) || url) return;
+		const exec = PLAYGROUND_REGEX.exec(msg.content);
+		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		await botMsg?.edit('');
 		this.editedLongLink.delete(msg.id);
 	}
 }
 
-function extractPlaygroundLink(content: string) {
-	const exec = PLAYGROUND_REGEX.exec(content);
-	return exec?.[0] ?? null;
-}
-
+// Take care when messing with the truncation, it's extremely finnicky
 function createPlaygroundEmbed(
 	author: User,
-	originalUrl: string,
-	processedUrl: string = originalUrl,
+	[_url, query, code]: RegExpExecArray,
+	url: string = _url,
 ) {
-	return new MessageEmbed()
+	const embed = new MessageEmbed()
 		.setColor(TS_BLUE)
 		.setTitle('Shortened Playground Link')
 		.setAuthor(author.tag, author.displayAvatarURL())
-		.setDescription(extractOneLinerFromURL(originalUrl))
-		.setURL(processedUrl);
+		.setURL(url);
+
+	const unzipped = decompressFromEncodedURIComponent(code);
+	if (!unzipped) return embed;
+
+	// Without 'normalized' you can't get consistent lengths across platforms
+	// Matters because the playground uses the line breaks of whoever created it
+	const lines = unzipped.split(/\r\n|\r|\n/);
+	const normalized = lines.join('\n');
+
+	const lengths = lines.map(l => l.length);
+	const cum = lengths.slice(1).reduce((acc, len, i) => {
+		acc.push(len + acc[i] + '\n'.length);
+		return acc;
+	}, lengths.slice(0, 1));
+	const lineIndices = [0].concat(cum);
+	const numLines = lengths.length;
+
+	// Note: lines are 1-indexed
+	let { startLine, endLine } = getSelectionQueryParams(query, numLines);
+
+	const startChar = startLine ? lineIndices[startLine - 1] : 0;
+	const endChar = endLine
+		? lineIndices[endLine]
+		: lineIndices.find(len => len >= startChar + DEFAULT_EMBED_LENGTH) ??
+		  normalized.length; // startChar + DEFAULT_EMBED_LENGTH > normalized.length
+
+	// Make lines as short as reasonably possible
+	const pretty = format(normalized, {
+		parser: 'typescript',
+		printWidth: 55,
+		tabWidth: 2,
+		semi: false,
+		bracketSpacing: false,
+		arrowParens: 'avoid',
+		rangeStart: startChar,
+		rangeEnd: endChar,
+	});
+	const prettyEnd = pretty.length - (normalized.length - endChar);
+	const maxEnd = Math.min(prettyEnd, startChar + MAX_EMBED_LENGTH);
+	const extract = pretty.slice(startChar, maxEnd);
+	const truncated = truncate(extract, MAX_EMBED_LENGTH);
+
+	if (!startLine && !endLine) {
+		embed.setFooter(
+			'You can choose specific lines to embed by selecting them before copying the link.',
+		);
+	}
+
+	return embed.setDescription(makeCodeBlock(truncated));
 }
 
 async function shortenPlaygroundLink(url: string) {
@@ -138,10 +185,17 @@ async function shortenPlaygroundLink(url: string) {
 	return shortened;
 }
 
-export const extractOneLinerFromURL = (url: string) => {
-	if (url.includes('#code/')) {
-		const zipped = url.split('#code/')[1];
-		const unzipped = decompressFromEncodedURIComponent(zipped);
-		return unzipped?.split('\n')[0] + '...';
-	}
-};
+// Sometimes the cursor is at the start of the selection, and other times
+// it's at the end of the selection; we don't care which, only that the
+// lower one always comes first. Also, parameter validation happens here
+function getSelectionQueryParams(query: string, numLines: number) {
+	const params = new URLSearchParams(query);
+
+	const [startLine, endLine] = ['pln', 'ssl']
+		// @ts-expect-error parseInt(null) is okay here since we check for NaN
+		.map(name => parseInt(params.get(name)))
+		.map(n => (n !== NaN && 1 <= n && n <= numLines ? n : undefined))
+		.sort((a, b) => (a ?? Infinity) - (b ?? Infinity));
+
+	return { startLine, endLine };
+}

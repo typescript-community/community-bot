@@ -1,18 +1,8 @@
 import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
 import { twoslasher } from '@typescript/twoslash';
-import { findCodeFromChannel } from '../util/findCodeblockFromChannel';
+import { makeCodeBlock, findCodeFromChannel } from '../util/codeBlocks';
 import { sendWithMessageOwnership } from '../util/send';
-
-const CODEBLOCK = '```';
-
-// Custom escape function instead of using discord.js Util.escapeCodeBlock because this
-// produces better results with template literal types. Discord's markdown handling is pretty
-// bad. It doesn't properly handle escaping back ticks, so we instead insert zero width spaces
-// so that users cannot escape our code block.
-function escapeCode(code: string) {
-	return code.replace(/`(?=`)/g, '`\u200B');
-}
 
 // Remove `@noErrorTruncation` from the source; this can cause lag/crashes for large errors
 function redactNoErrorTruncation(code: string) {
@@ -72,20 +62,15 @@ export class TwoslashModule extends Module {
 
 		await sendWithMessageOwnership(
 			msg,
-			blocks
-				.map(
-					block =>
-						`${CODEBLOCK}typescript\n${escapeCode(
-							block.join('\n'),
-						)}${CODEBLOCK}`,
-				)
-				.join(''),
+			blocks.map(block => makeCodeBlock(block.join('\n'))).join(''),
 		);
 	}
 
 	@listener({ event: 'message' })
 	async onTwoslashCodeBlock(msg: Message) {
-		const match = msg.content.match(/^```ts twoslash\n([\s\S]+)```$/im);
+		const match = msg.content.match(
+			/^```(?:ts |typescript )?twoslash\n([\s\S]+)```$/im,
+		);
 		if (!msg.author.bot && match) {
 			await this.twoslashBlock(msg, match[1]);
 			await msg.delete();
@@ -152,9 +137,6 @@ export class TwoslashModule extends Module {
 		});
 
 		const output = resultLines.join('\n');
-		return sendWithMessageOwnership(
-			msg,
-			`${CODEBLOCK}ts\n${escapeCode(output)}${CODEBLOCK}\n`,
-		);
+		return sendWithMessageOwnership(msg, makeCodeBlock(output) + '\n');
 	}
 }
