@@ -31,8 +31,8 @@ export async function findCodeFromChannel(channel: TextChannel) {
 	for (const { author, content, embeds } of msgs) {
 		if (!author.bot) {
 			const match = content.match(CODEBLOCK_REGEX);
-			if (match && match[2].length) {
-				return match[2];
+			if (match && match[1].length) {
+				return match[1];
 			}
 		}
 
