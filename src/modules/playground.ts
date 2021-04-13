@@ -135,18 +135,20 @@ function createPlaygroundEmbed(
 		return acc;
 	}, lengths.slice(0, 1));
 	const lineIndices = [0].concat(cum);
-	const numLines = lengths.length;
 
 	// Note: lines are 1-indexed
-	let { startLine, endLine } = getSelectionQueryParams(query, numLines);
+	let { startLine, endLine } = getSelectionQueryParams(query, lines.length);
 
 	const startChar = startLine ? lineIndices[startLine - 1] : 0;
-	const endChar = endLine
-		? lineIndices[endLine]
-		: lineIndices.find(len => len >= startChar + DEFAULT_EMBED_LENGTH) ??
-		  normalized.length; // startChar + DEFAULT_EMBED_LENGTH > normalized.length
+	const cutoff = endLine
+		? Math.min(lineIndices[endLine], startChar + MAX_EMBED_LENGTH)
+		: startChar + DEFAULT_EMBED_LENGTH;
+	// End of the line containing the cutoff
+	const endChar = lineIndices.find(len => len >= cutoff) ?? normalized.length;
 
-	// Make lines as short as reasonably possible
+	// Make lines as short as reasonably possible, so they fit in the embed.
+	// We pass prettier the full string, but only format part of it, so we can
+	// calculate where the endChar is post-formatting.
 	const pretty = format(normalized, {
 		parser: 'typescript',
 		printWidth: 55,
@@ -157,10 +159,8 @@ function createPlaygroundEmbed(
 		rangeStart: startChar,
 		rangeEnd: endChar,
 	});
-	const prettyEnd = pretty.length - (normalized.length - endChar);
-	const maxEnd = Math.min(prettyEnd, startChar + MAX_EMBED_LENGTH);
-	const extract = pretty.slice(startChar, maxEnd);
-	const truncated = truncate(extract, MAX_EMBED_LENGTH);
+	const prettyEndChar = pretty.length - (normalized.length - endChar);
+	const formattedSection = pretty.slice(startChar, prettyEndChar);
 
 	if (!startLine && !endLine) {
 		embed.setFooter(
@@ -168,7 +168,7 @@ function createPlaygroundEmbed(
 		);
 	}
 
-	return embed.setDescription(makeCodeBlock(truncated));
+	return embed.setDescription(makeCodeBlock(formattedSection));
 }
 
 async function shortenPlaygroundLink(url: string) {
