@@ -16,6 +16,7 @@ import { BaseEntity } from 'typeorm';
 import { Snippet } from '../entities/Snippet';
 import { BLOCKQUOTE_GREY } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
+import { getReferencedMessage } from '../util/getReferencedMessage';
 
 // https://stackoverflow.com/a/3809435
 const LINK_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
@@ -159,11 +160,7 @@ export class SnippetModule extends Module {
 			};
 		} else {
 			const sourceMessage =
-				linkedMessage ??
-				(msg.reference?.messageID != null &&
-					(await msg.channel.messages.fetch(
-						msg.reference?.messageID!,
-					)));
+				linkedMessage ?? (await getReferencedMessage(msg));
 			if (!sourceMessage)
 				return await sendWithMessageOwnership(
 					msg,

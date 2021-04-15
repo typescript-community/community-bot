@@ -15,7 +15,7 @@ import { URLSearchParams } from 'url';
 import { TS_BLUE } from '../env';
 import {
 	makeCodeBlock,
-	findCodeblockFromChannel,
+	findCode,
 	PLAYGROUND_REGEX,
 	truncate,
 } from '../util/codeBlocks';
@@ -43,10 +43,7 @@ export class PlaygroundModule extends Module {
 		const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
 
 		if (!code) {
-			code = await findCodeblockFromChannel(
-				msg.channel as TextChannel,
-				true,
-			);
+			code = await findCode(msg, true);
 			if (!code)
 				return sendWithMessageOwnership(
 					msg,
