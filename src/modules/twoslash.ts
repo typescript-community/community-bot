@@ -1,6 +1,6 @@
 import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
-import { twoslasher } from '@typescript/twoslash';
+import { twoslasher, TwoSlashReturn } from '@typescript/twoslash';
 import { makeCodeBlock, findCode } from '../util/codeBlocks';
 import { sendWithMessageOwnership } from '../util/send';
 import { getTypeScriptModule, TypeScript } from '../util/getTypeScriptModule';
@@ -64,9 +64,16 @@ export class TwoslashModule extends Module {
 
 		const symbols = [...new Set(content.trim().split(/\s+/g))];
 
-		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
-			defaultOptions: { noErrorValidation: true },
-		});
+		let ret: TwoSlashReturn;
+		try {
+			ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
+				tsModule,
+				defaultOptions: { noErrorValidation: true },
+			});
+		} catch (e) {
+			if (!(e instanceof Error)) throw e;
+			return await sendWithMessageOwnership(msg, `:x: ${e.message}`);
+		}
 
 		const blocks = [];
 
@@ -114,13 +121,19 @@ export class TwoslashModule extends Module {
 		code: string,
 		tsModule: TypeScript,
 	) {
-		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
-			tsModule,
-			defaultOptions: {
-				noErrorValidation: true,
-				noStaticSemanticInfo: false,
-			},
-		});
+		let ret: TwoSlashReturn;
+		try {
+			ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
+				tsModule,
+				defaultOptions: {
+					noErrorValidation: true,
+					noStaticSemanticInfo: false,
+				},
+			});
+		} catch (e) {
+			if (!(e instanceof Error)) throw e;
+			return await sendWithMessageOwnership(msg, `:x: ${e.message}`);
+		}
 
 		const resultLines: string[] = [];
 		const twoslashLines = ret.code.split('\n');
