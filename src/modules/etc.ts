@@ -11,6 +11,8 @@ import {
 	ownsBotMessage,
 } from '../util/send';
 
+const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
+
 export class EtcModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
@@ -25,9 +27,13 @@ export class EtcModule extends Module {
 	async onMessage(msg: Message) {
 		if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
 			return;
-		await msg.react('✅');
-		await msg.react('❌');
-		await msg.react('🤷');
+		let emojis = [
+			...new Set(
+				[...msg.content.matchAll(emojiRegex)].map(x => x[1] ?? x[2]),
+			),
+		];
+		if (!emojis.length) emojis = ['✅', '❌', '🤷'];
+		for (const emoji of emojis) await msg.react(emoji);
 	}
 
 	@listener({ event: 'messageReactionAdd' })
