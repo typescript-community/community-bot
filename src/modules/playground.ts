@@ -143,19 +143,25 @@ function createPlaygroundEmbed(
 	// End of the line containing the cutoff
 	const endChar = lineIndices.find(len => len >= cutoff) ?? normalized.length;
 
-	// Make lines as short as reasonably possible, so they fit in the embed.
-	// We pass prettier the full string, but only format part of it, so we can
-	// calculate where the endChar is post-formatting.
-	const pretty = format(normalized, {
-		parser: 'typescript',
-		printWidth: 55,
-		tabWidth: 2,
-		semi: false,
-		bracketSpacing: false,
-		arrowParens: 'avoid',
-		rangeStart: startChar,
-		rangeEnd: endChar,
-	});
+	let pretty;
+	try {
+		// Make lines as short as reasonably possible, so they fit in the embed.
+		// We pass prettier the full string, but only format part of it, so we can
+		// calculate where the endChar is post-formatting.
+		pretty = format(normalized, {
+			parser: 'typescript',
+			printWidth: 55,
+			tabWidth: 2,
+			semi: false,
+			bracketSpacing: false,
+			arrowParens: 'avoid',
+			rangeStart: startChar,
+			rangeEnd: endChar,
+		});
+	} catch (e) {
+		// Likely a syntax error
+		pretty = normalized;
+	}
 	const prettyEndChar = pretty.length - (normalized.length - endChar);
 	const formattedSection = pretty.slice(startChar, prettyEndChar);
 
