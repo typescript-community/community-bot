@@ -93,6 +93,8 @@ Help channels work a little differently on this server. So that people aren't ta
 Help channels will be automatically closed after ${dormantChannelTimeoutHours} hours of inactivity. When a channel is closed, it moves into the ":zzz: | Dormant Help Channels" category to eventually be recycled back into the ":white_check_mark: | Available Help Channels" category.
 `;
 
+const helpChannelTopic = `One person may ask questions at a time. The current status is pinned. Details: <#${askHelpChannelId}>`;
+
 export class HelpChanModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
@@ -335,7 +337,7 @@ export class HelpChanModule extends Module {
 					this.getChannelName(guild),
 					{
 						type: 'text',
-						topic: `One person may ask questions at a time. The current status is pinned. Details: <#${askHelpChannelId}>`,
+						topic: helpChannelTopic,
 						reason: 'maintain help channel goal',
 						parent: categories.ask,
 					},
@@ -568,5 +570,84 @@ export class HelpChanModule extends Module {
 
 		await this.ensureAskChannels(msg.guild);
 		await msg.channel.send(':ok_hand:');
+	}
+
+	getDormantChannels(guild: Guild) {
+		return guild.channels.cache
+			.filter(channel => channel.parentID == categories.dormant)
+			.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX));
+	}
+
+	getOutdatedChannels(guild: Guild) {
+		return this.getOngoingChannels()
+			.concat(
+				this.getAvailableChannels(guild).array() as TextChannel[],
+				this.getDormantChannels(guild).array() as TextChannel[],
+			)
+			.filter(it => it.topic !== helpChannelTopic);
+	}
+
+	updateHelpChannelTopicsTimeout: NodeJS.Timeout | undefined = undefined;
+
+	@command({
+		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+	})
+	async updateHelpChannelTopics(msg: Message) {
+		const guild = msg.guild;
+		if (!guild) return;
+
+		const channels =
+			this.getOutdatedChannels(guild)
+				.map(it => it.toString())
+				.join(', ') || 'None';
+
+		if (this.updateHelpChannelTopicsTimeout !== undefined) {
+			await msg.channel
+				.send(`Updates already in progress. Cancel with: \`!stopUpdatingHelpChannelTopics\`
+Remaining: ${channels}`);
+			return;
+		} else {
+			await msg.channel.send(`Updating these channels: ${channels}`);
+		}
+
+		const updateLoop = async () => {
+			const channel = this.getOutdatedChannels(guild)[0];
+			if (channel) {
+				this.updateHelpChannelTopicsTimeout = this.client.setTimeout(
+					() => updateLoop(),
+					20 * 60 * 1000, // 20 minute rate limit,
+				);
+				await channel.setTopic(
+					helpChannelTopic,
+					'Update outdated helpchan topic',
+				);
+			} else {
+				this.updateHelpChannelTopicsTimeout = undefined;
+			}
+		};
+
+		await updateLoop();
+	}
+
+	@command({
+		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+	})
+	async stopUpdatingHelpChannelTopics(msg: Message) {
+		if (!msg.guild) return;
+
+		if (this.updateHelpChannelTopicsTimeout === undefined) {
+			await msg.channel.send('Not in progress!');
+		} else {
+			this.client.clearTimeout(this.updateHelpChannelTopicsTimeout);
+
+			const channels =
+				this.getOutdatedChannels(msg.guild)
+					.map(it => it.toString())
+					.join(', ') || 'None';
+
+			await msg.channel.send(
+				`Canceled help channel updates. Remaining: ${channels}`,
+			);
+		}
 	}
 }
