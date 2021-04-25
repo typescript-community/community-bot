@@ -1,8 +1,13 @@
 import { command, Module, listener } from 'cookiecord';
 import { Message, TextChannel } from 'discord.js';
-import { twoslasher } from '@typescript/twoslash';
-import { makeCodeBlock, findCodeFromChannel } from '../util/codeBlocks';
+import { twoslasher, TwoSlashReturn } from '@typescript/twoslash';
+import { makeCodeBlock, findCode } from '../util/codeBlocks';
 import { sendWithMessageOwnership } from '../util/send';
+import { getTypeScriptModule, TypeScript } from '../util/getTypeScriptModule';
+import { splitCustomCommand } from '../util/customCommand';
+
+// Preload typescript@latest
+getTypeScriptModule('latest');
 
 // Remove `@noErrorTruncation` from the source; this can cause lag/crashes for large errors
 function redactNoErrorTruncation(code: string) {
@@ -17,7 +22,30 @@ export class TwoslashModule extends Module {
 		aliases: ['ts'],
 	})
 	async twoslash(msg: Message, content: string) {
-		const code = await findCodeFromChannel(msg.channel as TextChannel);
+		await this._twoslash(msg, 'latest', content);
+	}
+
+	@listener({ event: 'message' })
+	async twoslashVersion(msg: Message) {
+		const commandData = await splitCustomCommand(this.client, msg);
+		if (!commandData) return;
+		const { command, args } = commandData;
+		if (!command.startsWith('ts@') && !command.startsWith('twoslash@'))
+			return;
+		const version = command.split('@').slice(1).join('@');
+		await this._twoslash(msg, version, args);
+	}
+
+	async _twoslash(msg: Message, version: string, content: string) {
+		const tsModule = await getTypeScriptModule(version);
+
+		if (!tsModule)
+			return await sendWithMessageOwnership(
+				msg,
+				':x: Could not find that version of TypeScript',
+			);
+
+		const code = await findCode(msg);
 
 		if (!code)
 			return await sendWithMessageOwnership(
@@ -25,7 +53,7 @@ export class TwoslashModule extends Module {
 				`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
 			);
 
-		if (!content) return await this.twoslashBlock(msg, code);
+		if (!content) return await this.twoslashBlock(msg, code, tsModule);
 
 		if (!/^\s*([_$a-zA-Z][_$0-9a-zA-Z]*\b\s*)+/.test(content)) {
 			return sendWithMessageOwnership(
@@ -36,9 +64,16 @@ export class TwoslashModule extends Module {
 
 		const symbols = [...new Set(content.trim().split(/\s+/g))];
 
-		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
-			defaultOptions: { noErrorValidation: true },
-		});
+		let ret: TwoSlashReturn;
+		try {
+			ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
+				tsModule,
+				defaultOptions: { noErrorValidation: true },
+			});
+		} catch (e) {
+			if (!(e instanceof Error)) throw e;
+			return await sendWithMessageOwnership(msg, `:x: ${e.message}`);
+		}
 
 		const blocks = [];
 
@@ -72,18 +107,33 @@ export class TwoslashModule extends Module {
 			/^```(?:ts |typescript )?twoslash\n([\s\S]+)```$/im,
 		);
 		if (!msg.author.bot && match) {
-			await this.twoslashBlock(msg, match[1]);
+			await this.twoslashBlock(
+				msg,
+				match[1],
+				(await getTypeScriptModule('latest'))!,
+			);
 			await msg.delete();
 		}
 	}
 
-	private async twoslashBlock(msg: Message, code: string) {
-		const ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
-			defaultOptions: {
-				noErrorValidation: true,
-				noStaticSemanticInfo: false,
-			},
-		});
+	private async twoslashBlock(
+		msg: Message,
+		code: string,
+		tsModule: TypeScript,
+	) {
+		let ret: TwoSlashReturn;
+		try {
+			ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
+				tsModule,
+				defaultOptions: {
+					noErrorValidation: true,
+					noStaticSemanticInfo: false,
+				},
+			});
+		} catch (e) {
+			if (!(e instanceof Error)) throw e;
+			return await sendWithMessageOwnership(msg, `:x: ${e.message}`);
+		}
 
 		const resultLines: string[] = [];
 		const twoslashLines = ret.code.split('\n');

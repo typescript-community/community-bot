@@ -16,6 +16,8 @@ import { BaseEntity } from 'typeorm';
 import { Snippet } from '../entities/Snippet';
 import { BLOCKQUOTE_GREY } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
+import { getReferencedMessage } from '../util/getReferencedMessage';
+import { splitCustomCommand } from '../util/customCommand';
 
 // https://stackoverflow.com/a/3809435
 const LINK_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
@@ -29,16 +31,10 @@ export class SnippetModule extends Module {
 
 	@listener({ event: 'message' })
 	async runSnippet(msg: Message) {
-		const [commandPart] = msg.content.split(' ');
-		const prefixes = await this.client.getPrefix(msg);
-		const matchingPrefix = [prefixes]
-			.flat()
-			.find(x => msg.content.startsWith(x));
-		if (!matchingPrefix) return;
-		let command = commandPart.slice(matchingPrefix.length);
-		if (this.client.commandManager.getByTrigger(command)) return;
+		const commandData = await splitCustomCommand(this.client, msg);
+		if (!commandData) return;
+		const { command } = commandData;
 
-		if (!command) return;
 		if (command.includes('*') && !command.includes(':')) return [];
 
 		const [match] = await interpretSpecifier(msg.author, command, 1);
@@ -159,11 +155,7 @@ export class SnippetModule extends Module {
 			};
 		} else {
 			const sourceMessage =
-				linkedMessage ??
-				(msg.reference?.messageID != null &&
-					(await msg.channel.messages.fetch(
-						msg.reference?.messageID!,
-					)));
+				linkedMessage ?? (await getReferencedMessage(msg));
 			if (!sourceMessage)
 				return await sendWithMessageOwnership(
 					msg,
