@@ -40,7 +40,7 @@ function findCodeInMessage(
 		}
 	}
 
-	if (!ignoreLinks) return;
+	if (ignoreLinks) return;
 
 	const match = content.match(PLAYGROUND_REGEX);
 	if (match) {
