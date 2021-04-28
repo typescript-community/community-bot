@@ -5,7 +5,7 @@ import { rulesChannelId } from '../env';
 // Most job posts are in this format:
 // > [FOR HIRE][REMOTE][SOMETHING ELSE]
 // > Hi, I'm ponyman6000. Hire me!
-const jobPostRegex = /^(?:\[[A-Z ]+\]){2,}\n/;
+const jobPostRegex = /^(?:\[[A-Z ]+\]){2,}\n/i;
 
 export class ModModule extends Module {
 	constructor(client: CookiecordClient) {
