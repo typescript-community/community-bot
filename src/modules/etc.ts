@@ -79,9 +79,33 @@ export class EtcModule extends Module {
 		await confirmationMessage.delete();
 		if (!proceed) return;
 		await msg.react('☠️'),
-			console.log(
-				`💀 Killed by @${msg.author.username}#${msg.author.discriminator}/${msg.author.id}`,
-			);
+			console.log(`
+                            ,--.
+                           {    }
+                           K,   }
+                          /  ~Y\`
+                     ,   /   /
+                    {_'-K.__/
+                      \`/-.__L._
+                      /  ' /\`\\_}
+                     /  ' /
+             ____   /  ' /
+      ,-'~~~~    ~~/  ' /_
+    ,'             \`\`~~~  ',
+   (                        Y
+  {                         I
+ {      -                    \`,
+ |       ',                   )
+ |        |   ,..__      __. Y
+ |    .,_./  Y ' / ^Y   J   )|
+ \           |' /   |   |   ||      Killed by @${msg.author.username}#${msg.author.discriminator}/${msg.author.id}
+  \          L_/    . _ (_,.'(
+   \,   ,      ^^""' / |      )
+     \_  \          /,L]     /
+       '-_~-,       \` \`   ./\`
+          \`'{_            )
+              ^^\..___,.--\`
+		`);
 		process.exit(1);
 	}
 }
