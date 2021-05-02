@@ -3,8 +3,15 @@ import {
 	default as CookiecordClient,
 	Module,
 	listener,
+	CommonInhibitors,
 } from 'cookiecord';
-import { Message, MessageReaction, GuildMember } from 'discord.js';
+import {
+	Message,
+	MessageReaction,
+	GuildMember,
+	User,
+	ReactionEmoji,
+} from 'discord.js';
 import {
 	clearMessageOwnership,
 	DELETE_EMOJI,
@@ -50,5 +57,31 @@ export class EtcModule extends Module {
 		} else {
 			await reaction.users.remove(member.id);
 		}
+	}
+
+	@command({
+		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+	})
+	async kill(msg: Message) {
+		const confirm = '✅';
+		const confirmationMessage = await msg.channel.send('Confirm?');
+		confirmationMessage.react(confirm);
+		const reactionFilter = (reaction: MessageReaction, user: User) =>
+			reaction.emoji.name === confirm && user.id === msg.author.id;
+		const proceed = await confirmationMessage
+			.awaitReactions(reactionFilter, {
+				max: 1,
+				time: 10 * 1000,
+				errors: ['time'],
+			})
+			.then(() => true)
+			.catch(() => false);
+		await confirmationMessage.delete();
+		if (!proceed) return;
+		await msg.react('☠️'),
+			console.log(
+				`💀 Killed by @${msg.author.username}#${msg.author.discriminator}/${msg.author.id}`,
+			);
+		process.exit(1);
 	}
 }
