@@ -34,7 +34,7 @@ export class ModModule extends Module {
 		// Clean up joins from from outside of our raid threshold.
 		while ((this.joins[0].joinedTimestamp ?? 0) < lowerBound) {
 			this.joins.splice(0, 1);
-			this.bannedUpTo--;
+			this.bannedUpTo = Math.max(this.bannedUpTo - 1, 0);
 		}
 
 		// Ban everyone that just joined
