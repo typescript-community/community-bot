@@ -43,7 +43,9 @@ export class ModModule extends Module {
 			this.bannedUpTo = this.joins.length;
 
 			await Promise.all(
-				this.joins.slice(start).map(m => m.ban({ reason: 'Raid' })),
+				this.joins
+					.slice(start)
+					.map(m => m.ban({ reason: 'Raid', days: 1 })),
 			);
 		}
 	}
