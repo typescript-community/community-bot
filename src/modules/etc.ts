@@ -60,7 +60,7 @@ export class EtcModule extends Module {
 	}
 
 	@command({
-		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+		inhibitors: [CommonInhibitors.botAdminsOnly],
 	})
 	async kill(msg: Message) {
 		const confirm = '✅';
