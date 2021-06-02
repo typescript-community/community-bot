@@ -29,6 +29,8 @@ export const askHelpChannelId = process.env.ASK_HELP_CHANNEL!;
 
 export const rulesChannelId = process.env.RULES_CHANNEL!;
 
+export const staffChannelId = process.env.STAFF_CHANNEL!;
+
 export const channelNames = process.env.CHANNEL_NAMES!.split(',');
 
 export const dormantChannelTimeout = parseInt(

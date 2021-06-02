@@ -1,6 +1,6 @@
 import { Module, listener } from 'cookiecord';
 import { Message, GuildMember } from 'discord.js';
-import { rulesChannelId } from '../env';
+import { rulesChannelId, staffChannelId } from '../env';
 
 // Most job posts are in this format:
 // > [FOR HIRE][REMOTE][SOMETHING ELSE]
@@ -11,8 +11,12 @@ const jobPostRegex = /^(?:\[[A-Z ]+\]){2,}\n/i;
 const RAID_JOINS = 4;
 const RAID_SECONDS = 7;
 
+// Until this time passes, any joins are probably still part of the raid.
+const RAID_DELAY = 5 * 60 * 1000;
+
 export class ModModule extends Module {
 	bannedUpTo = 0; // To avoid double banning
+	raidEnd = 0;
 	joins: GuildMember[] = [];
 
 	@listener({ event: 'message' })
@@ -37,8 +41,20 @@ export class ModModule extends Module {
 			this.bannedUpTo = Math.max(this.bannedUpTo - 1, 0);
 		}
 
-		// Ban everyone that just joined
 		if (this.joins.length > RAID_JOINS) {
+			if (now < this.raidEnd) {
+				const channel = member.guild.channels.resolve(staffChannelId);
+				if (channel?.isText()) {
+					channel.send(
+						'@Moderator detected a raid in progress, starting auto ban.',
+					);
+				}
+			}
+			this.raidEnd = now + RAID_DELAY;
+		}
+
+		// Ban everyone that joins during the raid
+		if (now < this.raidEnd) {
 			const start = this.bannedUpTo;
 			this.bannedUpTo = this.joins.length;
 
