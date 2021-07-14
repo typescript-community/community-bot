@@ -16,5 +16,5 @@ We also have a docker-compose.yml for development, along with a .env.example.
 
 ## Thanks!
 
--   [ronthecookie](https://github.com/ronthecookie) for writing the base for the bot and the amazing [framework](https://github.com/cookiecord/cookiecord) used!
+-   [ckie](https://github.com/ckiee) for writing the base for the bot and the amazing [framework](https://github.com/cookiecord/cookiecord) used!
 -   [Python Discord](https://github.com/python-discord) for heavily influencing our help channel system.
