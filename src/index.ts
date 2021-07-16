@@ -20,11 +20,18 @@ const client = new CookiecordClient(
 		prefix: ['!', 't!'],
 	},
 	{
-		ws: { intents: Intents.NON_PRIVILEGED },
+		ws: {
+			intents:
+				Intents.FLAGS.GUILD_MEMBERS | // guildMemberAdd
+				Intents.FLAGS.GUILD_MESSAGES | // message, messageDelete, messageUpdate
+				Intents.FLAGS.GUILD_MESSAGE_REACTIONS, // messageReactionAdd, messageReactionRemove
+		},
 		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],
 		disableMentions: 'everyone',
 	},
 );
+
+client.setMaxListeners(15);
 
 for (const mod of [
 	AutoroleModule,
