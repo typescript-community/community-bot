@@ -164,11 +164,6 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
-"@types/common-tags@^1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@types/common-tags/-/common-tags-1.8.0.tgz#79d55e748d730b997be5b7fce4b74488d8b26a6b"
-  integrity sha512-htRqZr5qn8EzMelhX/Xmx142z218lLyGaeZ3YR8jlze4TATRU9huKKvuBmAJEW4LCC4pnY1N6JAm6p85fMHjhg==
-
 "@types/dotenv-safe@^8.1.0":
   version "8.1.1"
   resolved "https://registry.yarnpkg.com/@types/dotenv-safe/-/dotenv-safe-8.1.1.tgz#2d7248ed4ad969c41d85586266ad64e9a3603ad4"
@@ -276,25 +271,25 @@
     "@types/node" "*"
 
 "@types/ws@^7.2.1":
-  version "7.2.6"
-  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-7.2.6.tgz#516cbfb818310f87b43940460e065eb912a4178d"
-  integrity sha512-Q07IrQUSNpr+cXU4E4LtkSIBPie5GLZyyMC1QtQYRLWz701+XcoVygGUZgvLqElq1nU4ICldMYPnexlBsg3dqQ==
+  version "7.4.6"
+  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-7.4.6.tgz#c4320845e43d45a7129bb32905e28781c71c1fff"
+  integrity sha512-ijZ1vzRawI7QoWnTNL8KpHixd2b2XVb9I9HAqI3triPsh1EC0xH0Eg6w2O3TKbDCgiNNlJqfrof6j4T2I+l9vw==
   dependencies:
     "@types/node" "*"
 
-"@typescript/twoslash@^1.1.2":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@typescript/twoslash/-/twoslash-1.1.2.tgz#429c11032a708c6ffc38fb9278167df41e6ceefd"
-  integrity sha512-U7h7wVW4aymz6G54KaOIaeS1nqkSjKMeW6hWtw1r9GWnA9hshswKS2HslkEj3Ij91kUIjjigUBcVNfPq/P2TlA==
+"@typescript/twoslash@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@typescript/twoslash/-/twoslash-2.1.0.tgz#0128312e002670367393bb9b48378ac818aceccd"
+  integrity sha512-J72HH+zAMPA9udOuOgAxTXnzeRyz0t33Ww1jQ6CgNfjP3HtrOS4lNgG+m3u1H497U366zbcUOjNkIgNGqefd/A==
   dependencies:
-    "@typescript/vfs" "1.3.0"
+    "@typescript/vfs" "1.3.4"
     debug "^4.1.1"
     lz-string "^1.4.4"
 
-"@typescript/vfs@1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@typescript/vfs/-/vfs-1.3.0.tgz#1abc69c43c85c21a58881598a6031fd3f3600153"
-  integrity sha512-Bd1LdvQpm0uU2eclcCfO8H8oAGAfEJiKn0acKy/xeZV4sARwXx9MHBMuDX0XDPLmI2JpIm+mFV9Ers65xnoaQg==
+"@typescript/vfs@1.3.4":
+  version "1.3.4"
+  resolved "https://registry.yarnpkg.com/@typescript/vfs/-/vfs-1.3.4.tgz#07f89d2114f6e29255d589395ed7f3b4af8a00c2"
+  integrity sha512-RbyJiaAGQPIcAGWFa3jAXSuAexU4BFiDRF1g3hy7LmRqfNpYlTQWGXjcrOaVZjJ8YkkpuwG0FcsYvtWQpd9igQ==
   dependencies:
     debug "^4.1.1"
 
