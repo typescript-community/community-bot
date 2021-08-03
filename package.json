@@ -16,7 +16,7 @@
 		"pg": "^8.3.0",
 		"prettier": "^2.2.1",
 		"pretty-ms": "^7.0.0",
-		"tar": "^6.1.0",
+		"tar": "^6.1.2",
 		"typeorm": "^0.2.25"
 	},
 	"devDependencies": {
