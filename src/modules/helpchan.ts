@@ -278,7 +278,7 @@ export class HelpChanModule extends Module {
 	}
 
 	@command({
-		aliases: ['close', 'resolve', 'done'],
+		aliases: ['close', 'closed', 'resolve', 'done'],
 		description: 'Help Channel: Marks this channel as resolved',
 	})
 	async resolved(msg: Message) {
