@@ -19,7 +19,7 @@ export class RepModule extends Module {
 
 	MAX_REP = 3;
 
-	THANKS_REGEX = /\b(?:thank|thanks|thx|cheers|thanx|thnks|ty|tysm|tks|tkx|danke|merci|gracias|grazie)\b|xie|谢/i;
+	THANKS_REGEX = /\b(?:thank|thanks|thx|cheers|thanx|thnks|ty|tysm|tks|tkx|danke|merci|gracias|grazie|xie)\b|谢/i;
 
 	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
