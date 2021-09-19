@@ -19,7 +19,8 @@ export class RepModule extends Module {
 
 	MAX_REP = 3;
 
-	THANKS_REGEX = /\b(?:thank|thanks|thx|cheers|thanx|thnks|ty|tysm|tks|tkx)\b/i;
+	// The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
+	THANKS_REGEX = /\b(?:thank|thanks|thx|cheers|thanx|thnks|ty|tysm|tks|tkx|danke|merci|gracias|grazie|xiexie)\b|谢/i;
 
 	async getOrMakeUser(user: User) {
 		let ru = await RepUser.findOne(
