@@ -290,13 +290,13 @@ export class HelpChanModule extends Module {
 		}
 
 		// Ensure the user has permission to ping helpers
-		const owner = await HelpUser.findOne({
+		const asker = await HelpUser.findOne({
 			channelId: msg.channel.id,
 		});
-		const isOwner = owner?.userId === msg.author.id;
+		const isAsker = asker?.userId === msg.author.id;
 		const isTrusted =
 			(await isTrustedMember(msg, this.client)) === undefined; // No error if trusted
-		if (!isOwner && !isTrusted) {
+		if (!isAsker && !isTrusted) {
 			return msg.channel.send(
 				':warning: Only the asker can ping helpers',
 			);
@@ -305,14 +305,13 @@ export class HelpChanModule extends Module {
 		// Ensure they've waited long enough
 		// Trusted members (who aren't the asker) are allowed to disregard the timeout
 		const askTime = msg.channel.lastPinTimestamp ?? 0;
-		const timeToWait = timeBeforeHelperPing - (Date.now() - askTime);
+		const pingAllowedAfter = askTime + timeBeforeHelperPing;
 
-		if (isOwner && timeToWait > 0) {
-			const minutesToWait = Math.round(timeToWait / (60 * 1000));
+		if (isAsker && Date.now() < pingAllowedAfter) {
 			return msg.channel.send(
-				`:warning: Please wait at least ${minutesToWait} minute${
-					minutesToWait === 1 ? '' : 's'
-				} before attempting to ping helpers`,
+				`:warning: Please wait a bit longer. You can ping helpers <t:${
+					pingAllowedAfter / 1000
+				}:R>.`,
 			);
 		}
 
