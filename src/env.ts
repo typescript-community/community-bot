@@ -40,6 +40,10 @@ export const dormantChannelLoop = parseInt(process.env.DORMANT_CHANNEL_LOOP!);
 
 export const ongoingEmptyTimeout = parseInt(process.env.ONGOING_EMPTY_TIMEOUT!);
 
+export const timeBeforeHelperPing = parseInt(
+	process.env.TIME_BEFORE_HELPER_PING!,
+);
+
 export const TS_BLUE = '#007ACC';
 export const GREEN = '#77b155';
 // Picked from Discord's "hourglass" emoji (in ⌛ | Occupied Help Channels)
