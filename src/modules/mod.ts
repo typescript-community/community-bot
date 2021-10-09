@@ -35,7 +35,7 @@ export class ModModule extends Module {
 
 	@listener({ event: 'message' })
 	async onRepeatedMessage(msg: Message) {
-		if (!msg.guild) return;
+		if (!msg.guild || msg.author.id === this.client.user!.id) return;
 		const messageIdentifier = msg.content.trim().toLowerCase();
 		if (!messageIdentifier) return;
 		let recentMessageInfo = recentMessages.get(messageIdentifier);
