@@ -419,13 +419,23 @@ export class HelpChanModule extends Module {
 
 	private async checkDormantPossibilities() {
 		for (const channel of this.getOngoingChannels()) {
-			const messages = await channel.messages.fetch();
+			const [messages, member] = await Promise.all([
+				channel.messages.fetch(),
+				this.getChannelMember(channel),
+			]);
 
 			const diff =
 				Date.now() - (messages.first()?.createdAt.getTime() ?? 0);
 
-			if (diff > dormantChannelTimeout)
+			if (!member) {
+				await channel.send(
+					'Asker has left the server, closing channel...',
+				);
+			}
+			if (!member || diff > dormantChannelTimeout) {
 				await this.markChannelAsDormant(channel);
+				continue;
+			}
 		}
 	}
 
