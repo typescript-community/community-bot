@@ -364,19 +364,27 @@ export class HelpChanModule extends Module {
 		else askHelpChannel.send(newMessageText);
 	}
 
+	private async getChannelMember(channel: TextChannel) {
+		return (
+			HelpUser.findOneOrFail({
+				channelId: channel.id,
+			})
+				.then(helpUser => {
+					// Clear from the cache in case they've left the server
+					channel.guild.members.cache.delete(helpUser.userId);
+					return channel.guild.members.fetch({
+						user: helpUser.userId,
+					});
+				})
+				// Do nothing, member left the guild
+				.catch(() => undefined)
+		);
+	}
+
 	private async markChannelAsDormant(channel: TextChannel) {
 		this.busyChannels.add(channel.id);
 
-		const memberPromise = HelpUser.findOneOrFail({
-			channelId: channel.id,
-		})
-			.then(helpUser =>
-				channel.guild.members.fetch({
-					user: helpUser.userId,
-				}),
-			)
-			// Do nothing, member left the guild
-			.catch(() => undefined);
+		const memberPromise = this.getChannelMember(channel);
 
 		const pinnedPromise = channel.messages.fetchPinned();
 
