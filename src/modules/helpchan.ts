@@ -364,19 +364,27 @@ export class HelpChanModule extends Module {
 		else askHelpChannel.send(newMessageText);
 	}
 
+	private async getChannelMember(channel: TextChannel) {
+		return (
+			HelpUser.findOneOrFail({
+				channelId: channel.id,
+			})
+				.then(helpUser => {
+					// Clear from the cache in case they've left the server
+					channel.guild.members.cache.delete(helpUser.userId);
+					return channel.guild.members.fetch({
+						user: helpUser.userId,
+					});
+				})
+				// Do nothing, member left the guild
+				.catch(() => undefined)
+		);
+	}
+
 	private async markChannelAsDormant(channel: TextChannel) {
 		this.busyChannels.add(channel.id);
 
-		const memberPromise = HelpUser.findOneOrFail({
-			channelId: channel.id,
-		})
-			.then(helpUser =>
-				channel.guild.members.fetch({
-					user: helpUser.userId,
-				}),
-			)
-			// Do nothing, member left the guild
-			.catch(() => undefined);
+		const memberPromise = this.getChannelMember(channel);
 
 		const pinnedPromise = channel.messages.fetchPinned();
 
@@ -411,13 +419,23 @@ export class HelpChanModule extends Module {
 
 	private async checkDormantPossibilities() {
 		for (const channel of this.getOngoingChannels()) {
-			const messages = await channel.messages.fetch();
+			const [messages, member] = await Promise.all([
+				channel.messages.fetch(),
+				this.getChannelMember(channel),
+			]);
 
 			const diff =
 				Date.now() - (messages.first()?.createdAt.getTime() ?? 0);
 
-			if (diff > dormantChannelTimeout)
+			if (!member) {
+				await channel.send(
+					'Asker has left the server, closing channel...',
+				);
+			}
+			if (!member || diff > dormantChannelTimeout) {
 				await this.markChannelAsDormant(channel);
+				continue;
+			}
 		}
 	}
 
