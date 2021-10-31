@@ -29,7 +29,7 @@ export class SnippetModule extends Module {
 		super(client);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async runSnippet(msg: Message) {
 		const commandData = await splitCustomCommand(this.client, msg);
 		if (!commandData) return;
@@ -63,7 +63,7 @@ export class SnippetModule extends Module {
 		if (match.id.includes(':'))
 			embed.setAuthor(owner.tag, owner.displayAvatarURL());
 		if (snippet.image) embed.setImage(snippet.image);
-		await sendWithMessageOwnership(msg, { embed }, onDelete);
+		await sendWithMessageOwnership(msg, { embeds: [embed] }, onDelete);
 	}
 
 	@command({
@@ -78,18 +78,23 @@ export class SnippetModule extends Module {
 			limit + 1,
 		);
 		return await sendWithMessageOwnership(msg, {
-			embed: new MessageEmbed()
-				.setColor(BLOCKQUOTE_GREY)
-				.setTitle(
-					`${
-						matches.length > limit ? `${limit}+` : matches.length
-					} Matches Found`,
-				)
-				.setDescription(
-					matches
-						.slice(0, limit)
-						.map(s => `- \`${s.id}\` with **${s.uses}** uses`),
-				),
+			embeds: [
+				new MessageEmbed()
+					.setColor(BLOCKQUOTE_GREY)
+					.setTitle(
+						`${
+							matches.length > limit
+								? `${limit}+`
+								: matches.length
+						} Matches Found`,
+					)
+					.setDescription(
+						matches
+							.slice(0, limit)
+							.map(s => `- \`${s.id}\` with **${s.uses}** uses`)
+							.join('\n'),
+					),
+			],
 		});
 	}
 
@@ -229,7 +234,7 @@ export class SnippetModule extends Module {
 	}
 
 	private isMod(member: GuildMember | null) {
-		return member?.hasPermission('MANAGE_MESSAGES') ?? false;
+		return member?.permissions.has('MANAGE_MESSAGES') ?? false;
 	}
 
 	private async getMessageFromLink(messageLink: string | undefined) {

@@ -155,12 +155,15 @@ export class HelpChanModule extends Module {
 	}
 
 	private getOngoingChannels() {
-		return this.client.channels.cache
-			.filter(
-				channel =>
-					(channel as TextChannel).parentID === categories.ongoing,
-			)
-			.array() as TextChannel[];
+		return [
+			...this.client.channels.cache
+				.filter(
+					channel =>
+						(channel as TextChannel).parentId ===
+						categories.ongoing,
+				)
+				.values(),
+		] as TextChannel[];
 	}
 
 	@listener({ event: 'ready' })
@@ -211,9 +214,9 @@ export class HelpChanModule extends Module {
 	@listener({ event: 'messageDelete' })
 	async onMessageDeleted(msg: Message) {
 		if (
-			msg.channel.type !== 'text' ||
-			!msg.channel.parentID ||
-			msg.channel.parentID !== categories.ongoing
+			msg.channel.type !== 'GUILD_TEXT' ||
+			!msg.channel.parentId ||
+			msg.channel.parentId !== categories.ongoing
 		)
 			return;
 
@@ -224,8 +227,8 @@ export class HelpChanModule extends Module {
 		const parent = channel.guild.channels.resolve(category);
 		if (parent == null || !(parent instanceof CategoryChannel)) return;
 		const data: ChannelData = {
-			parentID: parent.id,
-			permissionOverwrites: parent.permissionOverwrites,
+			parent,
+			permissionOverwrites: parent.permissionOverwrites.cache,
 		};
 		channel = await channel.edit(data);
 		channel = (await channel.fetch()) as TextChannel;
@@ -235,15 +238,15 @@ export class HelpChanModule extends Module {
 		);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
 		if (
 			msg.author.bot ||
 			!msg.guild ||
 			!msg.member ||
-			msg.channel.type !== 'text' ||
-			!msg.channel.parentID ||
-			msg.channel.parentID !== categories.ask ||
+			msg.channel.type !== 'GUILD_TEXT' ||
+			!msg.channel.parentId ||
+			msg.channel.parentId !== categories.ask ||
 			!msg.channel.name.startsWith(this.CHANNEL_PREFIX) ||
 			this.busyChannels.has(msg.channel.id)
 		)
@@ -262,19 +265,19 @@ export class HelpChanModule extends Module {
 		this.busyChannels.delete(msg.channel.id);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onNewSystemPinMessage(msg: Message) {
 		if (
-			msg.type !== 'PINS_ADD' ||
-			msg.channel.type !== 'text' ||
+			msg.type !== 'CHANNEL_PINNED_MESSAGE' ||
+			msg.channel.type !== 'GUILD_TEXT' ||
 			!(
-				msg.channel.parentID == categories.ask ||
-				msg.channel.parentID == categories.ongoing ||
-				msg.channel.parentID == categories.dormant
+				msg.channel.parentId == categories.ask ||
+				msg.channel.parentId == categories.ongoing ||
+				msg.channel.parentId == categories.dormant
 			)
 		)
 			return;
-		await msg.delete({ reason: 'Pin system message' });
+		await msg.delete();
 	}
 
 	@command({
@@ -340,7 +343,7 @@ export class HelpChanModule extends Module {
 		)
 			return;
 
-		if (msg.channel.parentID !== categories.ongoing) {
+		if (msg.channel.parentId !== categories.ongoing) {
 			return await msg.channel.send(
 				':warning: you can only run this in ongoing help channels.',
 			);
@@ -352,7 +355,7 @@ export class HelpChanModule extends Module {
 
 		if (
 			(owner && owner.userId === msg.author.id) ||
-			msg.member?.hasPermission('MANAGE_MESSAGES')
+			msg.member?.permissions.has('MANAGE_MESSAGES')
 		) {
 			await this.markChannelAsDormant(msg.channel);
 		} else {
@@ -364,14 +367,14 @@ export class HelpChanModule extends Module {
 
 	getAvailableChannels(guild: Guild) {
 		return guild.channels.cache
-			.filter(channel => channel.parentID == categories.ask)
+			.filter(channel => channel.parentId == categories.ask)
 			.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX));
 	}
 
 	async ensureAskChannels(guild: Guild) {
 		while (this.getAvailableChannels(guild).size !== 2) {
 			const dormant = guild.channels.cache.find(
-				x => x.parentID == categories.dormant,
+				x => x.parentId == categories.dormant,
 			);
 			if (dormant && dormant instanceof TextChannel) {
 				await this.moveChannel(dormant, categories.ask);
@@ -379,7 +382,8 @@ export class HelpChanModule extends Module {
 					(await this.updateStatusEmbed(
 						dormant,
 						this.AVAILABLE_EMBED,
-					)) ?? (await dormant.send(this.AVAILABLE_EMBED));
+					)) ??
+					(await dormant.send({ embeds: [this.AVAILABLE_EMBED] }));
 				// Temporary -- on first deploy, old statuses won't be pinned,
 				// so the update will create a new one instead; pin it!
 				if (!msg.pinned) await msg.pin();
@@ -387,7 +391,7 @@ export class HelpChanModule extends Module {
 				const chan = await guild.channels.create(
 					this.getChannelName(guild),
 					{
-						type: 'text',
+						type: 'GUILD_TEXT',
 						topic: helpChannelTopic,
 						reason: 'maintain help channel goal',
 						parent: categories.ask,
@@ -396,7 +400,9 @@ export class HelpChanModule extends Module {
 
 				// Channel should already be in ask, but sync the permissions.
 				await this.moveChannel(chan, categories.ask);
-				await chan.send(this.AVAILABLE_EMBED).then(msg => msg.pin());
+				await chan
+					.send({ embeds: [this.AVAILABLE_EMBED] })
+					.then(msg => msg.pin());
 			}
 		}
 		await this.updateHelpMessage(guild);
@@ -405,11 +411,13 @@ export class HelpChanModule extends Module {
 	async updateHelpMessage(guild: Guild) {
 		const askHelpChannel = guild.channels.cache.get(askHelpChannelId);
 		if (!askHelpChannel || !(askHelpChannel instanceof TextChannel)) return;
-		const availableChannels = this.getAvailableChannels(guild).array();
+		const availableChannels = [
+			...this.getAvailableChannels(guild).values(),
+		];
 		const newMessageText = helpMessage(availableChannels);
 		const lastMessage =
 			askHelpChannel.lastMessage ??
-			(await askHelpChannel.messages.fetch({ limit: 1 })).array()[0];
+			(await askHelpChannel.messages.fetch({ limit: 1 })).first();
 		if (lastMessage?.author.id === this.client.user!.id)
 			lastMessage.edit(newMessageText);
 		else askHelpChannel.send(newMessageText);
@@ -442,7 +450,7 @@ export class HelpChanModule extends Module {
 		const newStatusPromise = this.moveChannel(
 			channel,
 			categories.dormant,
-		).then(() => channel.send(this.DORMANT_EMBED));
+		).then(() => channel.send({ embeds: [this.DORMANT_EMBED] }));
 
 		await Promise.all([
 			memberPromise,
@@ -450,11 +458,9 @@ export class HelpChanModule extends Module {
 			newStatusPromise,
 		]).then(([member, pinned, newStatus]) =>
 			Promise.all<unknown>([
-				this.updateStatusEmbed(
-					channel,
-					this.closedEmbed(newStatus),
-					pinned.array(),
-				),
+				this.updateStatusEmbed(channel, this.closedEmbed(newStatus), [
+					...pinned.values(),
+				]),
 				...pinned
 					.filter(m => m.id !== newStatus.id)
 					.map(msg => msg.unpin()),
@@ -502,7 +508,8 @@ export class HelpChanModule extends Module {
 				this.DORMANT_EMBED.title,
 			].includes(embed.title);
 
-		if (!pinned) pinned = (await channel.messages.fetchPinned()).array();
+		if (!pinned)
+			pinned = [...(await channel.messages.fetchPinned()).values()];
 
 		// There should be only one pinned message, the latest status message.
 		// However, to transition to this new behavior, and just in case someone
@@ -513,7 +520,7 @@ export class HelpChanModule extends Module {
 			.find(m => m.embeds.some(isStatusEmbed));
 
 		// If there is a last status message, edit it. Otherwise, send a new message.
-		return await lastMessage?.edit(embed);
+		return await lastMessage?.edit({ embeds: [embed] });
 	}
 
 	private async addCooldown(member: GuildMember, channel: TextChannel) {
@@ -577,8 +584,7 @@ export class HelpChanModule extends Module {
 				questionMsg.id !== msg.id,
 		);
 
-		const msgContent = questionMessages
-			.array()
+		const msgContent = [...questionMessages.values()]
 			.slice(0, 10)
 			.map(msg => msg.content)
 			.reverse()
@@ -587,8 +593,8 @@ export class HelpChanModule extends Module {
 
 		const claimedChannel = msg.guild!.channels.cache.find(
 			channel =>
-				channel.type === 'text' &&
-				channel.parentID == categories.ask &&
+				channel instanceof TextChannel &&
+				channel.parentId == categories.ask &&
 				channel.name.startsWith(this.CHANNEL_PREFIX) &&
 				!this.busyChannels.has(channel.id),
 		) as TextChannel | undefined;
@@ -607,7 +613,7 @@ export class HelpChanModule extends Module {
 			.setDescription(msgContent);
 
 		await Promise.all([
-			claimedChannel.send(questionEmbed).then(m => m.pin()),
+			claimedChannel.send({ embeds: [questionEmbed] }).then(m => m.pin()),
 			this.updateStatusEmbed(claimedChannel, this.occupiedEmbed(member)),
 			this.addCooldown(member, claimedChannel),
 			await this.moveChannel(claimedChannel, categories.ongoing),
@@ -643,15 +649,15 @@ export class HelpChanModule extends Module {
 
 	getDormantChannels(guild: Guild) {
 		return guild.channels.cache
-			.filter(channel => channel.parentID == categories.dormant)
+			.filter(channel => channel.parentId == categories.dormant)
 			.filter(channel => channel.name.startsWith(this.CHANNEL_PREFIX));
 	}
 
 	getOutdatedChannels(guild: Guild) {
 		return this.getOngoingChannels()
 			.concat(
-				this.getAvailableChannels(guild).array() as TextChannel[],
-				this.getDormantChannels(guild).array() as TextChannel[],
+				[...this.getAvailableChannels(guild).values()] as TextChannel[],
+				[...this.getDormantChannels(guild).values()] as TextChannel[],
 			)
 			.filter(it => it.topic !== helpChannelTopic);
 	}
@@ -682,7 +688,7 @@ Remaining: ${channels}`);
 		const updateLoop = async () => {
 			const channel = this.getOutdatedChannels(guild)[0];
 			if (channel) {
-				this.updateHelpChannelTopicsTimeout = this.client.setTimeout(
+				this.updateHelpChannelTopicsTimeout = setTimeout(
 					() => updateLoop(),
 					20 * 60 * 1000, // 20 minute rate limit,
 				);
@@ -707,7 +713,7 @@ Remaining: ${channels}`);
 		if (this.updateHelpChannelTopicsTimeout === undefined) {
 			await msg.channel.send('Not in progress!');
 		} else {
-			this.client.clearTimeout(this.updateHelpChannelTopicsTimeout);
+			clearTimeout(this.updateHelpChannelTopicsTimeout);
 
 			const channels =
 				this.getOutdatedChannels(msg.guild)

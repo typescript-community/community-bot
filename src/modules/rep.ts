@@ -36,7 +36,7 @@ export class RepModule extends Module {
 		return ru;
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onThank(msg: Message) {
 		const GIVE = '✅';
 		const PARTIAL_GIVE = '🤔';
@@ -47,8 +47,8 @@ export class RepModule extends Module {
 
 		if (msg.author.bot || !isThanks || !msg.guild) return;
 
-		const mentionUsers = msg.mentions.users.array();
-		if (!mentionUsers.length) return;
+		const mentionUsers = msg.mentions.users;
+		if (!mentionUsers.size) return;
 
 		const senderRU = await this.getOrMakeUser(msg.author);
 		// track how much rep the author has sent
@@ -57,7 +57,7 @@ export class RepModule extends Module {
 
 		if (currentSent >= this.MAX_REP) return await msg.react(NO_GIVE);
 
-		for (const user of mentionUsers) {
+		for (const user of mentionUsers.values()) {
 			if (user.id === msg.member?.id) continue;
 			if (currentSent >= this.MAX_REP)
 				return await msg.react(PARTIAL_GIVE);
@@ -202,6 +202,6 @@ export class RepModule extends Module {
 					)
 					.join('\n'),
 			);
-		await msg.channel.send(embed);
+		await msg.channel.send({ embeds: [embed] });
 	}
 }

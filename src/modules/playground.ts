@@ -54,10 +54,10 @@ export class PlaygroundModule extends Module {
 			.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
 			.setTitle('View in Playground')
 			.setColor(TS_BLUE);
-		await sendWithMessageOwnership(msg, { embed });
+		await sendWithMessageOwnership(msg, { embeds: [embed] });
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onPlaygroundLinkMessage(msg: Message) {
 		if (msg.author.bot) return;
 		if (msg.content[0] === '!') return;
@@ -66,20 +66,20 @@ export class PlaygroundModule extends Module {
 		const embed = createPlaygroundEmbed(msg.author, exec);
 		if (exec[0] === msg.content) {
 			// Message only contained the link
-			await sendWithMessageOwnership(msg, { embed });
+			await sendWithMessageOwnership(msg, { embeds: [embed] });
 			await msg.delete();
 		} else {
 			// Message also contained other characters
-			const botMsg = await msg.channel.send(
-				`${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
-				{ embed },
-			);
+			const botMsg = await msg.channel.send({
+				embeds: [embed],
+				content: `${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
+			});
 			this.editedLongLink.set(msg.id, botMsg);
 			await addMessageOwnership(botMsg, msg.author);
 		}
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onPlaygroundLinkAttachment(msg: Message) {
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
 		if (msg.author.bot || !attachment) return;
@@ -91,7 +91,7 @@ export class PlaygroundModule extends Module {
 		if (!exec || exec[0] !== content) return;
 		const shortenedUrl = await shortenPlaygroundLink(exec[0]);
 		const embed = createPlaygroundEmbed(msg.author, exec, shortenedUrl);
-		await sendWithMessageOwnership(msg, { embed });
+		await sendWithMessageOwnership(msg, { embeds: [embed] });
 		if (!msg.content) await msg.delete();
 	}
 

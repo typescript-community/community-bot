@@ -11,7 +11,9 @@ import {
 	GuildMember,
 	User,
 	ReactionEmoji,
+	TextChannel,
 } from 'discord.js';
+import { MessageChannel } from 'worker_threads';
 import {
 	clearMessageOwnership,
 	DELETE_EMOJI,
@@ -27,10 +29,11 @@ export class EtcModule extends Module {
 
 	@command({ description: 'See if the bot is alive' })
 	async ping(msg: Message) {
-		await msg.channel.send('pong. :ping_pong:');
+		if (msg.channel instanceof TextChannel)
+			await msg.channel.send('pong. :ping_pong:');
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onMessage(msg: Message) {
 		if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
 			return;
@@ -47,7 +50,7 @@ export class EtcModule extends Module {
 	async onReact(reaction: MessageReaction, member: GuildMember) {
 		if (reaction.partial) return;
 
-		if (reaction.message.author.id !== this.client.user?.id) return;
+		if (reaction.message.author?.id !== this.client.user?.id) return;
 		if (reaction.emoji.name !== DELETE_EMOJI) return;
 		if (member.id === this.client.user?.id) return;
 
@@ -63,13 +66,15 @@ export class EtcModule extends Module {
 		inhibitors: [CommonInhibitors.botAdminsOnly],
 	})
 	async kill(msg: Message) {
+		if (!(msg.channel instanceof TextChannel)) return;
 		const confirm = '✅';
 		const confirmationMessage = await msg.channel.send('Confirm?');
 		confirmationMessage.react(confirm);
 		const reactionFilter = (reaction: MessageReaction, user: User) =>
 			reaction.emoji.name === confirm && user.id === msg.author.id;
 		const proceed = await confirmationMessage
-			.awaitReactions(reactionFilter, {
+			.awaitReactions({
+				filter: reactionFilter,
 				max: 1,
 				time: 10 * 1000,
 				errors: ['time'],

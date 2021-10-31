@@ -20,11 +20,18 @@ const client = new CookiecordClient(
 		prefix: ['!', 't!'],
 	},
 	{
-		ws: { intents: Intents.NON_PRIVILEGED },
 		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],
-		disableMentions: 'everyone',
+		allowedMentions: {
+			parse: ['users'],
+		},
+		intents: new Intents([
+			'GUILDS',
+			'GUILD_MESSAGES',
+			'GUILD_MEMBERS',
+			'GUILD_MESSAGE_REACTIONS',
+		]),
 	},
-);
+).setMaxListeners(Infinity);
 
 for (const mod of [
 	AutoroleModule,

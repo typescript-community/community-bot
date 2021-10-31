@@ -24,7 +24,7 @@ export class ModModule extends Module {
 		super(client);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onJobMessage(msg: Message) {
 		if (msg.author.bot || !jobPostRegex.test(msg.content)) return;
 		await msg.delete();
@@ -33,7 +33,7 @@ export class ModModule extends Module {
 		);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onRepeatedMessage(msg: Message) {
 		if (!msg.guild || msg.author.id === this.client.user!.id) return;
 		const messageIdentifier = msg.content.trim().toLowerCase();

@@ -25,7 +25,7 @@ export class TwoslashModule extends Module {
 		await this._twoslash(msg, 'latest', content);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async twoslashVersion(msg: Message) {
 		const commandData = await splitCustomCommand(this.client, msg);
 		if (!commandData) return;
@@ -101,7 +101,7 @@ export class TwoslashModule extends Module {
 		);
 	}
 
-	@listener({ event: 'message' })
+	@listener({ event: 'messageCreate' })
 	async onTwoslashCodeBlock(msg: Message) {
 		const match = msg.content.match(
 			/^```(?:ts |typescript )?twoslash\n([\s\S]+)```$/im,
