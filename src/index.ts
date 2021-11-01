@@ -6,6 +6,7 @@ import { getDB } from './db';
 import { AutoroleModule } from './modules/autorole';
 import { EtcModule } from './modules/etc';
 import { HelpChanModule } from './modules/helpchan';
+import { HelpThreadModule } from './modules/helpthread';
 import { PlaygroundModule } from './modules/playground';
 import { RepModule } from './modules/rep';
 import { TwoslashModule } from './modules/twoslash';
@@ -37,6 +38,7 @@ for (const mod of [
 	AutoroleModule,
 	EtcModule,
 	HelpChanModule,
+	HelpThreadModule,
 	PlaygroundModule,
 	RepModule,
 	TwoslashModule,

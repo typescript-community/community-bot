@@ -22,6 +22,8 @@ export const categories = {
 	dormant: process.env.DORMANT_CATEGORY!,
 };
 
+export const helpCategory = process.env.HELP_CATEGORY!;
+
 export const askCooldownRoleId = process.env.ASK_COOLDOWN_ROLE!;
 
 export const trustedRoleId = process.env.TRUSTED_ROLE_ID!;
@@ -52,3 +54,7 @@ export const HOURGLASS_ORANGE = '#ffa647';
 export const BALLOT_BOX_BLUE = '#066696';
 // Picked from Discord's blockquote line
 export const BLOCKQUOTE_GREY = '#4f545c';
+
+export const timeBeforeHelperPing = parseInt(
+	process.env.TIME_BEFORE_HELPER_PING!,
+);
