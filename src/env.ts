@@ -16,35 +16,11 @@ export const autorole = process.env.AUTOROLE!.split(',').map(x => {
 
 export const dbUrl = process.env.DATABASE_URL!;
 
-export const categories = {
-	ask: process.env.ASK_CATEGORY!,
-	ongoing: process.env.ONGOING_CATEGORY!,
-	dormant: process.env.DORMANT_CATEGORY!,
-};
-
 export const helpCategory = process.env.HELP_CATEGORY!;
 
-export const askCooldownRoleId = process.env.ASK_COOLDOWN_ROLE!;
-
 export const trustedRoleId = process.env.TRUSTED_ROLE_ID!;
-export const askHelpChannelId = process.env.ASK_HELP_CHANNEL!;
 
 export const rulesChannelId = process.env.RULES_CHANNEL!;
-
-export const channelNames = process.env.CHANNEL_NAMES!.split(',');
-
-export const dormantChannelTimeout = parseInt(
-	process.env.DORMANT_CHANNEL_TIMEOUT!,
-);
-export const dormantChannelTimeoutHours =
-	dormantChannelTimeout / 60 / 60 / 1000;
-export const dormantChannelLoop = parseInt(process.env.DORMANT_CHANNEL_LOOP!);
-
-export const ongoingEmptyTimeout = parseInt(process.env.ONGOING_EMPTY_TIMEOUT!);
-
-export const timeBeforeHelperPing = parseInt(
-	process.env.TIME_BEFORE_HELPER_PING!,
-);
 
 export const TS_BLUE = '#007ACC';
 export const GREEN = '#77b155';

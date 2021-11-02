@@ -2,7 +2,6 @@ import { Connection, createConnection } from 'typeorm';
 import { dbUrl } from './env';
 import { RepUser } from './entities/RepUser';
 import { RepGive } from './entities/RepGive';
-import { HelpUser } from './entities/HelpUser';
 import { HelpThread } from './entities/HelpThread';
 import { Snippet } from './entities/Snippet';
 
@@ -28,7 +27,7 @@ export async function getDB() {
 		url: dbUrl,
 		synchronize: true,
 		logging: false,
-		entities: [RepUser, RepGive, HelpUser, HelpThread, Snippet],
+		entities: [RepUser, RepGive, HelpThread, Snippet],
 		...extraOpts,
 	});
 	console.log('Connected to DB');
