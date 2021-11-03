@@ -6,8 +6,8 @@ import {
 	Channel,
 	ThreadChannel,
 	MessageEmbed,
+	GuildMember,
 } from 'discord.js';
-import { threadId } from 'worker_threads';
 import { HelpThread } from '../entities/HelpThread';
 import {
 	trustedRoleId,
@@ -15,12 +15,13 @@ import {
 	timeBeforeHelperPing,
 	GREEN,
 	BLOCKQUOTE_GREY,
+	generalHelpChannel,
+	howToGetHelpChannel,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
-import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { sendWithMessageOwnership } from '../util/send';
 
-const THREAD_EXPIRE_MESSAGE = new MessageEmbed()
+const threadExpireEmbed = new MessageEmbed()
 	.setColor(BLOCKQUOTE_GREY)
 	.setTitle('This help thread expired.').setDescription(`
 If your question was not resolved, you can make a new thread by simply asking your question again. \
@@ -31,43 +32,55 @@ If you're not sure how, have a look through [StackOverflow's guide on asking a g
 // A zero-width space (necessary to prevent discord from trimming the leading whitespace), followed by a three non-breaking spaces.
 const indent = '\u200b\u00a0\u00a0\u00a0';
 
-const HELP_INFO = (channel: TextChannel) =>
-	new MessageEmbed().setColor(GREEN).setTitle('How To Get Help')
-		.setDescription(`
-${
-	channel.topic
-		? `This channel is for ${
-				channel.topic[0].toLowerCase() +
-				channel.topic.slice(1).split('\n')[0]
-		  }`
-		: ''
-}
+const helpInfo = (channel: TextChannel) =>
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setDescription(channel.topic ?? 'Ask your questions here!');
 
-**To get help:**
-• Post your question to this channel.
+const howToGetHelpEmbeds = () => [
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('How To Get Help')
+		.setDescription(
+			`
+• Post your question to one of the channels in this category.
+${indent}• If you're not sure which channel is best, just post in <#${generalHelpChannel}>.
 ${indent}• It's always ok to just ask your question; you don't need permission.
 • Our bot will make a thread dedicated to answering your channel.
 • Someone will (hopefully!) come along and help you.
-• When your question is resolved, type \`!tclose\`.
-
-**For better & faster answers:**
+• When your question is resolved, type \`!close\`.
+`,
+		),
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('How To Get *Better* Help')
+		.setDescription(
+			`
 • Explain what you want to happen and why…
 ${indent}• …and what actually happens, and your best guess at why.
-• Include a short code sample and error messages, if you got any.
+• Include a short code sample and any error messages you got.
 ${indent}• Text is better than screenshots. Start code blocks with ${'\\`\\`\\`ts'}.
 • If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
-${indent}• Send the full link in its own message. Do not use a link shortener.
+${indent}• Send the full link in its own message; do not use a link shortener.
 • Run \`!title <brief description>\` to make your help thread easier to spot.
-
-For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
-
+• For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+`,
+		),
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle("If You Haven't Gotten Help")
+		.setDescription(
+			`
 Usually someone will try to answer and help solve the issue within a few hours. \
-If not, and **if you have followed the bullets above**, you may ping helpers by running \`!helper\`. \
-Please allow extra time at night in America/Europe.
-`);
+If not, and if you have followed the bullets above, you can ping helpers by running \`!helper\`.
+`,
+		),
+];
 
-const helpInfoLocks = new Map<string, Promise<void>>();
-const manuallyArchivedThreads = new LimitedSizeMap<string, void>(100);
+const helpThreadWelcomeMessage = (owner: GuildMember) => `
+${owner} This thread is for your question; when it's resolved, please type \`!close\`. \
+See <#${howToGetHelpChannel}> for info on how to get better help.
+`;
 
 export class HelpThreadModule extends Module {
 	@listener({ event: 'messageCreate' })
@@ -80,27 +93,38 @@ export class HelpThreadModule extends Module {
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
 		thread.setLocked(true);
+		thread.send(helpThreadWelcomeMessage(msg.member!));
 		await HelpThread.create({
 			threadId: thread.id,
 			ownerId: msg.author.id,
 		}).save();
 	}
 
+	// Used to differentiate automatic archive from bot archive
+	manuallyArchivedThreads = new Set<string>();
+
 	@listener({ event: 'threadUpdate' })
 	async onThreadExpire(thread: ThreadChannel) {
 		if (
 			!this.isHelpThread(thread) ||
-			manuallyArchivedThreads.has(thread.id) ||
+			this.manuallyArchivedThreads.delete(thread.id) ||
 			!((await thread.fetch()) as ThreadChannel).archived
 		)
 			return;
-		await thread.send({ embeds: [THREAD_EXPIRE_MESSAGE] });
+		await thread.send({ embeds: [threadExpireEmbed] });
 		await this.closeThread(thread);
 	}
 
-	@command()
-	async tclose(msg: Message) {
-		if (!this.isHelpThread(msg.channel)) return;
+	@command({
+		aliases: ['closed', 'resolved', 'resolve', 'done'],
+		description: 'Help System: Close an active help thread',
+	})
+	async close(msg: Message) {
+		if (!this.isHelpThread(msg.channel))
+			return await sendWithMessageOwnership(
+				msg,
+				':warning: This can only be run in a help thread',
+			);
 
 		const threadData = (await HelpThread.findOne(msg.channel.id))!;
 
@@ -110,29 +134,31 @@ export class HelpThreadModule extends Module {
 		) {
 			await this.closeThread(msg.channel);
 		} else {
-			return await msg.channel.send(
-				':warning: you have to be the asker to close the thread.',
+			return await sendWithMessageOwnership(
+				msg,
+				':warning: You have to be the asker to close the thread.',
 			);
 		}
 	}
 
 	private async closeThread(thread: ThreadChannel) {
-		manuallyArchivedThreads.set(thread.id);
-		await thread.setArchived(true, 'grrr');
+		this.manuallyArchivedThreads.add(thread.id);
+		await thread.setArchived(true);
 		await HelpThread.delete(thread.id);
 	}
 
+	private helpInfoLocks = new Map<string, Promise<void>>();
 	private updateHelpInfo(channel: TextChannel) {
-		helpInfoLocks.set(
+		this.helpInfoLocks.set(
 			channel.id,
-			(helpInfoLocks.get(channel.id) ?? Promise.resolve()).then(
+			(this.helpInfoLocks.get(channel.id) ?? Promise.resolve()).then(
 				async () => {
 					await Promise.all([
 						...(await channel.messages.fetchPinned()).map(x =>
 							x.delete(),
 						),
 						channel
-							.send({ embeds: [HELP_INFO(channel)] })
+							.send({ embeds: [helpInfo(channel)] })
 							.then(x => x.pin()),
 					]);
 				},
@@ -153,7 +179,9 @@ export class HelpThreadModule extends Module {
 		channel: Omit<Channel, 'partial'>,
 	): channel is TextChannel {
 		return (
-			channel instanceof TextChannel && channel.parentId == helpCategory
+			channel instanceof TextChannel &&
+			channel.parentId == helpCategory &&
+			channel.id !== howToGetHelpChannel
 		);
 	}
 
@@ -167,7 +195,7 @@ export class HelpThreadModule extends Module {
 	}
 
 	@command({
-		description: 'Pings a helper in a help-thread',
+		description: 'Help System: Ping the @Helper role from a help thread',
 		aliases: ['helpers'],
 	})
 	async helper(msg: Message) {
@@ -219,13 +247,32 @@ export class HelpThreadModule extends Module {
 		]);
 	}
 
-	@command({ single: true })
+	@command({ single: true, description: 'Help System: Rename a help thread' })
 	async title(msg: Message, title: string) {
-		if (!this.isHelpThread(msg.channel)) return;
-		if (!title) return sendWithMessageOwnership(msg, ':x: Missing title');
+		if (!this.isHelpThread(msg.channel))
+			return sendWithMessageOwnership(
+				msg,
+				':warning: This can only be run in a help thread',
+			);
+		if (!title)
+			return sendWithMessageOwnership(msg, ':warning: Missing title');
 		let username = msg.member?.nickname ?? msg.author.username;
 		if (msg.channel.name !== username)
-			return sendWithMessageOwnership(msg, ':x: Already set thread name');
+			return sendWithMessageOwnership(
+				msg,
+				':warning: Already set thread name',
+			);
 		msg.channel.setName(`${username} - ${title}`);
+	}
+
+	@command()
+	async htgh(msg: Message) {
+		if (
+			msg.channel.id !== howToGetHelpChannel ||
+			!msg.member?.permissions.has('MANAGE_MESSAGES')
+		)
+			return;
+		(await msg.channel.messages.fetch()).forEach(x => x.delete());
+		msg.channel.send({ embeds: howToGetHelpEmbeds() });
 	}
 }
