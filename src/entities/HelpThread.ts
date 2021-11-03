@@ -11,4 +11,8 @@ export class HelpThread extends BaseEntity {
 	// When @helper was last pinged
 	@Column({ nullable: true })
 	helperTimestamp?: string;
+
+	// When the title was last set
+	@Column({ nullable: true })
+	titleSetTimestamp?: string;
 }

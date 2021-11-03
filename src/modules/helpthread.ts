@@ -82,6 +82,9 @@ ${owner} This thread is for your question; when it's resolved, please type \`!cl
 See <#${howToGetHelpChannel}> for info on how to get better help.
 `;
 
+// The rate limit for thread naming is 2 time / 10 mins, tracked per thread
+const titleSetCooldown = 5 * 60 * 1000;
+
 export class HelpThreadModule extends Module {
 	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
@@ -256,13 +259,33 @@ export class HelpThreadModule extends Module {
 			);
 		if (!title)
 			return sendWithMessageOwnership(msg, ':warning: Missing title');
-		let username = msg.member?.nickname ?? msg.author.username;
-		if (msg.channel.name !== username)
+		const thread = msg.channel;
+		const threadData = (await HelpThread.findOne(thread.id))!;
+		if (
+			msg.author.id !== threadData.ownerId &&
+			!msg.member!.roles.cache.has(trustedRoleId)
+		)
 			return sendWithMessageOwnership(
 				msg,
-				':warning: Already set thread name',
+				':warning: Only the asker and helpers can set the title',
 			);
-		msg.channel.setName(`${username} - ${title}`);
+		const titleSetAllowedAfter =
+			+(threadData.titleSetTimestamp ?? 0) + titleSetCooldown;
+		if (threadData.titleSetTimestamp && Date.now() < titleSetAllowedAfter)
+			return sendWithMessageOwnership(
+				msg,
+				`:warning: You can set the title again <t:${Math.ceil(
+					titleSetAllowedAfter / 1000,
+				)}:R>`,
+			);
+		const owner = await msg.guild!.members.fetch(threadData.ownerId);
+		const username = owner.nickname ?? owner.user.username;
+		await Promise.all([
+			HelpThread.update(thread.id, {
+				titleSetTimestamp: Date.now() + '',
+			}),
+			msg.channel.setName(`${username} - ${title}`),
+		]);
 	}
 
 	@command()
