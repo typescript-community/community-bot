@@ -29,8 +29,7 @@ export class EtcModule extends Module {
 
 	@command({ description: 'See if the bot is alive' })
 	async ping(msg: Message) {
-		if (msg.channel instanceof TextChannel)
-			await msg.channel.send('pong. :ping_pong:');
+		await msg.channel.send('pong. :ping_pong:');
 	}
 
 	@listener({ event: 'messageCreate' })
@@ -50,7 +49,8 @@ export class EtcModule extends Module {
 	async onReact(reaction: MessageReaction, member: GuildMember) {
 		if (reaction.partial) return;
 
-		if (reaction.message.author?.id !== this.client.user?.id) return;
+		if ((await reaction.message.fetch()).author.id !== this.client.user?.id)
+			return;
 		if (reaction.emoji.name !== DELETE_EMOJI) return;
 		if (member.id === this.client.user?.id) return;
 
@@ -66,7 +66,6 @@ export class EtcModule extends Module {
 		inhibitors: [CommonInhibitors.botAdminsOnly],
 	})
 	async kill(msg: Message) {
-		if (!(msg.channel instanceof TextChannel)) return;
 		const confirm = '✅';
 		const confirmationMessage = await msg.channel.send('Confirm?');
 		confirmationMessage.react(confirm);
