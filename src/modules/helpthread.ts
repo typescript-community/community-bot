@@ -85,6 +85,9 @@ See <#${howToGetHelpChannel}> for info on how to get better help.
 // The rate limit for thread naming is 2 time / 10 mins, tracked per thread
 const titleSetCooldown = 5 * 60 * 1000;
 
+// Delay before fully closing the thread, in case of hasty closing
+const threadCloseDelay = 60 * 1000;
+
 export class HelpThreadModule extends Module {
 	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
@@ -95,7 +98,6 @@ export class HelpThreadModule extends Module {
 			name: msg.member?.nickname ?? msg.author.username,
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
-		thread.setLocked(true);
 		thread.send(helpThreadWelcomeMessage(msg.member!));
 		await HelpThread.create({
 			threadId: thread.id,
@@ -110,8 +112,8 @@ export class HelpThreadModule extends Module {
 	async onThreadExpire(thread: ThreadChannel) {
 		if (
 			!this.isHelpThread(thread) ||
-			this.manuallyArchivedThreads.delete(thread.id) ||
-			!((await thread.fetch()) as ThreadChannel).archived
+			!((await thread.fetch()) as ThreadChannel).archived ||
+			this.manuallyArchivedThreads.delete(thread.id)
 		)
 			return;
 		await thread.send({ embeds: [threadExpireEmbed] });
@@ -129,13 +131,31 @@ export class HelpThreadModule extends Module {
 				':warning: This can only be run in a help thread',
 			);
 
-		const threadData = (await HelpThread.findOne(msg.channel.id))!;
+		let thread: ThreadChannel = msg.channel;
+		const threadData = (await HelpThread.findOne(thread.id))!;
 
 		if (
 			threadData.ownerId === msg.author.id ||
 			msg.member?.permissions.has('MANAGE_MESSAGES')
 		) {
-			await this.closeThread(msg.channel);
+			await msg.react('✅');
+			this.manuallyArchivedThreads.add(thread.id);
+			await thread.setArchived(true);
+			thread = (await thread.fetch()) as ThreadChannel;
+			let archiveTimestamp = thread.archiveTimestamp;
+			setTimeout(async () => {
+				thread = (await thread.fetch()) as ThreadChannel;
+				console.log(
+					thread.archived,
+					thread.archivedAt,
+					archiveTimestamp,
+				);
+				if (
+					thread.archived &&
+					thread.archiveTimestamp == archiveTimestamp
+				)
+					this.closeThread(thread);
+			}, threadCloseDelay);
 		} else {
 			return await sendWithMessageOwnership(
 				msg,
@@ -145,8 +165,9 @@ export class HelpThreadModule extends Module {
 	}
 
 	private async closeThread(thread: ThreadChannel) {
+		if (thread.archived) await thread.setArchived(false);
 		this.manuallyArchivedThreads.add(thread.id);
-		await thread.setArchived(true);
+		await thread.edit({ archived: true, locked: true });
 		await HelpThread.delete(thread.id);
 	}
 
