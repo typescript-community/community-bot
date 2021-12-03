@@ -153,7 +153,7 @@ export class RepModule extends Module {
 					)
 				).join('\n'),
 			);
-		await msg.channel.send(embed);
+		await msg.channel.send(embed, { split: true });
 	}
 
 	@command({
