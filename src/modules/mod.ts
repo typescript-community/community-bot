@@ -5,7 +5,7 @@ import { rulesChannelId } from '../env';
 // Most job posts are in this format:
 // > [FOR HIRE][REMOTE][SOMETHING ELSE]
 // > Hi, I'm ponyman6000. Hire me!
-const jobPostRegex = /^(?:\[[A-Z ]+\]\s*){2,}\n/i;
+const jobPostRegex = /^(?:\[[A-Z /]+\]\s*){2,}\n/i;
 
 const SPAM_CHANNEL_THRESHOLD = 3;
 const SPAM_MAX_TIME = 5000;
