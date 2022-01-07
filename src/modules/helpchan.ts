@@ -14,7 +14,6 @@ import {
 	GuildMember,
 	ChannelData,
 	CategoryChannel,
-	GuildManager,
 	Channel,
 } from 'discord.js';
 import { HelpUser } from '../entities/HelpUser';
@@ -32,6 +31,7 @@ import {
 	ongoingEmptyTimeout,
 	trustedRoleId,
 	dormantChannelTimeoutHours,
+	timeBeforeHelperPing,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 
@@ -66,13 +66,13 @@ If you want help, please ask in an available channel instead.
 • Explain what you want to happen and why…
 ${u2800}• …and what actually happens, and your best guess at why.
 • Include a short code sample and error messages, if you got any.
-${u2800}• Text is better than screenshots. Start code blocks with ${'```ts'}.
+${u2800}• Text is better than screenshots. Start code blocks with ${'\\`\\`\\`ts'}.
 • If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
 ${u2800}• Send the full link in its own message. Do not use a link shortener.
 
 For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 
-Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role. Please allow extra time at night in America/Europe.
+Usually someone will try to answer and help solve the issue within a few hours. If not, and **if you have followed the bullets above**, you may ping the <@&${trustedRoleId}> role with \`!helper\`. Please allow extra time at night in America/Europe.
 `;
 
 const DORMANT_MESSAGE = `
@@ -275,6 +275,48 @@ export class HelpChanModule extends Module {
 		)
 			return;
 		await msg.delete({ reason: 'Pin system message' });
+	}
+
+	@command({
+		description: 'Pings a helper in a help-channel',
+		aliases: ['helpers'],
+	})
+	async helper(msg: Message) {
+		if (msg.channel.type !== 'text') return;
+		if (msg.channel.parentID !== categories.ongoing) {
+			return msg.channel.send(
+				':warning: You may only ping helpers from a help channel',
+			);
+		}
+
+		// Ensure the user has permission to ping helpers
+		const asker = await HelpUser.findOne({
+			channelId: msg.channel.id,
+		});
+		const isAsker = asker?.userId === msg.author.id;
+		const isTrusted =
+			(await isTrustedMember(msg, this.client)) === undefined; // No error if trusted
+		if (!isAsker && !isTrusted) {
+			return msg.channel.send(
+				':warning: Only the asker can ping helpers',
+			);
+		}
+
+		// Ensure they've waited long enough
+		// Trusted members (who aren't the asker) are allowed to disregard the timeout
+		const askTime = msg.channel.lastPinTimestamp ?? 0;
+		const pingAllowedAfter = askTime + timeBeforeHelperPing;
+
+		if (isAsker && Date.now() < pingAllowedAfter) {
+			return msg.channel.send(
+				`:warning: Please wait a bit longer. You can ping helpers <t:${
+					pingAllowedAfter / 1000
+				}:R>.`,
+			);
+		}
+
+		// The beacons are lit, Gondor calls for aid
+		msg.channel.send(`<@&${trustedRoleId}>`);
 	}
 
 	@command({
