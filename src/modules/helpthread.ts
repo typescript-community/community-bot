@@ -85,9 +85,6 @@ See <#${howToGetHelpChannel}> for info on how to get better help.
 // The rate limit for thread naming is 2 time / 10 mins, tracked per thread
 const titleSetCooldown = 5 * 60 * 1000;
 
-// Delay before fully closing the thread, in case of hasty closing
-const threadCloseDelay = 60 * 1000;
-
 export class HelpThreadModule extends Module {
 	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
@@ -117,7 +114,8 @@ export class HelpThreadModule extends Module {
 		)
 			return;
 		await thread.send({ embeds: [threadExpireEmbed] });
-		await this.closeThread(thread);
+		this.manuallyArchivedThreads.add(thread.id);
+		await thread.setArchived(true);
 	}
 
 	@command({
@@ -141,34 +139,12 @@ export class HelpThreadModule extends Module {
 			await msg.react('✅');
 			this.manuallyArchivedThreads.add(thread.id);
 			await thread.setArchived(true);
-			thread = (await thread.fetch()) as ThreadChannel;
-			let archiveTimestamp = thread.archiveTimestamp;
-			setTimeout(async () => {
-				thread = (await thread.fetch()) as ThreadChannel;
-				console.log(
-					thread.archived,
-					thread.archivedAt,
-					archiveTimestamp,
-				);
-				if (
-					thread.archived &&
-					thread.archiveTimestamp == archiveTimestamp
-				)
-					this.closeThread(thread);
-			}, threadCloseDelay);
 		} else {
 			return await sendWithMessageOwnership(
 				msg,
 				':warning: You have to be the asker to close the thread.',
 			);
 		}
-	}
-
-	private async closeThread(thread: ThreadChannel) {
-		if (thread.archived) await thread.setArchived(false);
-		this.manuallyArchivedThreads.add(thread.id);
-		await thread.edit({ archived: true, locked: true });
-		await HelpThread.delete(thread.id);
 	}
 
 	private helpInfoLocks = new Map<string, Promise<void>>();
