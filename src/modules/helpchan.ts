@@ -25,12 +25,10 @@ import {
 	BALLOT_BOX_BLUE,
 	askCooldownRoleId,
 	channelNames,
-	dormantChannelTimeout,
 	dormantChannelLoop,
 	askHelpChannelId,
 	ongoingEmptyTimeout,
 	trustedRoleId,
-	dormantChannelTimeoutHours,
 	timeBeforeHelperPing,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
@@ -90,7 +88,7 @@ Help channels work a little differently on this server. So that people aren't ta
 • Someone will (hopefully!) come along and help you.
 • When your question(s) are resolved, type \`!close\`.
 
-Help channels will be automatically closed after ${dormantChannelTimeoutHours} hours of inactivity. When a channel is closed, it moves into the ":zzz: | Dormant Help Channels" category to eventually be recycled back into the ":white_check_mark: | Available Help Channels" category.
+Help channels will be automatically closed after a period of inactivity. When a channel is closed, it moves into the ":zzz: | Dormant Help Channels" category to eventually be recycled back into the ":white_check_mark: | Available Help Channels" category.
 `;
 
 const helpChannelTopic = `One person may ask questions at a time. The current status is pinned. Details: <#${askHelpChannelId}>`;
@@ -107,7 +105,7 @@ export class HelpChanModule extends Module {
 		.setColor(GREEN)
 		.setDescription(AVAILABLE_MESSAGE)
 		.setFooter(
-			`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when you send !close.`,
+			`Closes after a period of inactivity or when you send !close.`,
 		);
 
 	OCCUPIED_EMBED_BASE = new MessageEmbed()
@@ -118,7 +116,7 @@ export class HelpChanModule extends Module {
 		return new MessageEmbed(this.OCCUPIED_EMBED_BASE)
 			.setDescription(occupiedMessage(asker))
 			.setFooter(
-				`Closes after ${dormantChannelTimeoutHours} hours of inactivity or when ${asker.displayName} sends !close.`,
+				`Closes after a period of inactivity or when ${asker.displayName} sends !close.`,
 			);
 	}
 
@@ -474,7 +472,14 @@ export class HelpChanModule extends Module {
 					'Asker has left the server, closing channel...',
 				);
 			}
-			if (!member || diff > dormantChannelTimeout) {
+			if (
+				!member ||
+				diff >
+					this.calculateTimeout(
+						messages.first()?.createdAt.getTime() ||
+							new Date().getTime(),
+					)
+			) {
 				await this.markChannelAsDormant(channel);
 				continue;
 			}
@@ -645,6 +650,20 @@ export class HelpChanModule extends Module {
 				this.getDormantChannels(guild).array() as TextChannel[],
 			)
 			.filter(it => it.topic !== helpChannelTopic);
+	}
+
+	calculateTimeout(lastMessageUnixTime: number) {
+		const timeMod = Math.floor(lastMessageUnixTime / 1000) % (60 * 60 * 24);
+
+		const shortestTimeout = 10 * 60 * 60 * 1000;
+		const longestTimeout = 15 * 60 * 60 * 1000;
+
+		const apex = (9 + 5) * 60 * 60; // EST 9 am
+		const intercept = 10.125; // intercepts at 16 in the evening.
+		return Math.min(
+			(apex - timeMod) ** 2 / (3600 * intercept) + shortestTimeout,
+			longestTimeout,
+		);
 	}
 
 	updateHelpChannelTopicsTimeout: NodeJS.Timeout | undefined = undefined;
