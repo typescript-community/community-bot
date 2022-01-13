@@ -31,6 +31,13 @@ export const rulesChannelId = process.env.RULES_CHANNEL!;
 
 export const channelNames = process.env.CHANNEL_NAMES!.split(',');
 
+export const dormantChannelTimeoutShortest = parseInt(
+	process.env.DORMANT_CHANNEL_TIMEOUT_SHORTEST!,
+);
+export const dormantChannelTimeoutLongest = parseInt(
+	process.env.DORMANT_CHANNEL_TIMEOUT_LONGEST!,
+);
+
 export const dormantChannelLoop = parseInt(process.env.DORMANT_CHANNEL_LOOP!);
 
 export const ongoingEmptyTimeout = parseInt(process.env.ONGOING_EMPTY_TIMEOUT!);
