@@ -5,8 +5,8 @@ import { sendWithMessageOwnership } from '../util/send';
 import { TS_BLUE } from '../env';
 import { decode } from 'html-entities';
 
-const ALGOLIA_APP_ID = 'BH4D9OD16A';
-const ALGOLIA_API_KEY = '3c2db2aef0c7ff26e8911267474a9b2c';
+const ALGOLIA_APP_ID = 'BGCDYOIYZ5';
+const ALGOLIA_API_KEY = '37ee06fa68db6aef451a490df6df7c60';
 const ALGOLIA_INDEX_NAME = 'typescriptlang';
 
 const algolia = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY, {});
