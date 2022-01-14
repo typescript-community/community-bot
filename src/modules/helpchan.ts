@@ -658,7 +658,7 @@ export class HelpChanModule extends Module {
 		const timeMod = Math.floor(lastMessageUnixTime / 1000) % (60 * 60 * 24);
 
 		const apex = (9 + 5) * 60 * 60; // EST 9 am
-		const intercept = 10.125; // intercepts at 16 in the evening.
+		const intercept = 6.125; // intercepts at 16 in the evening.
 		return Math.min(
 			(apex - timeMod) ** 2 / (3600 * intercept) +
 				dormantChannelTimeoutShortest,
