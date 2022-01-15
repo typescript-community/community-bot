@@ -304,7 +304,16 @@ export class HelpChanModule extends Module {
 
 		// Ensure they've waited long enough
 		// Trusted members (who aren't the asker) are allowed to disregard the timeout
-		const askTime = msg.channel.lastPinTimestamp ?? 0;
+		const askTime = msg.channel.lastPinTimestamp;
+		if (!askTime) {
+			// This happens when the command is sent before the message is pinned
+			return msg.channel.send(
+				`:warning: Please wait a bit longer. You can ping helpers <t:${
+					// Not accurate, but good enough
+					(Date.now() + timeBeforeHelperPing) / 1000
+				}:R>.`,
+			);
+		}
 		const pingAllowedAfter = askTime + timeBeforeHelperPing;
 
 		if (isAsker && Date.now() < pingAllowedAfter) {
