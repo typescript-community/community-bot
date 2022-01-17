@@ -11,7 +11,7 @@ import { TS_BLUE } from '../env';
 
 import { RepGive } from '../entities/RepGive';
 import { RepUser } from '../entities/RepUser';
-import { Paginator } from '../util/Paginator';
+import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
 
 export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -162,7 +162,13 @@ export class RepModule extends Module {
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
 			.setAuthor(user.tag, user.displayAvatarURL());
-		new Paginator(embed, pages, msg.member, msg.channel, 300000);
+		await sendPaginatedMessage(
+			embed,
+			pages,
+			msg.member,
+			msg.channel,
+			300000,
+		);
 	}
 
 	@command({
