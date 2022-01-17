@@ -11,6 +11,7 @@ import { TS_BLUE } from '../env';
 
 import { RepGive } from '../entities/RepGive';
 import { RepUser } from '../entities/RepUser';
+import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
 
 export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -125,35 +126,49 @@ export class RepModule extends Module {
 		description: "Reputation: View a user's reputation history",
 	})
 	async getrep(msg: Message, @optional user?: User) {
+		if (!msg.member || msg.channel.type !== 'text') {
+			return;
+		}
 		if (!user) user = msg.author;
 
 		const targetRU = await this.getOrMakeUser(user);
+		const records = (await targetRU.got)
+			.concat(await targetRU.given)
+			// Decreasing chronologically
+			.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+			.map(rg => {
+				if (rg.from.id == targetRU.id)
+					return `:white_small_square: Gave 1 rep to <@${
+						rg.to.id
+					}> (${prettyMilliseconds(
+						Date.now() - rg.createdAt.getTime(),
+					)} ago)`;
+				else
+					return `:white_small_square: Got 1 rep from <@${
+						rg.from.id
+					}> (${prettyMilliseconds(
+						Date.now() - rg.createdAt.getTime(),
+					)} ago)`;
+			});
+		const recordsPerPage = 30;
+		const pages = records
+			.reduce((acc, cur, index) => {
+				const curChunk = Math.floor(index / recordsPerPage);
+				acc[curChunk] ??= [];
+				acc[curChunk].push(cur);
+				return acc;
+			}, [] as string[][])
+			.map(page => page.join('\n'));
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
-			.setAuthor(user.tag, user.displayAvatarURL())
-			.setDescription(
-				(
-					await Promise.all(
-						(await targetRU.got)
-							.concat(await targetRU.given)
-							.map(async rg => {
-								if (rg.from.id == targetRU.id)
-									return `:white_small_square: Gave 1 rep to <@${
-										rg.to.id
-									}> (${prettyMilliseconds(
-										Date.now() - rg.createdAt.getTime(),
-									)} ago)`;
-								else
-									return `:white_small_square: Got 1 rep from <@${
-										rg.from.id
-									}> (${prettyMilliseconds(
-										Date.now() - rg.createdAt.getTime(),
-									)} ago)`;
-							}),
-					)
-				).join('\n'),
-			);
-		await msg.channel.send(embed);
+			.setAuthor(user.tag, user.displayAvatarURL());
+		await sendPaginatedMessage(
+			embed,
+			pages,
+			msg.member,
+			msg.channel,
+			300000,
+		);
 	}
 
 	@command({
