@@ -102,8 +102,9 @@ export class PlaygroundModule extends Module {
 		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		// Edit the message to only have the embed and not the "please edit your message" message
-		await botMsg?.edit('', {
-			embed: botMsg.embeds[0],
+		await botMsg?.edit({
+			content: '',
+			embeds: [botMsg.embeds[0]],
 		});
 		this.editedLongLink.delete(msg.id);
 	}

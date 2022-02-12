@@ -285,8 +285,8 @@ export class HelpChanModule extends Module {
 		aliases: ['helpers'],
 	})
 	async helper(msg: Message) {
-		if (msg.channel.type !== 'text') return;
-		if (msg.channel.parentID !== categories.ongoing) {
+		if (msg.channel.type !== 'GUILD_TEXT') return;
+		if (msg.channel.parentId !== categories.ongoing) {
 			return msg.channel.send(
 				':warning: You may only ping helpers from a help channel',
 			);

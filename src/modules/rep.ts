@@ -126,7 +126,7 @@ export class RepModule extends Module {
 		description: "Reputation: View a user's reputation history",
 	})
 	async getrep(msg: Message, @optional user?: User) {
-		if (!msg.member || msg.channel.type !== 'text') {
+		if (!msg.member) {
 			return;
 		}
 		if (!user) user = msg.author;

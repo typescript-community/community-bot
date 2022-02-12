@@ -2,7 +2,7 @@ import {
 	GuildMember,
 	MessageEmbed,
 	MessageReaction,
-	TextChannel,
+	TextBasedChannels,
 	User,
 } from 'discord.js';
 
@@ -18,15 +18,17 @@ export async function sendPaginatedMessage(
 	embed: MessageEmbed,
 	pages: string[],
 	member: GuildMember,
-	channel: TextChannel,
+	channel: TextBasedChannels,
 	timeout: number = 100000,
 ) {
 	let curPage = 0;
-	const message = await channel.send(
-		embed
-			.setDescription(pages[curPage])
-			.setFooter(`Page ${curPage + 1} of ${pages.length}`),
-	);
+	const message = await channel.send({
+		embeds: [
+			embed
+				.setDescription(pages[curPage])
+				.setFooter(`Page ${curPage + 1} of ${pages.length}`),
+		],
+	});
 	if (pages.length === 1) return;
 
 	await message.react(emojis.first);
@@ -35,11 +37,11 @@ export async function sendPaginatedMessage(
 	await message.react(emojis.next);
 	await message.react(emojis.last);
 
-	const collector = message.createReactionCollector(
-		(reaction, user) =>
+	const collector = message.createReactionCollector({
+		filter: (reaction, user) =>
 			user.id === member.id && user.id !== message.author.id,
-		{ time: timeout },
-	);
+		time: timeout,
+	});
 
 	collector.on('collect', async (reaction: MessageReaction, user: User) => {
 		await reaction.users.remove(user);
@@ -64,11 +66,13 @@ export async function sendPaginatedMessage(
 				break;
 		}
 
-		await message.edit(
-			embed
-				.setDescription(pages[curPage])
-				.setFooter(`Page ${curPage + 1} of ${pages.length}`),
-		);
+		await message.edit({
+			embeds: [
+				embed
+					.setDescription(pages[curPage])
+					.setFooter(`Page ${curPage + 1} of ${pages.length}`),
+			],
+		});
 	});
 
 	collector.on('end', () => {
