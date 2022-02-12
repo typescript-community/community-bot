@@ -17,9 +17,9 @@ export async function findCode(message: Message, ignoreLinks = false) {
 		);
 		if (codeInReferencedMessage) return codeInReferencedMessage;
 	}
-	const msgs = (await message.channel.messages.fetch({ limit: 10 })).array();
+	const msgs = await message.channel.messages.fetch({ limit: 10 });
 
-	for (const msg of msgs) {
+	for (const msg of msgs.values()) {
 		const code = findCodeInMessage(msg, ignoreLinks);
 		if (code) return code;
 	}

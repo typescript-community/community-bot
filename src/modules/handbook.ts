@@ -35,7 +35,7 @@ export class HandbookModule extends Module {
 	async handbook(msg: Message, text: string) {
 		if (!text)
 			return await sendWithMessageOwnership(msg, {
-				embed: this.HANDBOOK_EMBED,
+				embeds: [this.HANDBOOK_EMBED],
 			});
 		const data = await algolia.search<AlgoliaResult>([
 			{
@@ -61,6 +61,6 @@ export class HandbookModule extends Module {
 			.setTitle(decode(hierarchyParts[hierarchyParts.length - 1]))
 			.setAuthor(decode(hierarchyParts.slice(0, -1).join(' / ')))
 			.setURL(hit.url);
-		await sendWithMessageOwnership(msg, { embed });
+		await sendWithMessageOwnership(msg, { embeds: [embed] });
 	}
 }

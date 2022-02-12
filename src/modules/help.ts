@@ -76,12 +76,12 @@ export class HelpModule extends Module {
 
 			embed
 				.setFooter(
-					this.client.user?.username,
-					this.client.user?.displayAvatarURL(),
+					this.client.user!.username,
+					this.client.user!.displayAvatarURL(),
 				)
 				.setTimestamp();
 
-			return await sendWithMessageOwnership(msg, { embed });
+			return await sendWithMessageOwnership(msg, { embeds: [embed] });
 		}
 
 		let cmd: { description?: string; triggers?: string[] } =
@@ -116,6 +116,6 @@ export class HelpModule extends Module {
 			`*${splitCategoryDescription(cmd.description ?? '')[1]}*`,
 		);
 
-		await sendWithMessageOwnership(msg, { embed });
+		await sendWithMessageOwnership(msg, { embeds: [embed] });
 	}
 }
