@@ -52,3 +52,7 @@ getDB(); // prepare the db for later
 
 client.login(token);
 client.on('ready', () => console.log(`Logged in as ${client.user?.tag}`));
+
+process.on('unhandledRejection', e => {
+	console.error('Unhandled rejection', e);
+});
