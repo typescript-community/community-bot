@@ -4,7 +4,7 @@ import { getReferencedMessage } from './getReferencedMessage';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript)?\n([\s\S]+)```/;
 
-export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*)#code\/([\w\-%+_]+={0,4})/;
+export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4})/;
 
 export async function findCode(message: Message, ignoreLinks = false) {
 	const codeInMessage = await findCodeInMessage(message, ignoreLinks);
