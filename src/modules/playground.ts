@@ -201,7 +201,7 @@ function getSelectionQueryParams(query: string, numLines: number) {
 	const [startLine, endLine] = ['pln', 'ssl']
 		// @ts-expect-error parseInt(null) is okay here since we check for NaN
 		.map(name => parseInt(params.get(name)))
-		.map(n => (n !== NaN && 1 <= n && n <= numLines ? n : undefined))
+		.map(n => (!Number.isNaN(n) && 1 <= n && n <= numLines ? n : undefined))
 		.sort((a, b) => (a ?? Infinity) - (b ?? Infinity));
 
 	return { startLine, endLine };
