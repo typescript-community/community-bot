@@ -5,6 +5,7 @@ import {
 	listener,
 	CommonInhibitors,
 } from 'cookiecord';
+import { ThreadAutoArchiveDuration } from 'discord-api-types';
 import {
 	Message,
 	MessageReaction,
@@ -12,8 +13,10 @@ import {
 	User,
 	ReactionEmoji,
 	TextChannel,
+	ThreadChannel,
 } from 'discord.js';
-import { MessageChannel } from 'worker_threads';
+import { MessageChannel, threadId } from 'worker_threads';
+import { suggestionsChannelId } from '../env';
 import {
 	clearMessageOwnership,
 	DELETE_EMOJI,
@@ -21,6 +24,8 @@ import {
 } from '../util/send';
 
 const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
+
+const defaultPollEmojis = ['✅', '❌', '🤷'];
 
 export class EtcModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -33,7 +38,7 @@ export class EtcModule extends Module {
 	}
 
 	@listener({ event: 'messageCreate' })
-	async onMessage(msg: Message) {
+	async onPoll(msg: Message) {
 		if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
 			return;
 		let emojis = [
@@ -41,8 +46,57 @@ export class EtcModule extends Module {
 				[...msg.content.matchAll(emojiRegex)].map(x => x[1] ?? x[2]),
 			),
 		];
-		if (!emojis.length) emojis = ['✅', '❌', '🤷'];
+		if (!emojis.length) emojis = defaultPollEmojis;
 		for (const emoji of emojis) await msg.react(emoji);
+	}
+
+	@listener({ event: 'messageCreate' })
+	async onSuggestion(msg: Message) {
+		if (msg.author.bot || msg.channelId !== suggestionsChannelId) return;
+		// First 50 characters of the first line of the content (without cutting off a word)
+		const title =
+			msg.content
+				.split('\n')[0]
+				.split(/(^.{0,50}\b)/)
+				.find(x => x) ?? 'Suggestion';
+		await msg.startThread({
+			name: title,
+			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
+		});
+		for (let emoji of defaultPollEmojis) await msg.react(emoji);
+	}
+
+	@listener({ event: 'threadUpdate' })
+	async onSuggestionClose(thread: ThreadChannel) {
+		if (
+			thread.parentId !== suggestionsChannelId ||
+			!((await thread.fetch()) as ThreadChannel).archived
+		)
+			return;
+		const channel = thread.parent!;
+		let lastMessage = null;
+		let suggestion: Message;
+		while (!suggestion!) {
+			const msgs = await channel.messages.fetch({
+				before: lastMessage ?? undefined,
+				limit: 5,
+			});
+			suggestion = msgs.find(msg => msg.thread?.id === thread.id)!;
+			lastMessage = msgs.last()!.id as string;
+		}
+		const pollingResults = defaultPollEmojis.map(emoji => {
+			const reactions = suggestion.reactions.resolve(emoji);
+			// Subtract the bot's vote
+			const count = (reactions?.count ?? 0) - 1;
+			return [emoji, count] as const;
+		});
+		const pollingResultStr = pollingResults
+			.sort((a, b) => b[1] - a[1])
+			.map(([emoji, count], i) => `${count}  ${emoji}`)
+			.join('   ');
+		await suggestion.reply({
+			content: `Polling finished; result:  ${pollingResultStr}`,
+		});
 	}
 
 	@listener({ event: 'messageReactionAdd' })

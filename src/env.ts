@@ -32,3 +32,5 @@ export const BLOCKQUOTE_GREY = '#4f545c';
 export const timeBeforeHelperPing = parseInt(
 	process.env.TIME_BEFORE_HELPER_PING!,
 );
+
+export const suggestionsChannelId = process.env.SUGGESTIONS_CHANNEL!;
