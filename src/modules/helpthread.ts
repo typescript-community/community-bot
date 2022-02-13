@@ -88,7 +88,7 @@ const titleSetCooldown = 5 * 60 * 1000;
 export class HelpThreadModule extends Module {
 	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
-		if (!this.isHelpChannel(msg.channel)) return;
+		if (!isHelpChannel(msg.channel)) return;
 		if (msg.author.id === this.client.user!.id) return;
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
@@ -108,7 +108,7 @@ export class HelpThreadModule extends Module {
 	@listener({ event: 'threadUpdate' })
 	async onThreadExpire(thread: ThreadChannel) {
 		if (
-			!this.isHelpThread(thread) ||
+			!isHelpThread(thread) ||
 			!((await thread.fetch()) as ThreadChannel).archived ||
 			this.manuallyArchivedThreads.delete(thread.id)
 		)
@@ -123,7 +123,7 @@ export class HelpThreadModule extends Module {
 		description: 'Help System: Close an active help thread',
 	})
 	async close(msg: Message) {
-		if (!this.isHelpThread(msg.channel))
+		if (!isHelpThread(msg.channel))
 			return await sendWithMessageOwnership(
 				msg,
 				':warning: This can only be run in a help thread',
@@ -168,30 +168,8 @@ export class HelpThreadModule extends Module {
 
 	@listener({ event: 'messageCreate' })
 	deletePinMessage(msg: Message) {
-		if (
-			this.isHelpChannel(msg.channel) &&
-			msg.type === 'CHANNEL_PINNED_MESSAGE'
-		)
+		if (isHelpChannel(msg.channel) && msg.type === 'CHANNEL_PINNED_MESSAGE')
 			msg.delete();
-	}
-
-	private isHelpChannel(
-		channel: Omit<Channel, 'partial'>,
-	): channel is TextChannel {
-		return (
-			channel instanceof TextChannel &&
-			channel.parentId == helpCategory &&
-			channel.id !== howToGetHelpChannel
-		);
-	}
-
-	private isHelpThread(
-		channel: Omit<Channel, 'partial'>,
-	): channel is ThreadChannel & { parent: TextChannel } {
-		return (
-			channel instanceof ThreadChannel &&
-			this.isHelpChannel(channel.parent!)
-		);
 	}
 
 	@command({
@@ -199,7 +177,7 @@ export class HelpThreadModule extends Module {
 		aliases: ['helpers'],
 	})
 	async helper(msg: Message) {
-		if (!this.isHelpThread(msg.channel)) {
+		if (!isHelpThread(msg.channel)) {
 			return sendWithMessageOwnership(
 				msg,
 				':warning: You may only ping helpers from a help thread',
@@ -249,7 +227,7 @@ export class HelpThreadModule extends Module {
 
 	@command({ single: true, description: 'Help System: Rename a help thread' })
 	async title(msg: Message, title: string) {
-		if (!this.isHelpThread(msg.channel))
+		if (!isHelpThread(msg.channel))
 			return sendWithMessageOwnership(
 				msg,
 				':warning: This can only be run in a help thread',
@@ -295,4 +273,20 @@ export class HelpThreadModule extends Module {
 		(await msg.channel.messages.fetch()).forEach(x => x.delete());
 		msg.channel.send({ embeds: howToGetHelpEmbeds() });
 	}
+}
+
+export function isHelpChannel(
+	channel: Omit<Channel, 'partial'>,
+): channel is TextChannel {
+	return (
+		channel instanceof TextChannel &&
+		channel.parentId == helpCategory &&
+		channel.id !== howToGetHelpChannel
+	);
+}
+
+export function isHelpThread(
+	channel: Omit<Channel, 'partial'>,
+): channel is ThreadChannel & { parent: TextChannel } {
+	return channel instanceof ThreadChannel && isHelpChannel(channel.parent!);
 }
