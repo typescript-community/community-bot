@@ -41,13 +41,18 @@ export class RepModule extends Module {
 		const GIVE = '✅';
 		const PARTIAL_GIVE = '🤔';
 		const NO_GIVE = '❌';
+		const LAUGH = '😆';
 
 		// Check for thanks messages
 		const isThanks = this.THANKS_REGEX.test(msg.content);
 
 		if (msg.author.bot || !isThanks || !msg.guild) return;
 
-		const mentionUsers = msg.mentions.users;
+		const allMentionUsers = msg.mentions.users;
+		const mentionUsers = allMentionUsers.filter(
+			user => user.id !== msg.member?.id,
+		);
+		if (mentionUsers.size < allMentionUsers.size) await msg.react(LAUGH);
 		if (!mentionUsers.size) return;
 
 		const senderRU = await this.getOrMakeUser(msg.author);
@@ -58,7 +63,6 @@ export class RepModule extends Module {
 		if (currentSent >= this.MAX_REP) return await msg.react(NO_GIVE);
 
 		for (const user of mentionUsers.values()) {
-			if (user.id === msg.member?.id) continue;
 			if (currentSent >= this.MAX_REP)
 				return await msg.react(PARTIAL_GIVE);
 
