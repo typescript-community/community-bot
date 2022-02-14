@@ -1,12 +1,6 @@
-import {
-	GuildMember,
-	MessageEmbed,
-	MessageReaction,
-	TextBasedChannels,
-	User,
-} from 'discord.js';
+import { MessageEmbed, MessageReaction, Message, User } from 'discord.js';
 
-const emojis = {
+const controls = {
 	back: '◀',
 	first: '⏮',
 	last: '⏭',
@@ -17,29 +11,28 @@ const emojis = {
 export async function sendPaginatedMessage(
 	embed: MessageEmbed,
 	pages: string[],
-	member: GuildMember,
-	channel: TextBasedChannels,
+	msg: Message,
 	timeout: number = 100000,
-) {
+): Promise<Message> {
 	let curPage = 0;
-	const message = await channel.send({
+	const message = await msg.channel.send({
 		embeds: [
 			embed
 				.setDescription(pages[curPage])
 				.setFooter(`Page ${curPage + 1} of ${pages.length}`),
 		],
 	});
-	if (pages.length === 1) return;
+	if (pages.length === 1) return message;
 
-	await message.react(emojis.first);
-	await message.react(emojis.back);
-	await message.react(emojis.stop);
-	await message.react(emojis.next);
-	await message.react(emojis.last);
+	await message.react(controls.first);
+	await message.react(controls.back);
+	await message.react(controls.stop);
+	await message.react(controls.next);
+	await message.react(controls.last);
 
 	const collector = message.createReactionCollector({
 		filter: (reaction, user) =>
-			user.id === member.id && user.id !== message.author.id,
+			user.id === msg.author.id && user.id !== message.author.id,
 		time: timeout,
 	});
 
@@ -47,20 +40,20 @@ export async function sendPaginatedMessage(
 		await reaction.users.remove(user);
 
 		switch (reaction.emoji.toString()) {
-			case emojis.first:
+			case controls.first:
 				curPage = 0;
 				break;
-			case emojis.last:
+			case controls.last:
 				curPage = pages.length - 1;
 				break;
-			case emojis.stop:
+			case controls.stop:
 				await message.reactions.removeAll();
 				break;
-			case emojis.back:
+			case controls.back:
 				curPage--;
 				if (curPage < 0) curPage = pages.length - 1;
 				break;
-			case emojis.next:
+			case controls.next:
 				curPage++;
 				if (curPage > pages.length - 1) curPage = 0;
 				break;
@@ -76,6 +69,10 @@ export async function sendPaginatedMessage(
 	});
 
 	collector.on('end', () => {
-		message.reactions.removeAll();
+		Object.values(controls).forEach(emoji => {
+			message.reactions.resolve(emoji)?.remove();
+		});
 	});
+
+	return message;
 }

@@ -12,6 +12,7 @@ import { TS_BLUE } from '../env';
 import { RepGive } from '../entities/RepGive';
 import { RepUser } from '../entities/RepUser';
 import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
+import { addMessageOwnership } from '../util/send';
 
 export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
@@ -130,9 +131,6 @@ export class RepModule extends Module {
 		description: "Reputation: View a user's reputation history",
 	})
 	async getrep(msg: Message, @optional user?: User) {
-		if (!msg.member) {
-			return;
-		}
 		if (!user) user = msg.author;
 
 		const targetRU = await this.getOrMakeUser(user);
@@ -166,13 +164,8 @@ export class RepModule extends Module {
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
 			.setAuthor(user.tag, user.displayAvatarURL());
-		await sendPaginatedMessage(
-			embed,
-			pages,
-			msg.member,
-			msg.channel,
-			300000,
-		);
+		const message = await sendPaginatedMessage(embed, pages, msg, 300000);
+		await addMessageOwnership(message, msg.author);
 	}
 
 	@command({
