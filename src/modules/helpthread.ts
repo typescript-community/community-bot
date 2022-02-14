@@ -92,7 +92,7 @@ export class HelpThreadModule extends Module {
 		if (msg.author.id === this.client.user!.id) return;
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
-			name: msg.member?.nickname ?? msg.author.username,
+			name: `Help ${msg.member?.nickname ?? msg.author.username}`,
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
 		thread.send(helpThreadWelcomeMessage(msg.member!));
