@@ -31,6 +31,7 @@ export class ModModule extends Module {
 		await msg.channel.send(
 			`${msg.author} We don't do job posts here; see <#${rulesChannelId}>`,
 		);
+		console.log('Deleted job post message from', msg.author);
 	}
 
 	@listener({ event: 'messageCreate' })
@@ -53,6 +54,13 @@ export class ModModule extends Module {
 						.then(member => void member.kick('Spam')),
 					...recentMessageInfo.messages.map(msg => void msg.delete()),
 				]);
+				console.log(
+					'Kicked',
+					msg.author,
+					'for spam and deleted',
+					recentMessageInfo.messages.length,
+					'identical messages',
+				);
 			}
 		} else {
 			recentMessages.set(messageIdentifier, {

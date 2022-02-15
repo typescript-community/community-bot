@@ -37,6 +37,7 @@ export class HandbookModule extends Module {
 			return await sendWithMessageOwnership(msg, {
 				embeds: [this.HANDBOOK_EMBED],
 			});
+		console.log('Searching algolia for', [text]);
 		const data = await algolia.search<AlgoliaResult>([
 			{
 				indexName: ALGOLIA_INDEX_NAME,
@@ -47,6 +48,7 @@ export class HandbookModule extends Module {
 				},
 			},
 		]);
+		console.log('Algolia response:', data);
 		const hit = data.results[0].hits[0];
 		if (!hit)
 			return await sendWithMessageOwnership(
