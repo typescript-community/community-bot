@@ -2,6 +2,7 @@ import { token, botAdmins } from './env';
 import CookiecordClient from 'cookiecord';
 import { Intents } from 'discord.js';
 import { getDB } from './db';
+import { hookLog } from './log';
 
 import { AutoroleModule } from './modules/autorole';
 import { EtcModule } from './modules/etc';
@@ -51,7 +52,10 @@ for (const mod of [
 getDB(); // prepare the db for later
 
 client.login(token);
-client.on('ready', () => console.log(`Logged in as ${client.user?.tag}`));
+client.on('ready', () => {
+	console.log(`Logged in as ${client.user?.tag}`);
+	hookLog(client);
+});
 
 process.on('unhandledRejection', e => {
 	console.error('Unhandled rejection', e);

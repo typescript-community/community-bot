@@ -29,9 +29,14 @@ let tsPackageData:
 export async function getTypeScriptModule(
 	version: string | null,
 ): Promise<TypeScript | null> {
+	console.log(`Downloading typescript@${version}`);
+
 	version = await resolveVersion(version);
 
-	if (!version) return null;
+	if (!version) {
+		console.log(`typescript@${version} does not exist`);
+		return null;
+	}
 
 	const memoModule = moduleMemo.get(version);
 	if (memoModule) return memoModule;

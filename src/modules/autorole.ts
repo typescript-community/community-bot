@@ -24,6 +24,7 @@ export class AutoroleModule extends Module {
 				user,
 			});
 			await member.roles.add(ar.roleID);
+			console.log('Gave role', ar.roleID, 'to', member);
 			if (!reaction.users.cache.has(this.client.user!.id)) {
 				await msg.react(reaction.emoji);
 			}
@@ -47,6 +48,7 @@ export class AutoroleModule extends Module {
 				user,
 			});
 			await member.roles.remove(ar.roleID);
+			console.log('Removed role', ar.roleID, 'from', member);
 		}
 	}
 }

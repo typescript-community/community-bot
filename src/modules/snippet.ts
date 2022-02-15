@@ -200,12 +200,12 @@ export class SnippetModule extends Module {
 
 		await existingSnippet?.remove();
 		await Snippet.create(data).save();
+		const verbed = existingSnippet ? 'Edited' : 'Created';
 		await sendWithMessageOwnership(
 			msg,
-			`:white_check_mark: ${
-				existingSnippet ? 'Edited' : 'Created'
-			} snippet \`${id}\``,
+			`:white_check_mark: ${verbed} snippet \`${id}\``,
 		);
+		console.log(`${verbed} snippet ${id} for`, msg.author);
 	}
 
 	private async getSnippet(id: string) {
@@ -230,6 +230,7 @@ export class SnippetModule extends Module {
 				":x: Cannot delete another user's snippet",
 			);
 		await snippet.remove();
+		console.log(`Deleted snippet ${id} for`, msg.author);
 		sendWithMessageOwnership(msg, ':white_check_mark: Deleted snippet');
 	}
 

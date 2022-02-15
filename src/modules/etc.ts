@@ -136,8 +136,8 @@ export class EtcModule extends Module {
 			.catch(() => false);
 		await confirmationMessage.delete();
 		if (!proceed) return;
-		await msg.react('☠️'),
-			console.log(`
+		await msg.react('☠️');
+		process.stdout.write(`
                             ,--.
                            {    }
                            K,   }
