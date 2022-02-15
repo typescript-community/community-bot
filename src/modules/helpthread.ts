@@ -115,6 +115,7 @@ export class HelpThreadModule extends Module {
 			return;
 		await thread.send({ embeds: [threadExpireEmbed] });
 		this.manuallyArchivedThreads.add(thread.id);
+		await thread.setName(`[Closed]: ${thread.name}`);
 		await thread.setArchived(true);
 	}
 
@@ -138,6 +139,7 @@ export class HelpThreadModule extends Module {
 		) {
 			await msg.react('✅');
 			this.manuallyArchivedThreads.add(thread.id);
+			await thread.setName(`[Closed]: ${thread.name}`);
 			await thread.setArchived(true);
 		} else {
 			return await sendWithMessageOwnership(
