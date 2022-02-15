@@ -134,8 +134,10 @@ export class RepModule extends Module {
 		if (!user) user = msg.author;
 
 		const targetRU = await this.getOrMakeUser(user);
-		const records = (await targetRU.got)
-			.concat(await targetRU.given)
+		const gotHistory = await targetRU.got;
+		const gaveHistory = await targetRU.given;
+		const records = gotHistory
+			.concat(gaveHistory)
 			// Decreasing chronologically
 			.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 			.map(rg => {
@@ -161,6 +163,7 @@ export class RepModule extends Module {
 				return acc;
 			}, [] as string[][])
 			.map(page => page.join('\n'));
+		pages[pages.length - 1] += `\n\nTotal rep points: ${gotHistory.length}`;
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
 			.setAuthor(user.tag, user.displayAvatarURL());
