@@ -92,7 +92,7 @@ export class HelpThreadModule extends Module {
 		if (msg.author.id === this.client.user!.id) return;
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
-			name: `[Open]: Help ${msg.member?.nickname ?? msg.author.username}`,
+			name: `[Open] Help ${msg.member?.nickname ?? msg.author.username}`,
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
 		thread.send(helpThreadWelcomeMessage(msg.member!));
@@ -115,7 +115,7 @@ export class HelpThreadModule extends Module {
 			return;
 		await thread.send({ embeds: [threadExpireEmbed] });
 		this.manuallyArchivedThreads.add(thread.id);
-		await thread.setName(`[Closed]: ${thread.name}`);
+		await thread.setName(`[Closed] ${thread.name.replace(/\[.+?] /, '')}`);
 		await thread.setArchived(true);
 	}
 
@@ -139,7 +139,9 @@ export class HelpThreadModule extends Module {
 		) {
 			await msg.react('✅');
 			this.manuallyArchivedThreads.add(thread.id);
-			await thread.setName(`[Closed]: ${thread.name}`);
+			await thread.setName(
+				`[Closed] ${thread.name.replace(/\[.+?] /, '')}`,
+			);
 			await thread.setArchived(true);
 		} else {
 			return await sendWithMessageOwnership(
@@ -261,7 +263,7 @@ export class HelpThreadModule extends Module {
 			HelpThread.update(thread.id, {
 				titleSetTimestamp: Date.now() + '',
 			}),
-			msg.channel.setName(`[Open]: ${username} - ${title}`),
+			msg.channel.setName(`[Open] ${username} - ${title}`),
 		]);
 	}
 
