@@ -74,6 +74,8 @@ export class RepModule extends Module {
 				to: targetRU,
 			}).save();
 
+			console.log('Gave one rep from', msg.author, 'to', user);
+
 			currentSent++;
 		}
 
@@ -123,6 +125,7 @@ export class RepModule extends Module {
 				(await senderRU.sent()) + 1
 			}/${this.MAX_REP} sent)`,
 		);
+		console.log('Gave one rep from', msg.author, 'to', targetMember.user);
 	}
 
 	@command({

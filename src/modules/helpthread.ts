@@ -90,6 +90,12 @@ export class HelpThreadModule extends Module {
 	async onNewQuestion(msg: Message) {
 		if (!isHelpChannel(msg.channel)) return;
 		if (msg.author.id === this.client.user!.id) return;
+		console.log(
+			'Received new question from',
+			msg.author,
+			'in',
+			msg.channel,
+		);
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
 			name: `[Open] Help ${msg.member?.nickname ?? msg.author.username}`,
@@ -100,6 +106,7 @@ export class HelpThreadModule extends Module {
 			threadId: thread.id,
 			ownerId: msg.author.id,
 		}).save();
+		console.log(`Created a new help thread for`, msg.author);
 	}
 
 	// Used to differentiate automatic archive from bot archive
@@ -113,6 +120,7 @@ export class HelpThreadModule extends Module {
 			this.manuallyArchivedThreads.delete(thread.id)
 		)
 			return;
+		console.log(`Help thread expired:`, thread);
 		await thread.send({ embeds: [threadExpireEmbed] });
 		this.manuallyArchivedThreads.add(thread.id);
 		await thread.setName(`[Closed] ${thread.name.replace(/\[.+?] /, '')}`);
@@ -137,6 +145,7 @@ export class HelpThreadModule extends Module {
 			threadData.ownerId === msg.author.id ||
 			msg.member?.permissions.has('MANAGE_MESSAGES')
 		) {
+			console.log(`Closing help thread:`, thread);
 			await msg.react('✅');
 			this.manuallyArchivedThreads.add(thread.id);
 			await thread.setName(
