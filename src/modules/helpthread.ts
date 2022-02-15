@@ -92,7 +92,7 @@ export class HelpThreadModule extends Module {
 		if (msg.author.id === this.client.user!.id) return;
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
-			name: `Help ${msg.member?.nickname ?? msg.author.username}`,
+			name: `[Open]: Help ${msg.member?.nickname ?? msg.author.username}`,
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
 		thread.send(helpThreadWelcomeMessage(msg.member!));
@@ -261,7 +261,7 @@ export class HelpThreadModule extends Module {
 			HelpThread.update(thread.id, {
 				titleSetTimestamp: Date.now() + '',
 			}),
-			msg.channel.setName(`${username} - ${title}`),
+			msg.channel.setName(`[Open]: ${username} - ${title}`),
 		]);
 	}
 
