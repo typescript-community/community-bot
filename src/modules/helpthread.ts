@@ -32,6 +32,8 @@ If you're not sure how, have a look through [StackOverflow's guide on asking a g
 // A zero-width space (necessary to prevent discord from trimming the leading whitespace), followed by a three non-breaking spaces.
 const indent = '\u200b\u00a0\u00a0\u00a0';
 
+const closedEmoji = '☑️';
+
 const helpInfo = (channel: TextChannel) =>
 	new MessageEmbed()
 		.setColor(GREEN)
@@ -98,19 +100,38 @@ export class HelpThreadModule extends Module {
 		);
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
-			name: `[Open] Help ${msg.member?.nickname ?? msg.author.username}`,
+			name: `Help ${msg.member?.nickname ?? msg.author.username}`,
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
 		thread.send(helpThreadWelcomeMessage(msg.member!));
 		await HelpThread.create({
 			threadId: thread.id,
 			ownerId: msg.author.id,
+			origMessageId: msg.id,
 		}).save();
 		console.log(`Created a new help thread for`, msg.author);
 	}
 
 	// Used to differentiate automatic archive from bot archive
 	manuallyArchivedThreads = new Set<string>();
+
+	@listener({ event: 'threadUpdate' })
+	async onThreadReopen(thread: ThreadChannel, ...a: any[]) {
+		if (
+			!isHelpThread(thread) ||
+			!thread.archived ||
+			((await thread.fetch()) as ThreadChannel).archived
+		)
+			return;
+		const threadData = (await HelpThread.findOne(thread.id))!;
+		if (!threadData.origMessageId) return;
+		const origMessage = await thread.parent.messages.fetch(
+			threadData.origMessageId,
+		);
+		origMessage.reactions
+			.resolve(closedEmoji)
+			?.users.remove(this.client.user!.id);
+	}
 
 	@listener({ event: 'threadUpdate' })
 	async onThreadExpire(thread: ThreadChannel) {
@@ -123,8 +144,7 @@ export class HelpThreadModule extends Module {
 		console.log(`Help thread expired:`, thread);
 		await thread.send({ embeds: [threadExpireEmbed] });
 		this.manuallyArchivedThreads.add(thread.id);
-		await thread.setName(`[Closed] ${thread.name.replace(/\[.+?] /, '')}`);
-		await thread.setArchived(true);
+		await this.archiveThread(thread);
 	}
 
 	@command({
@@ -148,16 +168,23 @@ export class HelpThreadModule extends Module {
 			console.log(`Closing help thread:`, thread);
 			await msg.react('✅');
 			this.manuallyArchivedThreads.add(thread.id);
-			await thread.setName(
-				`[Closed] ${thread.name.replace(/\[.+?] /, '')}`,
-			);
-			await thread.setArchived(true);
+			await this.archiveThread(thread);
 		} else {
 			return await sendWithMessageOwnership(
 				msg,
 				':warning: You have to be the asker to close the thread.',
 			);
 		}
+	}
+
+	private async archiveThread(thread: ThreadChannel) {
+		await thread.setArchived(true);
+		const threadData = (await HelpThread.findOne(thread.id))!;
+		if (!threadData.origMessageId) return;
+		const origMessage = await thread.parent!.messages.fetch(
+			threadData.origMessageId,
+		);
+		await origMessage.react(closedEmoji);
 	}
 
 	private helpInfoLocks = new Map<string, Promise<void>>();
@@ -272,7 +299,7 @@ export class HelpThreadModule extends Module {
 			HelpThread.update(thread.id, {
 				titleSetTimestamp: Date.now() + '',
 			}),
-			msg.channel.setName(`[Open] ${username} - ${title}`),
+			msg.channel.setName(`${username} - ${title}`),
 		]);
 	}
 
