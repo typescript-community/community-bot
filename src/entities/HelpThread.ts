@@ -15,4 +15,8 @@ export class HelpThread extends BaseEntity {
 	// When the title was last set
 	@Column({ nullable: true })
 	titleSetTimestamp?: string;
+
+	// The id of the original message; nullable for backwards compat
+	@Column({ nullable: true })
+	origMessageId?: string;
 }
