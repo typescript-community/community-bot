@@ -4,14 +4,14 @@ import { getReferencedMessage } from './getReferencedMessage';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript)?\n([\s\S]+)```/;
 
-export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]+)?(?:\&\w+=[^\s#&]+)*)#code\/([\w\-%+_]+={0,4})/;
+export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4})/;
 
 export async function findCode(message: Message, ignoreLinks = false) {
-	const codeInMessage = findCodeInMessage(message, ignoreLinks);
+	const codeInMessage = await findCodeInMessage(message, ignoreLinks);
 	if (codeInMessage) return codeInMessage;
 	const referencedMessage = await getReferencedMessage(message);
 	if (referencedMessage) {
-		const codeInReferencedMessage = findCodeInMessage(
+		const codeInReferencedMessage = await findCodeInMessage(
 			referencedMessage,
 			ignoreLinks,
 		);
@@ -20,7 +20,7 @@ export async function findCode(message: Message, ignoreLinks = false) {
 	const msgs = await message.channel.messages.fetch({ limit: 10 });
 
 	for (const msg of msgs.values()) {
-		const code = findCodeInMessage(msg, ignoreLinks);
+		const code = await findCodeInMessage(msg, ignoreLinks);
 		if (code) return code;
 	}
 }
@@ -29,10 +29,11 @@ export async function findCode(message: Message, ignoreLinks = false) {
 // 1: Normal code block annotated with ts from a non-bot
 // 2: Link to TS playground. This can be either from a bot or a normal user
 //    since we shorten playground links on their own and delete the message.
-function findCodeInMessage(
-	{ author, content, embeds }: Message,
-	ignoreLinks = false,
-) {
+async function findCodeInMessage(msg: Message, ignoreLinks = false) {
+	if (msg.type === 'THREAD_STARTER_MESSAGE') {
+		msg = await msg.fetchReference();
+	}
+	const { author, content, embeds } = msg;
 	if (!author.bot) {
 		const match = content.match(CODEBLOCK_REGEX);
 		if (match && match[1].length) {

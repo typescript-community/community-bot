@@ -20,8 +20,13 @@ import {
 	truncate,
 } from '../util/codeBlocks';
 import { LimitedSizeMap } from '../util/limitedSizeMap';
-import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
+import {
+	addMessageOwnership,
+	getResponseChannel,
+	sendWithMessageOwnership,
+} from '../util/send';
 import fetch from 'node-fetch';
+import { isHelpChannel } from './helpthread';
 
 const LINK_SHORTENER_ENDPOINT = 'https://tsplay.dev/api/short';
 const MAX_EMBED_LENGTH = 512;
@@ -64,13 +69,14 @@ export class PlaygroundModule extends Module {
 		const exec = PLAYGROUND_REGEX.exec(msg.content);
 		if (!exec) return;
 		const embed = createPlaygroundEmbed(msg.author, exec);
-		if (exec[0] === msg.content) {
+		if (exec[0] === msg.content && !isHelpChannel(msg.channel)) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, { embeds: [embed] });
 			await msg.delete();
 		} else {
 			// Message also contained other characters
-			const botMsg = await msg.channel.send({
+			const channel = await getResponseChannel(msg);
+			const botMsg = await channel.send({
 				embeds: [embed],
 				content: `${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
 			});
@@ -201,7 +207,7 @@ function getSelectionQueryParams(query: string, numLines: number) {
 	const [startLine, endLine] = ['pln', 'ssl']
 		// @ts-expect-error parseInt(null) is okay here since we check for NaN
 		.map(name => parseInt(params.get(name)))
-		.map(n => (n !== NaN && 1 <= n && n <= numLines ? n : undefined))
+		.map(n => (!Number.isNaN(n) && 1 <= n && n <= numLines ? n : undefined))
 		.sort((a, b) => (a ?? Infinity) - (b ?? Infinity));
 
 	return { startLine, endLine };
