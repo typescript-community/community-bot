@@ -1,4 +1,4 @@
-import { token, botAdmins } from './env';
+import { token, botAdmins, prefixes } from './env';
 import CookiecordClient from 'cookiecord';
 import { Intents } from 'discord.js';
 import { getDB } from './db';
@@ -18,7 +18,7 @@ import { ModModule } from './modules/mod';
 const client = new CookiecordClient(
 	{
 		botAdmins,
-		prefix: ['!', 't!'],
+		prefix: prefixes,
 	},
 	{
 		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],

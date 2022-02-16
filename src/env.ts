@@ -36,3 +36,5 @@ export const timeBeforeHelperPing = parseInt(
 export const suggestionsChannelId = process.env.SUGGESTIONS_CHANNEL!;
 
 export const logChannelId = process.env.LOG_CHANNEL!;
+
+export const prefixes = process.env.PREFIXES!.split(',');
