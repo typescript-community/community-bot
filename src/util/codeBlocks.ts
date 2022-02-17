@@ -2,7 +2,7 @@ import { Message, TextChannel } from 'discord.js';
 import { decompressFromEncodedURIComponent } from 'lz-string';
 import { getReferencedMessage } from './getReferencedMessage';
 
-const CODEBLOCK_REGEX = /```(?:ts|typescript)?\n([\s\S]+)```/;
+const CODEBLOCK_REGEX = /```(?:ts|typescript|js|javascript)?\n([\s\S]+)```/;
 
 export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4})/;
 
