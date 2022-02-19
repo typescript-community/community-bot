@@ -23,7 +23,7 @@ const client = new CookiecordClient(
 	{
 		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],
 		allowedMentions: {
-			parse: ['users'],
+			parse: ['users', 'roles'],
 		},
 		intents: new Intents([
 			'GUILDS',
