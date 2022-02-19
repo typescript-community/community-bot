@@ -237,8 +237,9 @@ export class HelpThreadModule extends Module {
 	@command({
 		description: 'Help System: Ping the @Helper role from a help thread',
 		aliases: ['helpers'],
+		single: true,
 	})
-	async helper(msg: Message) {
+	async helper(msg: Message, comment: string) {
 		if (!isHelpThread(msg.channel)) {
 			return sendWithMessageOwnership(
 				msg,
@@ -278,7 +279,11 @@ export class HelpThreadModule extends Module {
 
 		// The beacons are lit, Gondor calls for aid
 		await Promise.all([
-			thread.parent.send(`<@&${trustedRoleId}> ${msg.channel}`),
+			thread.parent.send(
+				`<@&${trustedRoleId}> ${msg.channel} ${
+					isTrusted ? comment : ''
+				}`,
+			),
 			this.updateHelpInfo(thread.parent),
 			msg.react('✅'),
 			HelpThread.update(thread.id, {
