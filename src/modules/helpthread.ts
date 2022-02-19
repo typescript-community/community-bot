@@ -150,8 +150,12 @@ export class HelpThreadModule extends Module {
 			this.manuallyArchivedThreads.delete(thread.id)
 		)
 			return;
+		const threadData = (await HelpThread.findOne(thread.id))!;
 		console.log(`Help thread expired:`, thread);
-		await thread.send({ embeds: [threadExpireEmbed] });
+		await thread.send({
+			content: `<@${threadData.ownerId}>`,
+			embeds: [threadExpireEmbed],
+		});
 		this.manuallyArchivedThreads.add(thread.id);
 		await this.archiveThread(thread);
 	}
@@ -181,6 +185,7 @@ export class HelpThreadModule extends Module {
 			await msg.react('✅');
 			if (!isOwner)
 				await msg.channel.send({
+					content: `<@${threadData.ownerId}>`,
 					embeds: [helperCloseEmbed(msg.member!)],
 				});
 			this.manuallyArchivedThreads.add(thread.id);
