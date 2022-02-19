@@ -29,6 +29,15 @@ Consider rephrasing the question to maximize your chance of getting a good answe
 If you're not sure how, have a look through [StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask).
 `);
 
+const helperCloseEmbed = (member: GuildMember) =>
+	new MessageEmbed().setColor(BLOCKQUOTE_GREY).setDescription(`
+Because your issue seemed to be resolved, this thread was closed by ${member}.
+
+If your issue is not resolved, **you can post another message here and the thread will automatically re-open**.
+
+*If you have a different question, just ask in <#${generalHelpChannel}>.*
+`);
+
 // A zero-width space (necessary to prevent discord from trimming the leading whitespace), followed by a three non-breaking spaces.
 const indent = '\u200b\u00a0\u00a0\u00a0';
 
@@ -80,7 +89,8 @@ If not, and if you have followed the bullets above, you can ping helpers by runn
 ];
 
 const helpThreadWelcomeMessage = (owner: GuildMember) => `
-${owner} This thread is for your question; when it's resolved, please type \`!close\`. \
+${owner} This thread is for your question; type \`!title <brief description>\`. \
+When it's resolved, please type \`!close\`. \
 See <#${howToGetHelpChannel}> for info on how to get better help.
 `;
 
@@ -141,8 +151,12 @@ export class HelpThreadModule extends Module {
 			this.manuallyArchivedThreads.delete(thread.id)
 		)
 			return;
+		const threadData = (await HelpThread.findOne(thread.id))!;
 		console.log(`Help thread expired:`, thread);
-		await thread.send({ embeds: [threadExpireEmbed] });
+		await thread.send({
+			content: `<@${threadData.ownerId}>`,
+			embeds: [threadExpireEmbed],
+		});
 		this.manuallyArchivedThreads.add(thread.id);
 		await this.archiveThread(thread);
 	}
@@ -161,12 +175,20 @@ export class HelpThreadModule extends Module {
 		let thread: ThreadChannel = msg.channel;
 		const threadData = (await HelpThread.findOne(thread.id))!;
 
+		const isOwner = threadData.ownerId === msg.author.id;
+
 		if (
-			threadData.ownerId === msg.author.id ||
+			isOwner ||
+			msg.member?.roles.cache.has(trustedRoleId) ||
 			msg.member?.permissions.has('MANAGE_MESSAGES')
 		) {
 			console.log(`Closing help thread:`, thread);
 			await msg.react('✅');
+			if (!isOwner)
+				await msg.channel.send({
+					content: `<@${threadData.ownerId}>`,
+					embeds: [helperCloseEmbed(msg.member!)],
+				});
 			this.manuallyArchivedThreads.add(thread.id);
 			await this.archiveThread(thread);
 		} else {
