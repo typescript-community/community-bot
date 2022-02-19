@@ -89,7 +89,8 @@ If not, and if you have followed the bullets above, you can ping helpers by runn
 ];
 
 const helpThreadWelcomeMessage = (owner: GuildMember) => `
-${owner} This thread is for your question; when it's resolved, please type \`!close\`. \
+${owner} This thread is for your question; type \`!title <brief description>\`. \
+When it's resolved, please type \`!close\`. \
 See <#${howToGetHelpChannel}> for info on how to get better help.
 `;
 
