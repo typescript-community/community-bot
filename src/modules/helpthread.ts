@@ -135,12 +135,16 @@ export class HelpThreadModule extends Module {
 			return;
 		const threadData = (await HelpThread.findOne(thread.id))!;
 		if (!threadData.origMessageId) return;
-		const origMessage = await thread.parent.messages.fetch(
-			threadData.origMessageId,
-		);
-		origMessage.reactions
-			.resolve(closedEmoji)
-			?.users.remove(this.client.user!.id);
+		try {
+			const origMessage = await thread.parent.messages.fetch(
+				threadData.origMessageId,
+			);
+			origMessage.reactions
+				.resolve(closedEmoji)
+				?.users.remove(this.client.user!.id);
+		} catch {
+			// Asker deleted original message
+		}
 	}
 
 	@listener({ event: 'threadUpdate' })
@@ -203,10 +207,14 @@ export class HelpThreadModule extends Module {
 		await thread.setArchived(true);
 		const threadData = (await HelpThread.findOne(thread.id))!;
 		if (!threadData.origMessageId) return;
-		const origMessage = await thread.parent!.messages.fetch(
-			threadData.origMessageId,
-		);
-		await origMessage.react(closedEmoji);
+		try {
+			const origMessage = await thread.parent!.messages.fetch(
+				threadData.origMessageId,
+			);
+			await origMessage.react(closedEmoji);
+		} catch {
+			// Asker deleted original message
+		}
 	}
 
 	private helpInfoLocks = new Map<string, Promise<void>>();
