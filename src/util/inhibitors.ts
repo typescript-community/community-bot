@@ -3,7 +3,7 @@ import { TextChannel } from 'discord.js';
 import { trustedRoleId } from '../env';
 
 export const isTrustedMember: Inhibitor = async (msg, client) => {
-	if (!msg.guild || !msg.member || !(msg.channel instanceof TextChannel)) {
+	if (!msg.guild || !msg.member || !msg.channel.isText()) {
 		return ":warning: you can't use that command here.";
 	}
 
