@@ -100,7 +100,7 @@ export class HelpThreadModule extends Module {
 	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
 		if (!isHelpChannel(msg.channel)) return;
-		if (msg.author.id === this.client.user!.id) return;
+		if (msg.author.bot) return;
 		console.log(
 			'Received new question from',
 			msg.author,
