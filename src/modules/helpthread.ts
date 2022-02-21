@@ -17,6 +17,8 @@ import {
 	BLOCKQUOTE_GREY,
 	generalHelpChannel,
 	howToGetHelpChannel,
+	howToGiveHelpChannel,
+	rolesChannelId,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 import { sendWithMessageOwnership } from '../util/send';
@@ -84,6 +86,46 @@ ${indent}• Send the full link in its own message; do not use a link shortener.
 			`
 Usually someone will try to answer and help solve the issue within a few hours. \
 If not, and if you have followed the bullets above, you can ping helpers by running \`!helper\`.
+`,
+		),
+];
+
+const howToGiveHelpEmbeds = () => [
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('How To Give Help')
+		.setDescription(
+			`
+• There are a couple ways you can browse help threads:
+${indent}• The channel sidebar on the left will list threads you have joined.
+${indent}• You can scroll through the channel to see all recent questions.
+${indent}${indent}• The bot will mark closed questions with ${closedEmoji}.
+${indent}• In the channel, you can click the *⌗*\u2004icon at the top right to view threads by title.
+
+`,
+		),
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('How To Give *Better* Help')
+		.setDescription(
+			`
+• Get yourself the <@&${trustedRoleId}> role at <#${rolesChannelId}>
+${indent}• (If you don't like the pings, you can disable role mentions for the server.)
+• As a <@&${trustedRoleId}>, you can:
+${indent}• Run \`!title <brief description>\` to set/update the thread title.
+${indent}${indent}• This will assist other helpers in finding the thread.
+${indent}${indent}• Also, it means your help is more accessible to others in the future.
+${indent}• If a thread appears to be resolved, run \`!close\` to close it.
+${indent}${indent}• *Only do this if the asker has indicated that their question has been resolved.*
+`,
+		),
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('Useful Snippets')
+		.setDescription(
+			`
+• \`!screenshot\` — for if an asker posts a screenshot of code
+• \`!ask\` — for if an asker only posts "can I get help?"
 `,
 		),
 ];
@@ -340,13 +382,18 @@ export class HelpThreadModule extends Module {
 
 	@command()
 	async htgh(msg: Message) {
+		if (!msg.member?.permissions.has('MANAGE_MESSAGES')) return;
 		if (
-			msg.channel.id !== howToGetHelpChannel ||
-			!msg.member?.permissions.has('MANAGE_MESSAGES')
+			msg.channel.id !== howToGetHelpChannel &&
+			msg.channel.id !== howToGiveHelpChannel
 		)
 			return;
 		(await msg.channel.messages.fetch()).forEach(x => x.delete());
-		msg.channel.send({ embeds: howToGetHelpEmbeds() });
+		const embeds =
+			msg.channel.id === howToGetHelpChannel
+				? howToGetHelpEmbeds()
+				: howToGiveHelpEmbeds();
+		msg.channel.send({ embeds });
 	}
 }
 
@@ -356,7 +403,8 @@ export function isHelpChannel(
 	return (
 		channel instanceof TextChannel &&
 		channel.parentId == helpCategory &&
-		channel.id !== howToGetHelpChannel
+		channel.id !== howToGetHelpChannel &&
+		channel.id !== howToGiveHelpChannel
 	);
 }
 

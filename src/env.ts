@@ -18,11 +18,14 @@ export const dbUrl = process.env.DATABASE_URL!;
 
 export const helpCategory = process.env.HELP_CATEGORY!;
 export const howToGetHelpChannel = process.env.HOW_TO_GET_HELP_CHANNEL!;
+export const howToGiveHelpChannel = process.env.HOW_TO_GIVE_HELP_CHANNEL!;
 export const generalHelpChannel = process.env.GENERAL_HELP_CHANNEL!;
 
 export const trustedRoleId = process.env.TRUSTED_ROLE_ID!;
 
 export const rulesChannelId = process.env.RULES_CHANNEL!;
+
+export const rolesChannelId = process.env.ROLES_CHANNEL!;
 
 export const TS_BLUE = '#007ACC';
 export const GREEN = '#3ba55d';
