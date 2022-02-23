@@ -152,18 +152,44 @@ export class TwoslashModule extends Module {
 					e => '// ' + e.renderedMessage.split('\n').join('\n// '),
 				);
 
-				//  ^^^^^ ^^^^^
-				// hats to indicate what token is causing the issue
-				let linkWithHats = '';
-				lineErrors.forEach(e => {
-					if (!e.character) return;
-					const spaceBefore = e.character - linkWithHats.length;
-					linkWithHats += ' '.repeat(spaceBefore);
-					linkWithHats += '^'.repeat(e.length || 0);
-				});
+				// Points to errors, e.g. '       ^^^^   ^^^^^'
+				const hats = lineErrors
+					// only those with a valid span
+					.filter(x => x.character != null && x.length != null)
+					// map to [start, end (non-inclusive)]
+					.map(
+						error =>
+							[
+								error.character!,
+								error.character! + error.length!,
+							] as const,
+					)
+					// sort by start, ascending
+					.sort((a, b) => a[0] - b[0])
+					// fix overlapping ranges
+					.map((cur, i, a) => {
+						let prev = a[i - 1];
+						if (!prev) return cur;
+						return [
+							Math.max(prev[1], cur[0]),
+							Math.max(prev[1], cur[1]),
+						] as const;
+					})
+					// remove empty ranges
+					.filter(([start, end]) => start < end)
+					// map each to hats
+					.map(([start, end], i, a) => {
+						let prevEnd = a[i - 1]?.[1] ?? 0;
+						return (
+							' '.repeat(start - prevEnd) +
+							'^'.repeat(end - start)
+						);
+					})
+					// join the resulting strings
+					.join('');
 
-				if (linkWithHats.length > 0) {
-					resultLines.push('//' + linkWithHats.substr(2));
+				if (hats.length > 0) {
+					resultLines.push('//' + hats.slice(2));
 				}
 
 				resultLines.push(...errors);
