@@ -17,6 +17,8 @@ import {
 	BLOCKQUOTE_GREY,
 	generalHelpChannel,
 	howToGetHelpChannel,
+	howToGiveHelpChannel,
+	rolesChannelId,
 } from '../env';
 import { isTrustedMember } from '../util/inhibitors';
 import { sendWithMessageOwnership } from '../util/send';
@@ -38,9 +40,6 @@ If your issue is not resolved, **you can post another message here and the threa
 *If you have a different question, just ask in <#${generalHelpChannel}>.*
 `);
 
-// A zero-width space (necessary to prevent discord from trimming the leading whitespace), followed by a three non-breaking spaces.
-const indent = '\u200b\u00a0\u00a0\u00a0';
-
 const closedEmoji = '☑️';
 
 const helpInfo = (channel: TextChannel) =>
@@ -53,29 +52,29 @@ const howToGetHelpEmbeds = () => [
 		.setColor(GREEN)
 		.setTitle('How To Get Help')
 		.setDescription(
-			`
-• Post your question to one of the channels in this category.
-${indent}• If you're not sure which channel is best, just post in <#${generalHelpChannel}>.
-${indent}• It's always ok to just ask your question; you don't need permission.
-• Our bot will make a thread dedicated to answering your channel.
-• Someone will (hopefully!) come along and help you.
-• When your question is resolved, type \`!close\`.
-`,
+			listify(`
+- Post your question to one of the channels in this category.
+	- If you're not sure which channel is best, just post in <#${generalHelpChannel}>.
+	- It's always ok to just ask your question; you don't need permission.
+- Our bot will make a thread dedicated to answering your channel.
+- Someone will (hopefully!) come along and help you.
+- When your question is resolved, type \`!close\`.
+`),
 		),
 	new MessageEmbed()
 		.setColor(GREEN)
 		.setTitle('How To Get *Better* Help')
 		.setDescription(
-			`
-• Explain what you want to happen and why…
-${indent}• …and what actually happens, and your best guess at why.
-• Include a short code sample and any error messages you got.
-${indent}• Text is better than screenshots. Start code blocks with ${'\\`\\`\\`ts'}.
-• If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
-${indent}• Send the full link in its own message; do not use a link shortener.
-• Run \`!title <brief description>\` to make your help thread easier to spot.
-• For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
-`,
+			listify(`
+- Explain what you want to happen and why…
+	- …and what actually happens, and your best guess at why.
+- Include a short code sample and any error messages you got.
+	- Text is better than screenshots. Start code blocks with ${'\\`\\`\\`ts'}.
+- If possible, create a minimal reproduction in the **[TypeScript Playground](https://www.typescriptlang.org/play)**.
+	- Send the full link in its own message; do not use a link shortener.
+- Run \`!title <brief description>\` to make your help thread easier to spot.
+- For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
+`),
 		),
 	new MessageEmbed()
 		.setColor(GREEN)
@@ -85,6 +84,46 @@ ${indent}• Send the full link in its own message; do not use a link shortener.
 Usually someone will try to answer and help solve the issue within a few hours. \
 If not, and if you have followed the bullets above, you can ping helpers by running \`!helper\`.
 `,
+		),
+];
+
+const howToGiveHelpEmbeds = () => [
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('How To Give Help')
+		.setDescription(
+			listify(`
+- There are a couple ways you can browse help threads:
+	- The channel sidebar on the left will list threads you have joined.
+	- You can scroll through the channel to see all recent questions.
+		- The bot will mark closed questions with ${closedEmoji}.
+	- In the channel, you can click the *⌗*\u2004icon at the top right to view threads by title.
+
+`),
+		),
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('How To Give *Better* Help')
+		.setDescription(
+			listify(`
+- Get yourself the <@&${trustedRoleId}> role at <#${rolesChannelId}>
+	- (If you don't like the pings, you can disable role mentions for the server.)
+- As a <@&${trustedRoleId}>, you can:
+	- Run \`!title <brief description>\` to set/update the thread title.
+		- This will assist other helpers in finding the thread.
+		- Also, it means your help is more accessible to others in the future.
+	- If a thread appears to be resolved, run \`!close\` to close it.
+		- *Only do this if the asker has indicated that their question has been resolved.*
+`),
+		),
+	new MessageEmbed()
+		.setColor(GREEN)
+		.setTitle('Useful Snippets')
+		.setDescription(
+			listify(`
+- \`!screenshot\` — for if an asker posts a screenshot of code
+- \`!ask\` — for if an asker only posts "can I get help?"
+`),
 		),
 ];
 
@@ -340,13 +379,18 @@ export class HelpThreadModule extends Module {
 
 	@command()
 	async htgh(msg: Message) {
+		if (!msg.member?.permissions.has('MANAGE_MESSAGES')) return;
 		if (
-			msg.channel.id !== howToGetHelpChannel ||
-			!msg.member?.permissions.has('MANAGE_MESSAGES')
+			msg.channel.id !== howToGetHelpChannel &&
+			msg.channel.id !== howToGiveHelpChannel
 		)
 			return;
 		(await msg.channel.messages.fetch()).forEach(x => x.delete());
-		msg.channel.send({ embeds: howToGetHelpEmbeds() });
+		const embeds =
+			msg.channel.id === howToGetHelpChannel
+				? howToGetHelpEmbeds()
+				: howToGiveHelpEmbeds();
+		msg.channel.send({ embeds });
 	}
 }
 
@@ -356,7 +400,8 @@ export function isHelpChannel(
 	return (
 		channel instanceof TextChannel &&
 		channel.parentId == helpCategory &&
-		channel.id !== howToGetHelpChannel
+		channel.id !== howToGetHelpChannel &&
+		channel.id !== howToGiveHelpChannel
 	);
 }
 
@@ -364,4 +409,11 @@ export function isHelpThread(
 	channel: Omit<Channel, 'partial'>,
 ): channel is ThreadChannel & { parent: TextChannel } {
 	return channel instanceof ThreadChannel && isHelpChannel(channel.parent!);
+}
+
+function listify(text: string) {
+	// A zero-width space (necessary to prevent discord from trimming the leading whitespace), followed by a three non-breaking spaces.
+	const indent = '\u200b\u00a0\u00a0\u00a0';
+	const bullet = '•';
+	return text.replace(/^(\s*)-/gm, `$1${bullet}`).replace(/\t/g, indent);
 }
