@@ -5,98 +5,149 @@ import {
 	optional,
 	listener,
 } from 'cookiecord';
-import { GuildMember, Message, MessageEmbed, User } from 'discord.js';
-import prettyMilliseconds from 'pretty-ms';
-import { TS_BLUE } from '../env';
+import {
+	GuildMember,
+	Message,
+	MessageEmbed,
+	MessageReaction,
+	User,
+} from 'discord.js';
+import { repEmoji, TS_BLUE } from '../env';
 
-import { RepGive } from '../entities/RepGive';
-import { RepUser } from '../entities/RepUser';
+import { Rep } from '../entities/Rep';
 import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
+import { getMessageOwner, sendWithMessageOwnership } from '../util/send';
+
+// The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
+const thanksRegex = /\b(?:thank|thanks|thx|cheers|thanx|thnks|ty|tysm|tks|tkx|danke|merci|gracias|grazie|xiexie)\b|谢/i;
+
+const removedReactions = new Set();
 
 export class RepModule extends Module {
 	constructor(client: CookiecordClient) {
 		super(client);
 	}
 
-	MAX_REP = 3;
-
-	// The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
-	THANKS_REGEX = /\b(?:thank|thanks|thx|cheers|thanx|thnks|ty|tysm|tks|tkx|danke|merci|gracias|grazie|xiexie)\b|谢/i;
-
-	async getOrMakeUser(user: User) {
-		let ru = await RepUser.findOne(
-			{ id: user.id },
-			{ relations: ['got', 'given'] },
-		);
-
-		if (!ru) {
-			ru = await RepUser.create({ id: user.id }).save();
-		}
-
-		return ru;
-	}
-
 	@listener({ event: 'messageCreate' })
-	async onThank(msg: Message) {
-		const GIVE = '✅';
-		const PARTIAL_GIVE = '🤔';
-		const NO_GIVE = '❌';
-		const LAUGH = '😆';
-
+	async onThank(msg: Message, force = false) {
 		// Check for thanks messages
-		const isThanks = this.THANKS_REGEX.test(msg.content);
+		const isThanks = thanksRegex.test(msg.content);
+		if (msg.author.bot || (!isThanks && !force) || !msg.guild) return;
 
-		if (msg.author.bot || !isThanks || !msg.guild) return;
-
-		const allMentionUsers = msg.mentions.users;
-		const mentionUsers = allMentionUsers.filter(
-			user => user.id !== msg.member?.id,
+		const mentionUsers = msg.mentions.users.filter(
+			user =>
+				user.id !== msg.member?.id && user.id !== this.client.user?.id,
 		);
-		if (mentionUsers.size < allMentionUsers.size) await msg.react(LAUGH);
-		if (!mentionUsers.size) return;
+		if (mentionUsers.size !== 1) return;
 
-		const senderRU = await this.getOrMakeUser(msg.author);
-		// track how much rep the author has sent
-		// 3 possible outcomes: NO_GIVE, PARTIAL_GIVE and GAVE
-		let currentSent = await senderRU.sent();
+		const recipient = mentionUsers.first()!;
 
-		if (currentSent >= this.MAX_REP) return await msg.react(NO_GIVE);
+		console.log('Creating a Rep with recipient', recipient);
 
-		for (const user of mentionUsers.values()) {
-			if (currentSent >= this.MAX_REP)
-				return await msg.react(PARTIAL_GIVE);
+		await Rep.create({
+			messageId: msg.id,
+			channel: msg.channelId,
+			amount: 1,
+			recipient: recipient.id,
+			initialGiver: msg.author.id,
+			date: new Date().toISOString(),
+		}).save();
 
-			// give rep
-			const targetRU = await this.getOrMakeUser(user);
-
-			await RepGive.create({
-				from: senderRU,
-				to: targetRU,
-			}).save();
-
-			console.log('Gave one rep from', msg.author, 'to', user);
-
-			currentSent++;
-		}
-
-		await msg.react(GIVE);
+		await msg.react(repEmoji);
 	}
 
-	@command({
-		description:
-			'Reputation: See how many reputation points you have left to send',
-	})
-	async remaining(msg: Message) {
-		const USED = '✅';
-		const UNUSED = '⬜';
+	@listener({ event: 'messageReactionAdd' })
+	async onRepReact(reaction: MessageReaction, user: User) {
+		console.log(reaction.emoji.id);
+		if (
+			!reaction.message.guild ||
+			user.id === this.client.user?.id ||
+			(reaction.emoji.id ?? reaction.emoji.name) !== repEmoji
+		)
+			return;
 
-		const ru = await this.getOrMakeUser(msg.author);
-		const sent = await ru.sent();
+		const msg = reaction.message;
+		const author = (await msg.fetch()).author;
 
-		await msg.channel.send(
-			`Rep used: ${
-				USED.repeat(sent) + UNUSED.repeat(this.MAX_REP - sent)
-			}`,
+		console.log('Received rep reaction on', msg.id);
+
+		if (user.id === author.id) {
+			console.log('Reacter is message author; removing reaction');
+			return removeReaction();
+		}
+
+		console.log('Querying database for existing Rep');
+
+		let existingRep = await Rep.findOne({ messageId: msg.id });
+
+		if (existingRep) {
+			console.log('Found existing Rep', existingRep);
+			if (user.id === existingRep.recipient) {
+				console.log('User is recipient; removing reaction');
+				return removeReaction();
+			}
+			console.log('Existing amount is', existingRep.amount);
+			existingRep.amount++;
+			existingRep.save();
+			console.log('Incremented amount to', existingRep.amount);
+			return;
+		}
+
+		console.log('None found');
+
+		let recipient = author.id;
+
+		if (recipient == this.client.user!.id) {
+			console.log('Recipient is bot; checking for message ownership');
+			let altRecipient = getMessageOwner(msg);
+			if (!altRecipient) {
+				console.log('No message owner recorded; removing reaction');
+				return removeReaction();
+			}
+			console.log('Message owner is', altRecipient);
+			recipient = altRecipient;
+		}
+
+		console.log('Creating a Rep with recipient', recipient);
+
+		await Rep.create({
+			messageId: msg.id,
+			channel: msg.channelId,
+			amount: 1,
+			recipient,
+			initialGiver: author.id,
+			date: new Date().toISOString(),
+		}).save();
+
+		async function removeReaction() {
+			removedReactions.add([msg.id, user.id].toString());
+			await reaction.users.remove(user.id);
+		}
+	}
+
+	@listener({ event: 'messageReactionRemove' })
+	async onRepReactRemove(reaction: MessageReaction, user: User) {
+		if (
+			!reaction.message.guild ||
+			(reaction.emoji.id ?? reaction.emoji.name) !== repEmoji ||
+			removedReactions.delete([reaction.message.id, user.id].toString())
+		)
+			return;
+
+		let rep = await Rep.findOne({
+			messageId: reaction.message.id,
+		});
+
+		if (!rep) return;
+
+		rep.amount -= 1;
+		await rep.save();
+
+		console.log(
+			'Decremented rep amount to',
+			rep.amount,
+			'for message',
+			rep.messageId,
 		);
 	}
 
@@ -104,59 +155,31 @@ export class RepModule extends Module {
 		description: 'Reputation: Give a different user some reputation points',
 	})
 	async rep(msg: Message, targetMember: GuildMember) {
-		if (targetMember.id === msg.member?.id)
-			return msg.channel.send(`:x: you cannot send rep to yourself`);
-
-		const senderRU = await this.getOrMakeUser(msg.author);
-		const targetRU = await this.getOrMakeUser(targetMember.user);
-
-		if ((await senderRU.sent()) >= this.MAX_REP)
-			return await msg.channel.send(
-				':warning: no rep remaining! come back later.',
-			);
-
-		await RepGive.create({
-			from: senderRU,
-			to: targetRU,
-		}).save();
-
-		await msg.channel.send(
-			`:ok_hand: sent \`${targetMember.displayName}\` 1 rep (${
-				(await senderRU.sent()) + 1
-			}/${this.MAX_REP} sent)`,
-		);
-		console.log('Gave one rep from', msg.author, 'to', targetMember.user);
+		this.onThank(msg, true);
 	}
 
 	@command({
-		aliases: ['history'],
 		description: "Reputation: View a user's reputation history",
 	})
-	async getrep(msg: Message, @optional user?: User) {
-		if (!msg.member) {
-			return;
-		}
+	async history(msg: Message, @optional user?: User) {
+		if (!msg.member) return;
 		if (!user) user = msg.author;
 
-		const targetRU = await this.getOrMakeUser(user);
-		const records = (await targetRU.got)
-			.concat(await targetRU.given)
-			// Decreasing chronologically
-			.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+		const records = (await Rep.find({ where: { recipient: user.id } }))
+			.reverse()
+			.filter(x => x.amount > 0)
 			.map(rg => {
-				if (rg.from.id == targetRU.id)
-					return `:white_small_square: Gave 1 rep to <@${
-						rg.to.id
-					}> (${prettyMilliseconds(
-						Date.now() - rg.createdAt.getTime(),
-					)} ago)`;
-				else
-					return `:white_small_square: Got 1 rep from <@${
-						rg.from.id
-					}> (${prettyMilliseconds(
-						Date.now() - rg.createdAt.getTime(),
-					)} ago)`;
+				const emoji = msg.guild!.emojis.resolve(repEmoji) ?? repEmoji;
+				const messageLink = `https://discord.com/channels/${
+					msg.guild!.id
+				}/${rg.channel}/${rg.messageId}`;
+				return `**${
+					rg.amount
+				} ${emoji}** on [message](${messageLink}) (<@${
+					rg.initialGiver
+				}>${rg.amount > 1 ? ' et al.' : ''})`;
 			});
+		if (!records.length) records.push('[no reputation history]');
 		const recordsPerPage = 30;
 		const pages = records
 			.reduce((acc, cur, index) => {
@@ -182,30 +205,69 @@ export class RepModule extends Module {
 		aliases: ['leaderboard', 'lb'],
 		description: 'Reputation: See who has the most reputation',
 	})
-	async leaderboard(msg: Message) {
+	async leaderboard(msg: Message, @optional period: string = 'month') {
+		let periods = {
+			'rolling-hour': [
+				'Within the Last Hour',
+				Date.now() - 60 * 60 * 1000,
+			] as const,
+			'rolling-day': [
+				'Within the Last 24 Hours',
+				Date.now() - 24 * 60 * 60 * 1000,
+			] as const,
+			'rolling-month': [
+				'Within the Last 30 Days',
+				Date.now() - 30 * 24 * 60 * 60 * 1000,
+			],
+			'rolling-year': [
+				'Within the Last Year',
+				Date.now() - 365 * 24 * 60 * 60 * 1000,
+			],
+			day: [
+				'Today',
+				+new Date(
+					new Date().getFullYear(),
+					new Date().getMonth(),
+					new Date().getDate(),
+				),
+			] as const,
+			month: [
+				'This Month',
+				+new Date(new Date().getFullYear(), new Date().getMonth()),
+			] as const,
+			year: ['This Year', +new Date(new Date().getFullYear())] as const,
+			all: ['All-Time', 0] as const,
+		};
+		if (!(period in periods))
+			return await sendWithMessageOwnership(
+				msg,
+				`:x: Invalid period (expected one of ${Object.keys(periods)
+					.map(x => `\`${x}\``)
+					.join(', ')})`,
+			);
+		const [text, dateMin] = periods[period as keyof typeof periods];
 		const topEmojis = [':first_place:', ':second_place:', ':third_place:'];
-		const data = ((await RepGive.createQueryBuilder('give')
-			.select(['give.to', 'COUNT(*)'])
-			.groupBy('give.to')
-			.orderBy('COUNT(*)', 'DESC')
-			.limit(11)
-			.getRawMany()) as { toId: string; count: string }[])
-			.filter(x => x.toId !== this.client.user?.id)
-			.slice(0, 10)
-			.map(x => ({
-				id: x.toId,
-				count: parseInt(x.count, 10),
-			}));
+		console.log(new Date(dateMin).toISOString());
+		const query = Rep.createQueryBuilder()
+			.where(`date > '${new Date(dateMin).toISOString()}'`)
+			.select(['recipient', 'SUM(amount)', 'MAX(date)'])
+			.groupBy('recipient')
+			.orderBy('SUM(amount)', 'DESC')
+			.limit(10);
+		const data = (await query.getRawMany()) as {
+			recipient: string;
+			sum: number;
+		}[];
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
-			.setTitle('Top 10 Reputation')
+			.setTitle(`Top 10 Reputation ${text}`)
 			.setDescription(
 				data
 					.map(
 						(x, index) =>
 							`${
 								topEmojis[index] || ':white_small_square:'
-							} **<@${x.id}>** with **${x.count}** points.`,
+							} **<@${x.recipient}>** with **${x.sum}** points.`,
 					)
 					.join('\n'),
 			);
