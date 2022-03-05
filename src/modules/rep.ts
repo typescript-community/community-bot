@@ -207,24 +207,18 @@ export class RepModule extends Module {
 	})
 	async leaderboard(msg: Message, @optional period: string = 'month') {
 		let periods = {
-			'rolling-hour': [
-				'Within the Last Hour',
-				Date.now() - 60 * 60 * 1000,
-			],
-			'rolling-day': [
-				'Within the Last 24 Hours',
-				Date.now() - 24 * 60 * 60 * 1000,
-			],
+			'rolling-hour': ['(past hour)', Date.now() - 60 * 60 * 1000],
+			'rolling-day': ['(past day)', Date.now() - 24 * 60 * 60 * 1000],
 			'rolling-month': [
-				'Within the Last 30 Days',
+				'(past 30 days)',
 				Date.now() - 30 * 24 * 60 * 60 * 1000,
 			],
 			'rolling-year': [
-				'Within the Last Year',
+				'(past year)',
 				Date.now() - 365 * 24 * 60 * 60 * 1000,
 			],
 			day: [
-				'Today',
+				'(today)',
 				+new Date(
 					new Date().getFullYear(),
 					new Date().getMonth(),
@@ -232,11 +226,11 @@ export class RepModule extends Module {
 				),
 			],
 			month: [
-				'This Month',
+				'(this month)',
 				+new Date(new Date().getFullYear(), new Date().getMonth()),
 			] as const,
-			year: ['This Year', +new Date(new Date().getFullYear())],
-			all: ['All-Time', 0],
+			year: ['(this year)', +new Date(new Date().getFullYear())],
+			all: ['(all time)', 0],
 		} as const;
 		if (!(period in periods))
 			return await sendWithMessageOwnership(
