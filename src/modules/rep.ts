@@ -210,11 +210,11 @@ export class RepModule extends Module {
 			'rolling-hour': [
 				'Within the Last Hour',
 				Date.now() - 60 * 60 * 1000,
-			] as const,
+			],
 			'rolling-day': [
 				'Within the Last 24 Hours',
 				Date.now() - 24 * 60 * 60 * 1000,
-			] as const,
+			],
 			'rolling-month': [
 				'Within the Last 30 Days',
 				Date.now() - 30 * 24 * 60 * 60 * 1000,
@@ -230,14 +230,14 @@ export class RepModule extends Module {
 					new Date().getMonth(),
 					new Date().getDate(),
 				),
-			] as const,
+			],
 			month: [
 				'This Month',
 				+new Date(new Date().getFullYear(), new Date().getMonth()),
 			] as const,
-			year: ['This Year', +new Date(new Date().getFullYear())] as const,
-			all: ['All-Time', 0] as const,
-		};
+			year: ['This Year', +new Date(new Date().getFullYear())],
+			all: ['All-Time', 0],
+		} as const;
 		if (!(period in periods))
 			return await sendWithMessageOwnership(
 				msg,
