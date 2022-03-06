@@ -151,6 +151,11 @@ export class RepModule extends Module {
 		);
 	}
 
+	@listener({ event: 'messageDelete' })
+	async onRepMsgDelete(msg: Message) {
+		await Rep.delete(msg.id);
+	}
+
 	@command({
 		description: 'Reputation: Give a different user some reputation points',
 	})
