@@ -181,7 +181,9 @@ export class RepModule extends Module {
 					rg.amount
 				} ${emoji}** on [message](${messageLink}) (<@${
 					rg.initialGiver
-				}>${rg.amount > 1 ? ' et al.' : ''})`;
+				}>${rg.amount > 1 ? ' et al.' : ''}) at <t:${
+					(+new Date(rg.date) / 1000) | 0
+				}>`;
 			});
 		if (!records.length) records.push('[no reputation history]');
 		const recordsPerPage = 30;
