@@ -58,7 +58,6 @@ export class RepModule extends Module {
 
 	@listener({ event: 'messageReactionAdd' })
 	async onRepReact(reaction: MessageReaction, user: User) {
-		console.log(reaction.emoji.id);
 		if (
 			!reaction.message.guild ||
 			user.id === this.client.user?.id ||
@@ -246,7 +245,6 @@ export class RepModule extends Module {
 			);
 		const [text, dateMin] = periods[period as keyof typeof periods];
 		const topEmojis = [':first_place:', ':second_place:', ':third_place:'];
-		console.log(new Date(dateMin).toISOString());
 		const query = Rep.createQueryBuilder()
 			.where(`date > '${new Date(dateMin).toISOString()}'`)
 			.select(['recipient', 'SUM(amount)', 'MAX(date)'])
