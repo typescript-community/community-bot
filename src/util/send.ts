@@ -45,6 +45,10 @@ export async function addMessageOwnership(
 	messageToUserId.set(message.id, { owner: user.id, onDelete });
 }
 
+export function getMessageOwner(message: Message | PartialMessage) {
+	return messageToUserId.get(message.id)?.owner;
+}
+
 export function ownsBotMessage(
 	message: Message | PartialMessage,
 	userId: string,
