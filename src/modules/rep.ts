@@ -234,7 +234,7 @@ export class RepModule extends Module {
 			month: [
 				'(this month)',
 				+new Date(new Date().getFullYear(), new Date().getMonth()),
-			] as const,
+			],
 			year: ['(this year)', +new Date(new Date().getFullYear())],
 			all: ['(all time)', 0],
 		} as const;
