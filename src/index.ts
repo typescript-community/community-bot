@@ -30,6 +30,7 @@ const client = new CookiecordClient(
 			'GUILD_MESSAGES',
 			'GUILD_MEMBERS',
 			'GUILD_MESSAGE_REACTIONS',
+			'DIRECT_MESSAGES',
 		]),
 	},
 ).setMaxListeners(Infinity);
