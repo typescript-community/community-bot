@@ -373,7 +373,8 @@ export class HelpThreadModule extends Module {
 			HelpThread.update(thread.id, {
 				titleSetTimestamp: Date.now() + '',
 			}),
-			msg.channel.setName(`${username} - ${title}`),
+			// Truncate if longer than 100, the max thread title length
+			msg.channel.setName(`${username} - ${title}`.slice(0, 100)),
 		]);
 	}
 
