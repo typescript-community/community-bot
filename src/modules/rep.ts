@@ -114,7 +114,7 @@ export class RepModule extends Module {
 			channel: msg.channelId,
 			amount: 1,
 			recipient,
-			initialGiver: author.id,
+			initialGiver: user.id,
 			date: new Date().toISOString(),
 		}).save();
 
