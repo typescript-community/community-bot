@@ -181,19 +181,19 @@ export class RepModule extends Module {
 					rg.amount
 				} ${emoji}** on [message](${messageLink}) (<@${
 					rg.initialGiver
-				}>${rg.amount > 1 ? ' et al.' : ''}) at <t:${
-					(+new Date(rg.date) / 1000) | 0
-				}>`;
+				}>${rg.amount > 1 ? ' et al.' : ''}) at <t:${Math.floor(
+					+new Date(rg.date) / 1000,
+				)}>`;
 			});
 		if (!records.length) records.push('[no reputation history]');
-		const recordsPerPage = 30;
+		const recordsPerPage = 10;
 		const pages = records
-			.reduce((acc, cur, index) => {
+			.reduce<string[][]>((acc, cur, index) => {
 				const curChunk = Math.floor(index / recordsPerPage);
 				acc[curChunk] ??= [];
 				acc[curChunk].push(cur);
 				return acc;
-			}, [] as string[][])
+			}, [])
 			.map(page => page.join('\n'));
 		const embed = new MessageEmbed()
 			.setColor(TS_BLUE)
