@@ -205,7 +205,7 @@ export class HelpThreadModule extends Module {
 	}
 
 	@command({
-		aliases: ['closed', 'resolved', 'resolve', 'done'],
+		aliases: ['closed', 'resolved', 'resolve', 'done', 'solved'],
 		description: 'Help System: Close an active help thread',
 	})
 	async close(msg: Message) {
