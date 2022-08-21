@@ -124,7 +124,7 @@ function createPlaygroundEmbed(
 ) {
 	const embed = new MessageEmbed()
 		.setColor(TS_BLUE)
-		.setTitle('Shortened Playground Link')
+		.setTitle('Playground Link')
 		.setAuthor(author.tag, author.displayAvatarURL())
 		.setURL(url);
 
@@ -174,6 +174,10 @@ function createPlaygroundEmbed(
 	}
 	const prettyEndChar = pretty.length - (normalized.length - endChar);
 	const formattedSection = pretty.slice(startChar, prettyEndChar);
+	const content =
+		(startChar === 0 ? '' : '...\n') +
+		formattedSection.replace(/^\s*\n|\n\s*$/g, '') +
+		(prettyEndChar === pretty.length ? '' : '\n...');
 
 	if (!startLine && !endLine) {
 		embed.setFooter(
@@ -181,7 +185,7 @@ function createPlaygroundEmbed(
 		);
 	}
 
-	return embed.setDescription(makeCodeBlock(formattedSection));
+	return embed.setDescription('**Preview:**' + makeCodeBlock(content));
 }
 
 async function shortenPlaygroundLink(url: string) {
