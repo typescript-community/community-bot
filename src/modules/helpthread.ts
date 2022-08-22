@@ -341,14 +341,19 @@ export class HelpThreadModule extends Module {
 
 	@command({ single: true, description: 'Help System: Rename a help thread' })
 	async title(msg: Message, title: string) {
-		if (!isHelpThread(msg.channel))
+		const m = /^<#(\d+)>\s*([^]*)/.exec(title);
+		let thread: Omit<Channel, 'partial'> | undefined = msg.channel;
+		if (m) {
+			thread = msg.guild?.channels.cache.get(m[1])!;
+			title = m[2];
+		}
+		if (!thread || !isHelpThread(thread))
 			return sendWithMessageOwnership(
 				msg,
 				':warning: This can only be run in a help thread',
 			);
 		if (!title)
 			return sendWithMessageOwnership(msg, ':warning: Missing title');
-		const thread = msg.channel;
 		const threadData = (await HelpThread.findOne(thread.id))!;
 		if (
 			msg.author.id !== threadData.ownerId &&
@@ -374,8 +379,11 @@ export class HelpThreadModule extends Module {
 				titleSetTimestamp: Date.now() + '',
 			}),
 			// Truncate if longer than 100, the max thread title length
-			msg.channel.setName(`${username} - ${title}`.slice(0, 100)),
+			thread.setName(`${username} - ${title}`.slice(0, 100)),
 		]);
+		if (thread !== msg.channel) {
+			await msg.react('✅');
+		}
 	}
 
 	@command()
