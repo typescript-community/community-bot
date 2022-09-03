@@ -1,4 +1,9 @@
-import { command, Module, listener } from 'cookiecord';
+import CookiecordClient, {
+	command,
+	Module,
+	listener,
+	CommonInhibitors,
+} from 'cookiecord';
 import { ThreadAutoArchiveDuration } from 'discord-api-types';
 import {
 	Message,
@@ -7,6 +12,7 @@ import {
 	ThreadChannel,
 	MessageEmbed,
 	GuildMember,
+	Client,
 } from 'discord.js';
 import { HelpThread } from '../entities/HelpThread';
 import {
@@ -136,7 +142,14 @@ See <#${howToGetHelpChannel}> for info on how to get better help.
 // The rate limit for thread naming is 2 time / 10 mins, tracked per thread
 const titleSetCooldown = 5 * 60 * 1000;
 
+const threadExpireHours = ThreadAutoArchiveDuration.OneDay;
+const threadCheckInterval = 60 * 60 * 1000;
+
 export class HelpThreadModule extends Module {
+	constructor(client: CookiecordClient) {
+		super(client);
+	}
+
 	@listener({ event: 'messageCreate' })
 	async onNewQuestion(msg: Message) {
 		if (!isHelpChannel(msg.channel)) return;
@@ -150,7 +163,7 @@ export class HelpThreadModule extends Module {
 		this.updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
 			name: `Help ${msg.member?.nickname ?? msg.author.username}`,
-			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
+			autoArchiveDuration: threadExpireHours,
 		});
 		thread.send(helpThreadWelcomeMessage(msg.member!));
 		await HelpThread.create({
@@ -186,6 +199,29 @@ export class HelpThreadModule extends Module {
 		}
 	}
 
+	@listener({ event: 'ready' })
+	@command({
+		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
+	})
+	checkThreads() {
+		setTimeout(() => this.checkThreads(), threadCheckInterval);
+		this.client.guilds.cache.forEach(guild => {
+			guild.channels.cache.forEach(async channel => {
+				if (!isHelpChannel(channel)) return;
+				const threads = await channel.threads.fetchActive();
+				threads.threads.forEach(async thread => {
+					const time =
+						Date.now() -
+						(await thread.messages.fetch({ limit: 1 })).first()!
+							.createdTimestamp;
+					if (time >= threadExpireHours * 60 * 1000) {
+						this._onThreadExpire(thread);
+					}
+				});
+			});
+		});
+	}
+
 	@listener({ event: 'threadUpdate' })
 	async onThreadExpire(thread: ThreadChannel) {
 		if (
@@ -194,6 +230,10 @@ export class HelpThreadModule extends Module {
 			this.manuallyArchivedThreads.delete(thread.id)
 		)
 			return;
+		this._onThreadExpire(thread);
+	}
+
+	private async _onThreadExpire(thread: ThreadChannel) {
 		const threadData = (await HelpThread.findOne(thread.id))!;
 		console.log(`Help thread expired:`, thread);
 		await thread.send({
