@@ -16,8 +16,8 @@ import { TS_BLUE } from '../env';
 import {
 	makeCodeBlock,
 	findCode,
-	PLAYGROUND_REGEX,
-	truncate,
+	matchPlaygroundLink,
+	PlaygroundLinkMatch,
 } from '../util/codeBlocks';
 import { LimitedSizeMap } from '../util/limitedSizeMap';
 import {
@@ -66,10 +66,10 @@ export class PlaygroundModule extends Module {
 	async onPlaygroundLinkMessage(msg: Message) {
 		if (msg.author.bot) return;
 		if (msg.content[0] === '!') return;
-		const exec = PLAYGROUND_REGEX.exec(msg.content);
+		const exec = matchPlaygroundLink(msg.content);
 		if (!exec) return;
 		const embed = createPlaygroundEmbed(msg.author, exec);
-		if (exec[0] === msg.content && !isHelpChannel(msg.channel)) {
+		if (exec.url === msg.content && !isHelpChannel(msg.channel)) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, { embeds: [embed] });
 			await msg.delete();
@@ -90,12 +90,12 @@ export class PlaygroundModule extends Module {
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
 		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
-		const exec = PLAYGROUND_REGEX.exec(content);
+		const exec = matchPlaygroundLink(content);
 		// By default, if you write a message in the box and then paste a long
 		// playground link, it will only put the paste in message.txt and will
 		// put the rest of the message in msg.content
-		if (!exec || exec[0] !== content) return;
-		const shortenedUrl = await shortenPlaygroundLink(exec[0]);
+		if (!exec || exec.url !== content) return;
+		const shortenedUrl = await shortenPlaygroundLink(exec.url);
 		const embed = createPlaygroundEmbed(msg.author, exec, shortenedUrl);
 		await sendWithMessageOwnership(msg, { embeds: [embed] });
 		if (!msg.content) await msg.delete();
@@ -104,7 +104,7 @@ export class PlaygroundModule extends Module {
 	@listener({ event: 'messageUpdate' })
 	async onLongFix(_oldMsg: Message, msg: Message) {
 		if (msg.partial) await msg.fetch();
-		const exec = PLAYGROUND_REGEX.exec(msg.content);
+		const exec = matchPlaygroundLink(msg.content);
 		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
 		const botMsg = this.editedLongLink.get(msg.id);
 		// Edit the message to only have the embed and not the "please edit your message" message
@@ -119,7 +119,7 @@ export class PlaygroundModule extends Module {
 // Take care when messing with the truncation, it's extremely finnicky
 function createPlaygroundEmbed(
 	author: User,
-	[_url, query, code]: RegExpExecArray,
+	{ url: _url, query, code }: PlaygroundLinkMatch,
 	url: string = _url,
 ) {
 	const embed = new MessageEmbed()

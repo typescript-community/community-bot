@@ -4,7 +4,17 @@ import { getReferencedMessage } from './getReferencedMessage';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript|js|javascript)?\n([\s\S]+)```/;
 
-export const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:[a-z]{2,3}\/)?(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4})/;
+const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:[a-z]{2,3}\/)?(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4})/;
+
+export type PlaygroundLinkMatch = { url: string; query: string; code: string };
+export function matchPlaygroundLink(
+	msg: string,
+): PlaygroundLinkMatch | undefined {
+	const match = msg.match(PLAYGROUND_REGEX);
+	if (!match) return;
+	const [url, query, code] = match;
+	return { url, query, code };
+}
 
 export async function findCode(message: Message, ignoreLinks = false) {
 	const codeInMessage = await findCodeInMessage(message, ignoreLinks);
@@ -43,15 +53,12 @@ async function findCodeInMessage(msg: Message, ignoreLinks = false) {
 
 	if (ignoreLinks) return;
 
-	const match = content.match(PLAYGROUND_REGEX);
-	if (match) {
-		return decompressFromEncodedURIComponent(match[2]);
-	}
+	const codeSources = [content, ...embeds.map(({ url }) => url)];
 
-	for (const embed of embeds) {
-		const match = embed.url?.match(PLAYGROUND_REGEX);
+	for (const code of codeSources) {
+		const match = code && matchPlaygroundLink(code);
 		if (match) {
-			return decompressFromEncodedURIComponent(match[2]);
+			return decompressFromEncodedURIComponent(match.code);
 		}
 	}
 }
