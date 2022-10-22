@@ -4,16 +4,25 @@ import { getReferencedMessage } from './getReferencedMessage';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript|js|javascript)?\n([\s\S]+)```/;
 
-const PLAYGROUND_REGEX = /https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:[a-z]{2,3}\/)?(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4})/;
+const PLAYGROUND_REGEX = /<?(https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:[a-z]{2,3}\/)?(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4}))>?/;
 
-export type PlaygroundLinkMatch = { url: string; query: string; code: string };
+export type PlaygroundLinkMatch = {
+	url: string;
+	query: string;
+	code: string;
+	isWholeMatch: boolean;
+	/* Is the url wrapped in < > ? */
+	isEscaped: boolean;
+};
 export function matchPlaygroundLink(
 	msg: string,
 ): PlaygroundLinkMatch | undefined {
 	const match = msg.match(PLAYGROUND_REGEX);
 	if (!match) return;
-	const [url, query, code] = match;
-	return { url, query, code };
+	const [possiblyEscapedUrl, url, query, code] = match;
+	const isWholeMatch = msg === possiblyEscapedUrl;
+	const isEscaped = possiblyEscapedUrl.length === url.length + 2;
+	return { url, query, code, isWholeMatch, isEscaped };
 }
 
 export async function findCode(message: Message, ignoreLinks = false) {

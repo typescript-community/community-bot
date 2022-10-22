@@ -69,9 +69,11 @@ export class PlaygroundModule extends Module {
 		const exec = matchPlaygroundLink(msg.content);
 		if (!exec) return;
 		const embed = createPlaygroundEmbed(msg.author, exec);
-		if (exec.url === msg.content && !isHelpChannel(msg.channel)) {
+		if (exec.isWholeMatch && !isHelpChannel(msg.channel)) {
 			// Message only contained the link
-			await sendWithMessageOwnership(msg, { embeds: [embed] });
+			await sendWithMessageOwnership(msg, {
+				embeds: [embed],
+			});
 			await msg.delete();
 		} else {
 			// Message also contained other characters
@@ -94,10 +96,12 @@ export class PlaygroundModule extends Module {
 		// By default, if you write a message in the box and then paste a long
 		// playground link, it will only put the paste in message.txt and will
 		// put the rest of the message in msg.content
-		if (!exec || exec.url !== content) return;
+		if (!exec?.isWholeMatch) return;
 		const shortenedUrl = await shortenPlaygroundLink(exec.url);
 		const embed = createPlaygroundEmbed(msg.author, exec, shortenedUrl);
-		await sendWithMessageOwnership(msg, { embeds: [embed] });
+		await sendWithMessageOwnership(msg, {
+			embeds: [embed],
+		});
 		if (!msg.content) await msg.delete();
 	}
 
@@ -119,7 +123,7 @@ export class PlaygroundModule extends Module {
 // Take care when messing with the truncation, it's extremely finnicky
 function createPlaygroundEmbed(
 	author: User,
-	{ url: _url, query, code }: PlaygroundLinkMatch,
+	{ url: _url, query, code, isEscaped }: PlaygroundLinkMatch,
 	url: string = _url,
 ) {
 	const embed = new MessageEmbed()
@@ -179,13 +183,16 @@ function createPlaygroundEmbed(
 		formattedSection.replace(/^\s*\n|\n\s*$/g, '') +
 		(prettyEndChar === pretty.length ? '' : '\n...');
 
-	if (!startLine && !endLine) {
-		embed.setFooter(
-			'You can choose specific lines to embed by selecting them before copying the link.',
-		);
+	if (!isEscaped) {
+		embed.setDescription('**Preview:**' + makeCodeBlock(content));
+		if (!startLine && !endLine) {
+			embed.setFooter(
+				'You can choose specific lines to embed by selecting them before copying the link.',
+			);
+		}
 	}
 
-	return embed.setDescription('**Preview:**' + makeCodeBlock(content));
+	return embed;
 }
 
 async function shortenPlaygroundLink(url: string) {
