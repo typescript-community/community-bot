@@ -28,6 +28,22 @@ export class RepModule extends Module {
 		super(client);
 	}
 
+	private giveRep(
+		msg: Pick<Message, 'id' | 'channelId'>,
+		{ recipient, initialGiver }: Pick<Rep, 'recipient' | 'initialGiver'>,
+	) {
+		console.log('Creating a Rep with recipient', recipient);
+
+		return Rep.create({
+			messageId: msg.id,
+			channel: msg.channelId,
+			amount: 1,
+			recipient,
+			initialGiver,
+			date: new Date().toISOString(),
+		}).save();
+	}
+
 	@listener({ event: 'messageCreate' })
 	async onThank(msg: Message, force = false) {
 		// Check for thanks messages
@@ -42,16 +58,10 @@ export class RepModule extends Module {
 
 		const recipient = mentionUsers.first()!;
 
-		console.log('Creating a Rep with recipient', recipient);
-
-		await Rep.create({
-			messageId: msg.id,
-			channel: msg.channelId,
-			amount: 1,
+		await this.giveRep(msg, {
 			recipient: recipient.id,
 			initialGiver: msg.author.id,
-			date: new Date().toISOString(),
-		}).save();
+		});
 
 		await msg.react(repEmoji);
 	}
@@ -107,16 +117,10 @@ export class RepModule extends Module {
 			recipient = altRecipient;
 		}
 
-		console.log('Creating a Rep with recipient', recipient);
-
-		await Rep.create({
-			messageId: msg.id,
-			channel: msg.channelId,
-			amount: 1,
+		await this.giveRep(msg, {
 			recipient,
 			initialGiver: user.id,
-			date: new Date().toISOString(),
-		}).save();
+		});
 
 		async function removeReaction() {
 			removedReactions.add([msg.id, user.id].toString());
@@ -158,7 +162,20 @@ export class RepModule extends Module {
 	@command({
 		description: 'Reputation: Give a different user some reputation points',
 	})
-	async rep(msg: Message, targetMember: GuildMember) {
+	async rep(msg: Message, targetMember: string) {
+		if (targetMember.match(/\d+/)) {
+			const user = await this.client.users
+				.fetch(targetMember)
+				.catch(() => null);
+			if (user) {
+				if (user.id === msg.author.id) return msg.react('🤡');
+				await this.giveRep(msg, {
+					recipient: targetMember,
+					initialGiver: msg.author.id,
+				});
+				return msg.react(repEmoji);
+			}
+		}
 		this.onThank(msg, true);
 	}
 
