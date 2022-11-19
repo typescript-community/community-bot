@@ -7,9 +7,15 @@ export interface CommandRegistration {
 	listener: (msg: Message, content: string) => Promise<void>;
 }
 
+interface Command {
+	admin: boolean;
+	aliases: string[];
+	description?: string;
+	listener: (msg: Message, content: string) => Promise<void>;
+}
+
 export class Bot {
-	commands: CommandRegistration[] = [];
-	adminCommands: CommandRegistration[] = [];
+	commands = new Map<string, Command>();
 
 	constructor(public client: Client<true>) {
 		client.on('messageCreate', msg => {
@@ -26,11 +32,7 @@ export class Bot {
 					triggerWithPrefix.substring(matchingPrefix.length),
 				);
 
-				if (
-					!command ||
-					(this.adminCommands.includes(command) &&
-						!this.isAdmin(msg.author))
-				) {
+				if (!command || (command.admin && !this.isAdmin(msg.author))) {
 					return;
 				}
 				command.listener(msg, content).catch(err => {
@@ -40,17 +42,28 @@ export class Bot {
 		});
 	}
 
-	registerCommand(command: CommandRegistration) {
-		this.commands.push(command);
+	registerCommand(registration: CommandRegistration) {
+		const command: Command = {
+			...registration,
+			admin: false,
+		};
+		for (const a of command.aliases) {
+			this.commands.set(a, command);
+		}
 	}
 
-	registerAdminCommand(command: CommandRegistration) {
-		this.adminCommands.push(command);
+	registerAdminCommand(registration: CommandRegistration) {
+		const command: Command = {
+			...registration,
+			admin: true,
+		};
+		for (const a of command.aliases) {
+			this.commands.set(a, command);
+		}
 	}
 
-	getByTrigger(trigger: string): CommandRegistration | undefined {
-		const match = (c: CommandRegistration) => c.aliases.includes(trigger);
-		return this.commands.find(match) || this.adminCommands.find(match);
+	getByTrigger(trigger: string): Command | undefined {
+		return this.commands.get(trigger);
 	}
 
 	isMod(member: GuildMember | null) {
@@ -80,18 +93,18 @@ export class Bot {
 		const mentioned = msg.mentions.members?.first()?.user;
 		if (mentioned) return mentioned;
 
-		if (query) {
-			// Search by ID
-			const queriedUser = await this.client.users
-				.fetch(query)
-				.catch(() => undefined);
-			if (queriedUser) return queriedUser;
+		if (!query) return;
 
-			// Search by name, likely a better way to do this...
-			for (const user of this.client.users.cache.values()) {
-				if (user.tag === query || user.username === query) {
-					return user;
-				}
+		// Search by ID
+		const queriedUser = await this.client.users
+			.fetch(query)
+			.catch(() => undefined);
+		if (queriedUser) return queriedUser;
+
+		// Search by name, likely a better way to do this...
+		for (const user of this.client.users.cache.values()) {
+			if (user.tag === query || user.username === query) {
+				return user;
 			}
 		}
 	}

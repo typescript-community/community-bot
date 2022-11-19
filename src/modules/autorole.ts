@@ -1,4 +1,3 @@
-import { TextBasedChannel } from 'discord.js';
 import { Bot } from '../bot';
 import { autorole, rolesChannelId } from '../env';
 
@@ -18,10 +17,6 @@ export async function autoroleModule({ client }: Bot) {
 		}
 		await msg?.react(ar.emoji);
 	}
-
-	client.channels.fetch(rolesChannelId).then(channel => {
-		(channel as TextBasedChannel).messages.fetch();
-	});
 
 	client.on('messageReactionAdd', async (reaction, user) => {
 		if (user.id == client.user.id) return;

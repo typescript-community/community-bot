@@ -16,5 +16,5 @@ We also have a docker-compose.yml for development, along with a .env.example.
 
 ## Thanks!
 
--   [ckie](https://github.com/ckiee) for writing the base for the bot.
+-   [ckie](https://github.com/ckiee) for writing the base for the bot!
 -   [Python Discord](https://github.com/python-discord) for heavily influencing our help channel system.

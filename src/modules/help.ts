@@ -54,10 +54,10 @@ export function helpModule(bot: Bot) {
 						`Hello ${msg.author.username}! Here is a list of all commands in me! To get detailed description on any specific command, do \`help <command>\``,
 					);
 
-				for (const cat of getCommandCategories(bot.commands)) {
+				for (const cat of getCommandCategories(bot.commands.values())) {
 					embed.addFields({
 						name: `**${cat} Commands:**`,
-						value: getCategoryHelp(cat, bot.commands),
+						value: getCategoryHelp(cat, bot.commands.values()),
 					});
 				}
 
@@ -72,7 +72,7 @@ export function helpModule(bot: Bot) {
 			}
 
 			let cmd: { description?: string; aliases?: string[] } =
-				bot.commands.find(c => c.aliases.includes(cmdTrigger)) || {};
+				bot.getByTrigger(cmdTrigger) || {};
 
 			if (!cmd.description && cmdTrigger.includes(':')) {
 				const snippet = await Snippet.findOne({
