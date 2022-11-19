@@ -1,10 +1,11 @@
-import { Message, TextChannel } from 'discord.js';
+import { Message, MessageType } from 'discord.js';
 import { decompressFromEncodedURIComponent } from 'lz-string';
 import { getReferencedMessage } from './getReferencedMessage';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript|js|javascript)?\n([\s\S]+)```/;
 
-const PLAYGROUND_REGEX = /<?(https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:[a-z]{2,3}\/)?(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4}))>?/;
+const PLAYGROUND_REGEX =
+	/<?(https?:\/\/(?:www\.)?(?:typescriptlang|staging-typescript)\.org\/(?:[a-z]{2,3}\/)?(?:play|dev\/bug-workbench)(?:\/index\.html)?\/?(\??(?:\w+=[^\s#&]*)?(?:\&\w+=[^\s#&]*)*)#code\/([\w\-%+_]+={0,4}))>?/;
 
 export type PlaygroundLinkMatch = {
 	url: string;
@@ -49,7 +50,7 @@ export async function findCode(message: Message, ignoreLinks = false) {
 // 2: Link to TS playground. This can be either from a bot or a normal user
 //    since we shorten playground links on their own and delete the message.
 async function findCodeInMessage(msg: Message, ignoreLinks = false) {
-	if (msg.type === 'THREAD_STARTER_MESSAGE') {
+	if (msg.type === MessageType.ThreadStarterMessage) {
 		msg = await msg.fetchReference();
 	}
 	const { author, content, embeds } = msg;

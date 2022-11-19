@@ -1,249 +1,240 @@
-import {
-	command,
-	default as CookiecordClient,
-	Module,
-	listener,
-	optional,
-} from 'cookiecord';
-import {
-	GuildMember,
-	Message,
-	MessageEmbed,
-	TextChannel,
-	User,
-} from 'discord.js';
-import { BaseEntity } from 'typeorm';
+import { EmbedBuilder, TextChannel, User } from 'discord.js';
 import { Snippet } from '../entities/Snippet';
 import { BLOCKQUOTE_GREY } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 import { getReferencedMessage } from '../util/getReferencedMessage';
 import { splitCustomCommand } from '../util/customCommand';
+import { Bot } from '../bot';
 
 // https://stackoverflow.com/a/3809435
-const LINK_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+const LINK_REGEX =
+	/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
-const DISCORD_MESSAGE_LINK_REGEX_ANCHORED = /^https:\/\/discord.com\/channels\/(\d+)\/(\d+)\/(\d+)$/;
+const DISCORD_MESSAGE_LINK_REGEX_ANCHORED =
+	/^https:\/\/discord.com\/channels\/(\d+)\/(\d+)\/(\d+)$/;
 
-export class SnippetModule extends Module {
-	constructor(client: CookiecordClient) {
-		super(client);
-	}
-
-	@listener({ event: 'messageCreate' })
-	async runSnippet(msg: Message) {
-		const commandData = await splitCustomCommand(this.client, msg);
+export function snippetModule(bot: Bot) {
+	bot.client.on('messageCreate', async msg => {
+		const commandData = await splitCustomCommand(bot, msg);
 		if (!commandData) return;
 		const { command } = commandData;
 
-		if (command.includes('*') && !command.includes(':')) return [];
+		if (command.includes('*') && !command.includes(':')) return;
 
 		const [match] = await interpretSpecifier(msg.author, command, 1);
 
 		if (!match) return;
 
 		// We already know there's a snippet under this id from the search
-		const snippet = (await this.getSnippet(match.id))!;
+		const snippet = (await Snippet.findOneBy({ id: match.id }))!;
 
 		await addSnippetUses(match.id);
 		const onDelete = () => addSnippetUses(match.id, -1);
 
-		if (snippet.content)
-			return await sendWithMessageOwnership(
-				msg,
-				snippet.content,
-				onDelete,
-			);
+		if (snippet.content) {
+			await sendWithMessageOwnership(msg, snippet.content, onDelete);
+			return;
+		}
 
-		const owner = await this.client.users.fetch(snippet.owner);
-		const embed = new MessageEmbed({
+		const owner = await bot.client.users.fetch(snippet.owner);
+		const embed = new EmbedBuilder({
 			...snippet,
 			// image is in an incompatible format, so we have to set it later
 			image: undefined,
 		});
 		if (match.id.includes(':'))
-			embed.setAuthor(owner.tag, owner.displayAvatarURL());
+			embed.setAuthor({
+				name: owner.tag,
+				iconURL: owner.displayAvatarURL(),
+			});
 		if (snippet.image) embed.setImage(snippet.image);
 		await sendWithMessageOwnership(msg, { embeds: [embed] }, onDelete);
-	}
+	});
 
-	@command({
+	bot.registerCommand({
 		description: 'Snippet: List snippets matching an optional filter',
-		aliases: ['snippets', 'snips'],
-	})
-	async listSnippets(msg: Message, @optional specifier: string = '*') {
-		const limit = 20;
-		const matches = await interpretSpecifier(
-			msg.author,
-			specifier,
-			limit + 1,
-		);
-		return await sendWithMessageOwnership(msg, {
-			embeds: [
-				new MessageEmbed()
-					.setColor(BLOCKQUOTE_GREY)
-					.setTitle(
-						`${
-							matches.length > limit
-								? `${limit}+`
-								: matches.length
-						} Matches Found`,
-					)
-					.setDescription(
-						matches
-							.slice(0, limit)
-							.map(s => `- \`${s.id}\` with **${s.uses}** uses`)
-							.join('\n'),
-					),
-			],
-		});
-	}
+		aliases: ['listSnippets', 'snippets', 'snips'],
+		async listener(msg, specifier) {
+			const limit = 20;
+			const matches = await interpretSpecifier(
+				msg.author,
+				specifier || '*',
+				limit + 1,
+			);
+			await sendWithMessageOwnership(msg, {
+				embeds: [
+					new EmbedBuilder()
+						.setColor(BLOCKQUOTE_GREY)
+						.setTitle(
+							`${
+								matches.length > limit
+									? `${limit}+`
+									: matches.length
+							} Matches Found`,
+						)
+						.setDescription(
+							matches
+								.slice(0, limit)
+								.map(
+									s =>
+										`- \`${s.id}\` with **${s.uses}** uses`,
+								)
+								.join('\n'),
+						),
+				],
+			});
+		},
+	});
 
-	@command({
+	bot.registerCommand({
 		description: 'Snippet: Create or edit a snippet',
-		aliases: ['snip', 'snippet'],
-	})
-	async createSnippet(msg: Message, name: string, @optional source?: string) {
-		if (!msg.member) return;
+		aliases: ['snip', 'snippet', 'createSnippet'],
+		async listener(msg, content) {
+			if (!msg.member) return;
 
-		const linkedMessage = await this.getMessageFromLink(source);
+			const [name, ...parts] = content.split(' ');
+			const source = parts.join(' ');
 
-		if (!name) {
-			return await sendWithMessageOwnership(
-				msg,
-				':x: You have to supply a name for the command',
-			);
-		}
+			const linkedMessage = await getMessageFromLink(source);
 
-		const id = name.startsWith('!')
-			? `${sanitizeIdPart(name.slice(1))}`
-			: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(name)}`;
-		const existingSnippet = await this.getSnippet(id);
-
-		if (!id.includes(':') && !this.isMod(msg.member))
-			return await sendWithMessageOwnership(
-				msg,
-				":x: You don't have permission to create a global snippet",
-			);
-
-		if (
-			!this.isMod(msg.member) &&
-			existingSnippet &&
-			existingSnippet.owner !== msg.author.id
-		)
-			return await sendWithMessageOwnership(
-				msg,
-				":x: Cannot edit another user's snippet",
-			);
-
-		const title = `\`!${id}\`: `;
-		const base = {
-			id,
-			uses: existingSnippet?.uses ?? 0,
-			owner: msg.author.id,
-			title,
-		};
-		let data: Omit<Snippet, keyof BaseEntity> | undefined;
-
-		if (source && !linkedMessage) {
-			const referencedSnippet = await this.getSnippet(source);
-			if (!referencedSnippet)
+			if (!name) {
 				return await sendWithMessageOwnership(
 					msg,
-					':x: Second argument must be a valid discord message link or snippet id',
+					':x: You have to supply a name for the command',
 				);
-			data = {
-				...referencedSnippet,
-				...base,
-				title:
-					base.title +
-					referencedSnippet.title?.split(': ').slice(1).join(': '),
+			}
+
+			const id = name.startsWith('!')
+				? `${sanitizeIdPart(name.slice(1))}`
+				: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(
+						name,
+				  )}`;
+			const existingSnippet = await Snippet.findOneBy({ id });
+
+			if (!id.includes(':') && !bot.isMod(msg.member))
+				return await sendWithMessageOwnership(
+					msg,
+					":x: You don't have permission to create a global snippet",
+				);
+
+			if (
+				!bot.isMod(msg.member) &&
+				existingSnippet &&
+				existingSnippet.owner !== msg.author.id
+			)
+				return await sendWithMessageOwnership(
+					msg,
+					":x: Cannot edit another user's snippet",
+				);
+
+			const title = `\`!${id}\`: `;
+			const base = {
+				id,
+				uses: existingSnippet?.uses ?? 0,
+				owner: msg.author.id,
+				title,
 			};
-		} else {
-			const sourceMessage =
-				linkedMessage ?? (await getReferencedMessage(msg));
-			if (!sourceMessage)
+			let data: Partial<Snippet> | undefined;
+
+			if (source && !linkedMessage) {
+				const referencedSnippet = await Snippet.findOneBy({
+					id: source,
+				});
+				if (!referencedSnippet)
+					return await sendWithMessageOwnership(
+						msg,
+						':x: Second argument must be a valid discord message link or snippet id',
+					);
+				data = {
+					...referencedSnippet,
+					...base,
+					title:
+						base.title +
+						referencedSnippet.title
+							?.split(': ')
+							.slice(1)
+							.join(': '),
+				};
+			} else {
+				const sourceMessage =
+					linkedMessage ?? (await getReferencedMessage(msg));
+				if (!sourceMessage)
+					return await sendWithMessageOwnership(
+						msg,
+						':x: You have to reply or link to a comment to make it a snippet',
+					);
+
+				const description = sourceMessage.content;
+				const referencedEmbed = sourceMessage.embeds[0];
+
+				if (LINK_REGEX.exec(description)?.[0] === description)
+					data = {
+						...base,
+						content: description,
+					};
+				else if (description)
+					data = {
+						...base,
+						description,
+						color: parseInt(BLOCKQUOTE_GREY.slice(1), 16),
+					};
+				else if (referencedEmbed)
+					data = {
+						...base,
+						title: title + (referencedEmbed.title || ''),
+						description: referencedEmbed.description!,
+						color: referencedEmbed.color!,
+						image: referencedEmbed.image?.url,
+						url: referencedEmbed.url!,
+					};
+			}
+
+			if (!data) {
 				return await sendWithMessageOwnership(
 					msg,
-					':x: You have to reply or link to a comment to make it a snippet',
+					':x: Cannot generate a snippet from that message',
 				);
+			}
 
-			const description = sourceMessage.content;
-			const referencedEmbed = sourceMessage.embeds[0];
-
-			if (LINK_REGEX.exec(description)?.[0] === description)
-				data = {
-					...base,
-					content: description,
-				};
-			else if (description)
-				data = {
-					...base,
-					description,
-					color: parseInt(BLOCKQUOTE_GREY.slice(1), 16),
-				};
-			else if (referencedEmbed)
-				data = {
-					...base,
-					title: title + (referencedEmbed.title || ''),
-					description: referencedEmbed.description!,
-					color: referencedEmbed.color!,
-					image: referencedEmbed.image?.url,
-					url: referencedEmbed.url!,
-				};
-		}
-
-		if (!data)
-			return await sendWithMessageOwnership(
+			await existingSnippet?.remove();
+			await Snippet.create(data).save();
+			const verb = existingSnippet ? 'Edited' : 'Created';
+			await sendWithMessageOwnership(
 				msg,
-				':x: Cannot generate a snippet from that message',
+				`:white_check_mark: ${verb} snippet \`${id}\``,
 			);
+			console.log(`${verb} snippet ${id} for`, msg.author);
+		},
+	});
 
-		await existingSnippet?.remove();
-		await Snippet.create(data).save();
-		const verbed = existingSnippet ? 'Edited' : 'Created';
-		await sendWithMessageOwnership(
-			msg,
-			`:white_check_mark: ${verbed} snippet \`${id}\``,
-		);
-		console.log(`${verbed} snippet ${id} for`, msg.author);
-	}
-
-	private async getSnippet(id: string) {
-		return await Snippet.findOne(id);
-	}
-
-	@command({
+	bot.registerCommand({
 		description: 'Snippet: Delete a snippet you own',
 		aliases: ['deleteSnip'],
-	})
-	async deleteSnippet(msg: Message, id: string) {
-		if (!msg.member) return;
-		const snippet = await this.getSnippet(id);
-		if (!snippet)
-			return await sendWithMessageOwnership(
-				msg,
-				':x: No snippet found with that id',
-			);
-		if (!this.isMod(msg.member) && snippet.owner !== msg.author.id)
-			return await sendWithMessageOwnership(
-				msg,
-				":x: Cannot delete another user's snippet",
-			);
-		await snippet.remove();
-		console.log(`Deleted snippet ${id} for`, msg.author);
-		sendWithMessageOwnership(msg, ':white_check_mark: Deleted snippet');
-	}
+		async listener(msg, id) {
+			if (!msg.member) return;
+			const snippet = await Snippet.findOneBy({ id });
+			if (!snippet)
+				return await sendWithMessageOwnership(
+					msg,
+					':x: No snippet found with that id',
+				);
+			if (!bot.isMod(msg.member) && snippet.owner !== msg.author.id)
+				return await sendWithMessageOwnership(
+					msg,
+					":x: Cannot delete another user's snippet",
+				);
+			await snippet.remove();
+			console.log(`Deleted snippet ${id} for`, msg.author);
+			sendWithMessageOwnership(msg, ':white_check_mark: Deleted snippet');
+		},
+	});
 
-	private isMod(member: GuildMember | null) {
-		return member?.permissions.has('MANAGE_MESSAGES') ?? false;
-	}
-
-	private async getMessageFromLink(messageLink: string | undefined) {
+	async function getMessageFromLink(messageLink: string | undefined) {
 		const messageLinkExec = DISCORD_MESSAGE_LINK_REGEX_ANCHORED.exec(
 			messageLink ?? '',
 		);
 		if (!messageLinkExec) return;
-		const guild = this.client.guilds.cache.get(messageLinkExec[1]);
+		const guild = bot.client.guilds.cache.get(messageLinkExec[1]);
 		const channel = guild?.channels.cache.get(messageLinkExec[2]);
 		if (!channel || !(channel instanceof TextChannel)) return;
 		const message = await channel.messages.fetch(messageLinkExec[3]);

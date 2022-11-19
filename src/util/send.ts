@@ -1,7 +1,6 @@
 import {
 	Message,
-	MessageEmbed,
-	MessageOptions,
+	MessageCreateOptions,
 	MessagePayload,
 	PartialMessage,
 	User,
@@ -27,7 +26,7 @@ export async function getResponseChannel(message: Message) {
 
 export async function sendWithMessageOwnership(
 	message: Message,
-	toSend: string | MessagePayload | MessageOptions,
+	toSend: string | MessagePayload | MessageCreateOptions,
 	onDelete?: () => void,
 ) {
 	const channel = await getResponseChannel(message);
