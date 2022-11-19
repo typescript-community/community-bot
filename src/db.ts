@@ -29,7 +29,7 @@ export async function getDB() {
 		entities: [Rep, HelpThread, Snippet],
 		...extraOpts,
 	});
-	await db.initialize()
+	await db.initialize();
 	console.log('Connected to DB');
 	return db;
 }

@@ -5,24 +5,25 @@ import { autorole, rolesChannelId } from '../env';
 export async function autoroleModule({ client }: Bot) {
 	const channel = await client.channels.fetch(rolesChannelId);
 	if (!channel?.isTextBased()) {
-		console.error(`Roles channel (${rolesChannelId}) does not exist or is not text based.`)
+		console.error(
+			`Roles channel (${rolesChannelId}) does not exist or is not text based.`,
+		);
 		return;
 	}
 
 	for (const ar of autorole) {
 		const msg = await channel.messages.fetch(ar.msgID);
 		if (!msg) {
-			console.error(`Role message does not exist for ${ar.msgID}`)
+			console.error(`Role message does not exist for ${ar.msgID}`);
 		}
-		await msg?.react(ar.emoji)
+		await msg?.react(ar.emoji);
 	}
 
 	client.channels.fetch(rolesChannelId).then(channel => {
-		(channel as TextBasedChannel).messages.fetch()
-	})
+		(channel as TextBasedChannel).messages.fetch();
+	});
 
-
-	client.on("messageReactionAdd", async (reaction, user) => {
+	client.on('messageReactionAdd', async (reaction, user) => {
 		if (user.id == client.user.id) return;
 		if (reaction.partial) await reaction.fetch();
 		for (const ar of autorole) {
@@ -41,9 +42,9 @@ export async function autoroleModule({ client }: Bot) {
 				await msg.react(reaction.emoji);
 			}
 		}
-	})
+	});
 
-	client.on("messageReactionRemove", async (reaction, user) => {
+	client.on('messageReactionRemove', async (reaction, user) => {
 		if (user.id == client.user.id) return;
 		if (reaction.partial) await reaction.fetch();
 		for (const ar of autorole) {
@@ -59,5 +60,5 @@ export async function autoroleModule({ client }: Bot) {
 			await member.roles.remove(ar.roleID);
 			console.log('Removed role', ar.roleID, 'from', member);
 		}
-	})
+	});
 }
