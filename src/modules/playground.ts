@@ -31,7 +31,7 @@ export async function playgroundModule(bot: Bot) {
 	const editedLongLink = new LimitedSizeMap<string, Message>(1000);
 
 	bot.registerCommand({
-		aliases: ['pg', 'playg', 'playground'],
+		aliases: ['playground', 'pg', 'playg'],
 		description: 'Shorten a TypeScript playground link',
 		async listener(msg, content) {
 			console.log('Playground', msg.content);
@@ -46,7 +46,6 @@ export async function playgroundModule(bot: Bot) {
 						":warning: couldn't find a codeblock!",
 					);
 			}
-			console.log('Code is', code);
 			const embed = new EmbedBuilder()
 				.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
 				.setTitle('View in Playground')

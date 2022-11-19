@@ -1,5 +1,5 @@
 import { Message, Client, User, GuildMember } from 'discord.js';
-import { prefixes, trustedRoleId } from './env';
+import { botAdmins, prefixes, trustedRoleId } from './env';
 
 export interface CommandRegistration {
 	aliases: string[];
@@ -21,13 +21,21 @@ export class Bot {
 				const content = msg.content
 					.substring(triggerWithPrefix.length + 1)
 					.trim();
-				this.getByTrigger(
+
+				const command = this.getByTrigger(
 					triggerWithPrefix.substring(matchingPrefix.length),
-				)
-					?.listener(msg, content)
-					.catch(err => {
-						this.client.emit('error', err);
-					});
+				);
+
+				if (
+					!command ||
+					(this.adminCommands.includes(command) &&
+						!this.isAdmin(msg.author))
+				) {
+					return;
+				}
+				command.listener(msg, content).catch(err => {
+					this.client.emit('error', err);
+				});
 			}
 		});
 	}
@@ -47,6 +55,10 @@ export class Bot {
 
 	isMod(member: GuildMember | null) {
 		return member?.permissions.has('ManageMessages') ?? false;
+	}
+
+	isAdmin(user: User) {
+		return botAdmins.includes(user.id);
 	}
 
 	getTrustedMemberError(msg: Message) {

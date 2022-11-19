@@ -18,7 +18,7 @@ const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
 const defaultPollEmojis = ['✅', '❌', '🤷'];
 
 export function etcModule(bot: Bot) {
-	bot.registerAdminCommand({
+	bot.registerCommand({
 		aliases: ['ping'],
 		description: 'See if the bot is alive',
 		async listener(msg) {
