@@ -38,9 +38,9 @@ How To Get Better Help
 	- …and what actually happens, and your best guess at why.
 	- Include a short code sample and any error messages you got.
 - Text is better than screenshots. Start code blocks with \`\`\`ts.
-- If possible, create a minimal reproduction in the TypeScript Playground: https://www.typescriptlang.org/play.
+- If possible, create a minimal reproduction in the TypeScript Playground: <https://www.typescriptlang.org/play>.
 	- Send the full link in its own message; do not use a link shortener.
-- For more tips, check out StackOverflow's guide on asking good questions: https://stackoverflow.com/help/how-to-ask
+- For more tips, check out StackOverflow's guide on asking good questions: <https://stackoverflow.com/help/how-to-ask>
 \u200b
 If You Haven't Gotten Help
 Usually someone will try to answer and help solve the issue within a few hours. If not, and if you have followed the bullets above, you can ping helpers by running !helper.
