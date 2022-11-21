@@ -6,7 +6,7 @@ import { sendWithMessageOwnership } from '../util/send';
 function getCategoryHelp(cat: string, commands: Iterable<CommandRegistration>) {
 	const out: string[] = [];
 
-	for (const cmd of commands) {
+	for (const cmd of new Set(commands)) {
 		if (!cmd.description) continue;
 		const [cat2, description] = splitCategoryDescription(cmd.description);
 		if (cat !== cat2) continue;

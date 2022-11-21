@@ -17,7 +17,6 @@ export async function hookLog(client: Client<true>) {
 		(await client.guilds.fetch()).first()!.id,
 	)!;
 	const channel = (await guild.channels.fetch(logChannelId)) as TextChannel;
-	console.log('Writing logs to', channel);
 	let curLogText = '';
 	let timeout: NodeJS.Timeout | null = null;
 	const origLog = console.log;
@@ -30,6 +29,7 @@ export async function hookLog(client: Client<true>) {
 		origError(...args);
 		postLog(['[ERROR]', ...args]);
 	};
+	console.log('Writing logs to', channel);
 	function argToString(arg: unknown) {
 		if (typeof arg === 'string') return arg;
 		return inspect(arg);

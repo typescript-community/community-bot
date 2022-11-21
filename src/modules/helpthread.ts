@@ -390,7 +390,6 @@ export function helpThreadModule(bot: Bot) {
 	bot.registerAdminCommand({
 		aliases: ['htgh'],
 		async listener(msg) {
-			if (!bot.isMod(msg.member)) return;
 			if (
 				msg.channel.id !== howToGetHelpChannel &&
 				msg.channel.id !== howToGiveHelpChannel
