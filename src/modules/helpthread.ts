@@ -1,19 +1,13 @@
-import CookiecordClient, {
-	command,
-	Module,
-	listener,
-	CommonInhibitors,
-} from 'cookiecord';
-import { ThreadAutoArchiveDuration } from 'discord-api-types';
 import {
-	Message,
+	ThreadAutoArchiveDuration,
 	TextChannel,
-	Channel,
 	ThreadChannel,
-	MessageEmbed,
+	EmbedBuilder,
 	GuildMember,
-	Client,
+	MessageType,
+	Channel,
 } from 'discord.js';
+import { Bot } from '../bot';
 import { HelpThread } from '../entities/HelpThread';
 import {
 	trustedRoleId,
@@ -26,10 +20,9 @@ import {
 	howToGiveHelpChannel,
 	rolesChannelId,
 } from '../env';
-import { isTrustedMember } from '../util/inhibitors';
 import { sendWithMessageOwnership } from '../util/send';
 
-const threadExpireEmbed = new MessageEmbed()
+const threadExpireEmbed = new EmbedBuilder()
 	.setColor(BLOCKQUOTE_GREY)
 	.setTitle('This help thread expired.').setDescription(`
 If your question was not resolved, you can make a new thread by simply asking your question again. \
@@ -38,7 +31,7 @@ If you're not sure how, have a look through [StackOverflow's guide on asking a g
 `);
 
 const helperCloseEmbed = (member: GuildMember) =>
-	new MessageEmbed().setColor(BLOCKQUOTE_GREY).setDescription(`
+	new EmbedBuilder().setColor(BLOCKQUOTE_GREY).setDescription(`
 Because your issue seemed to be resolved, this thread was closed by ${member}.
 
 If your issue is not resolved, **you can post another message here and the thread will automatically re-open**.
@@ -49,12 +42,12 @@ If your issue is not resolved, **you can post another message here and the threa
 const closedEmoji = '☑️';
 
 const helpInfo = (channel: TextChannel) =>
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setDescription(channel.topic ?? 'Ask your questions here!');
 
 const howToGetHelpEmbeds = () => [
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setTitle('How To Get Help')
 		.setDescription(
@@ -67,7 +60,7 @@ const howToGetHelpEmbeds = () => [
 - When your question is resolved, type \`!close\`.
 `),
 		),
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setTitle('How To Get *Better* Help')
 		.setDescription(
@@ -82,7 +75,7 @@ const howToGetHelpEmbeds = () => [
 - For more tips, check out StackOverflow's guide on **[asking good questions](https://stackoverflow.com/help/how-to-ask)**.
 `),
 		),
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setTitle("If You Haven't Gotten Help")
 		.setDescription(
@@ -94,7 +87,7 @@ If not, and if you have followed the bullets above, you can ping helpers by runn
 ];
 
 const howToGiveHelpEmbeds = () => [
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setTitle('How To Give Help')
 		.setDescription(
@@ -107,7 +100,7 @@ const howToGiveHelpEmbeds = () => [
 
 `),
 		),
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setTitle('How To Give *Better* Help')
 		.setDescription(
@@ -122,7 +115,7 @@ const howToGiveHelpEmbeds = () => [
 		- *Only do this if the asker has indicated that their question has been resolved.*
 `),
 		),
-	new MessageEmbed()
+	new EmbedBuilder()
 		.setColor(GREEN)
 		.setTitle('Useful Snippets')
 		.setDescription(
@@ -145,13 +138,13 @@ const titleSetCooldown = 5 * 60 * 1000;
 const threadExpireHours = ThreadAutoArchiveDuration.OneDay;
 const threadCheckInterval = 60 * 60 * 1000;
 
-export class HelpThreadModule extends Module {
-	constructor(client: CookiecordClient) {
-		super(client);
-	}
+export function helpThreadModule(bot: Bot) {
+	const { client } = bot;
 
-	@listener({ event: 'messageCreate' })
-	async onNewQuestion(msg: Message) {
+	const helpInfoLocks = new Map<string, Promise<void>>();
+	const manuallyArchivedThreads = new Set<string>();
+
+	client.on('messageCreate', async msg => {
 		if (!isHelpChannel(msg.channel)) return;
 		if (msg.author.bot) return;
 		console.log(
@@ -160,7 +153,7 @@ export class HelpThreadModule extends Module {
 			'in',
 			msg.channel,
 		);
-		this.updateHelpInfo(msg.channel);
+		updateHelpInfo(msg.channel);
 		let thread = await msg.startThread({
 			name: `Help ${msg.member?.nickname ?? msg.author.username}`,
 			autoArchiveDuration: threadExpireHours,
@@ -172,20 +165,18 @@ export class HelpThreadModule extends Module {
 			origMessageId: msg.id,
 		}).save();
 		console.log(`Created a new help thread for`, msg.author);
-	}
+	});
 
-	// Used to differentiate automatic archive from bot archive
-	manuallyArchivedThreads = new Set<string>();
-
-	@listener({ event: 'threadUpdate' })
-	async onThreadReopen(thread: ThreadChannel, ...a: any[]) {
+	client.on('threadUpdate', async thread => {
 		if (
 			!isHelpThread(thread) ||
 			!thread.archived ||
 			((await thread.fetch()) as ThreadChannel).archived
 		)
 			return;
-		const threadData = (await HelpThread.findOne(thread.id))!;
+		const threadData = (await HelpThread.findOneBy({
+			threadId: thread.id,
+		}))!;
 		if (!threadData.origMessageId) return;
 		try {
 			const origMessage = await thread.parent.messages.fetch(
@@ -193,19 +184,16 @@ export class HelpThreadModule extends Module {
 			);
 			origMessage.reactions
 				.resolve(closedEmoji)
-				?.users.remove(this.client.user!.id);
+				?.users.remove(client.user.id);
 		} catch {
 			// Asker deleted original message
 		}
-	}
+	});
 
-	@listener({ event: 'ready' })
-	@command({
-		inhibitors: [CommonInhibitors.hasGuildPermission('MANAGE_MESSAGES')],
-	})
-	checkThreads() {
-		setTimeout(() => this.checkThreads(), threadCheckInterval);
-		this.client.guilds.cache.forEach(guild => {
+	checkThreads();
+	function checkThreads() {
+		setTimeout(checkThreads, threadCheckInterval);
+		bot.client.guilds.cache.forEach(guild => {
 			guild.channels.cache.forEach(async channel => {
 				if (!isHelpChannel(channel)) return;
 				const threads = await channel.threads.fetchActive();
@@ -215,76 +203,244 @@ export class HelpThreadModule extends Module {
 						(await thread.messages.fetch({ limit: 1 })).first()!
 							.createdTimestamp;
 					if (time >= threadExpireHours * 60 * 1000) {
-						this._onThreadExpire(thread);
+						onThreadExpire(thread).catch(console.error);
 					}
 				});
 			});
 		});
 	}
 
-	@listener({ event: 'threadUpdate' })
-	async onThreadExpire(thread: ThreadChannel) {
+	client.on('threadUpdate', async thread => {
 		if (
 			!isHelpThread(thread) ||
-			!((await thread.fetch()) as ThreadChannel).archived ||
-			this.manuallyArchivedThreads.delete(thread.id)
+			!(await thread.fetch()).archived ||
+			manuallyArchivedThreads.delete(thread.id)
 		)
 			return;
-		this._onThreadExpire(thread);
-	}
+		await onThreadExpire(thread);
+	});
 
-	private async _onThreadExpire(thread: ThreadChannel) {
-		const threadData = (await HelpThread.findOne(thread.id))!;
+	client.on('messageCreate', msg => {
+		if (
+			isHelpChannel(msg.channel) &&
+			msg.type === MessageType.ChannelPinnedMessage
+		) {
+			msg.delete();
+		}
+	});
+
+	bot.registerCommand({
+		aliases: ['close', 'closed', 'resolved', 'resolve', 'done', 'solved'],
+		description: 'Help System: Close an active help thread',
+		async listener(msg) {
+			if (!isHelpThread(msg.channel))
+				return await sendWithMessageOwnership(
+					msg,
+					':warning: This can only be run in a help thread',
+				);
+
+			let thread: ThreadChannel = msg.channel;
+			const threadData = (await HelpThread.findOneBy({
+				threadId: thread.id,
+			}))!;
+
+			const isOwner = threadData.ownerId === msg.author.id;
+
+			if (
+				isOwner ||
+				msg.member?.roles.cache.has(trustedRoleId) ||
+				bot.isMod(msg.member)
+			) {
+				console.log(`Closing help thread:`, thread);
+				await msg.react('✅');
+				if (!isOwner)
+					await msg.channel.send({
+						content: `<@${threadData.ownerId}>`,
+						embeds: [helperCloseEmbed(msg.member!)],
+					});
+				manuallyArchivedThreads.add(thread.id);
+				await archiveThread(thread);
+			} else {
+				return await sendWithMessageOwnership(
+					msg,
+					':warning: You have to be the asker to close the thread.',
+				);
+			}
+		},
+	});
+
+	bot.registerCommand({
+		aliases: ['helper', 'helpers'],
+		description: 'Help System: Ping the @Helper role from a help thread',
+		async listener(msg, comment) {
+			if (!isHelpThread(msg.channel)) {
+				return sendWithMessageOwnership(
+					msg,
+					':warning: You may only ping helpers from a help thread',
+				);
+			}
+
+			const thread = msg.channel;
+			const threadData = (await HelpThread.findOneBy({
+				threadId: thread.id,
+			}))!;
+
+			// Ensure the user has permission to ping helpers
+			const isAsker = msg.author.id === threadData.ownerId;
+			const isTrusted = bot.getTrustedMemberError(msg) === undefined; // No error if trusted
+
+			if (!isAsker && !isTrusted) {
+				return sendWithMessageOwnership(
+					msg,
+					':warning: Only the asker can ping helpers',
+				);
+			}
+
+			const askTime = thread.createdTimestamp;
+			const pingAllowedAfter =
+				+(threadData.helperTimestamp ?? askTime ?? Date.now()) +
+				timeBeforeHelperPing;
+
+			// Ensure they've waited long enough
+			// Trusted members (who aren't the asker) are allowed to disregard the timeout
+			if (isAsker && Date.now() < pingAllowedAfter) {
+				return sendWithMessageOwnership(
+					msg,
+					`:warning: Please wait a bit longer. You can ping helpers <t:${Math.ceil(
+						pingAllowedAfter / 1000,
+					)}:R>.`,
+				);
+			}
+
+			// The beacons are lit, Gondor calls for aid
+			await Promise.all([
+				thread.parent!.send(
+					`<@&${trustedRoleId}> ${msg.channel} ${
+						isTrusted ? comment : ''
+					}`,
+				),
+				updateHelpInfo(thread.parent!),
+				msg.react('✅'),
+				HelpThread.update(thread.id, {
+					helperTimestamp: Date.now().toString(),
+				}),
+			]);
+		},
+	});
+
+	bot.registerCommand({
+		aliases: ['title'],
+		description: 'Help System: Rename a help thread',
+		async listener(msg, title) {
+			const m = /^<#(\d+)>\s*([^]*)/.exec(title);
+			let thread: Omit<Channel, 'partial'> | undefined = msg.channel;
+			if (m) {
+				thread = msg.guild?.channels.cache.get(m[1])!;
+				title = m[2];
+			}
+			if (!thread || !isHelpThread(thread))
+				return sendWithMessageOwnership(
+					msg,
+					':warning: This can only be run in a help thread',
+				);
+			if (!title)
+				return sendWithMessageOwnership(msg, ':warning: Missing title');
+			const threadData = (await HelpThread.findOneBy({
+				threadId: thread.id,
+			}))!;
+			if (
+				msg.author.id !== threadData.ownerId &&
+				!msg.member!.roles.cache.has(trustedRoleId)
+			) {
+				return sendWithMessageOwnership(
+					msg,
+					':warning: Only the asker and helpers can set the title',
+				);
+			}
+
+			const titleSetAllowedAfter =
+				+(threadData.titleSetTimestamp ?? 0) + titleSetCooldown;
+			if (
+				threadData.titleSetTimestamp &&
+				Date.now() < titleSetAllowedAfter
+			) {
+				return sendWithMessageOwnership(
+					msg,
+					`:warning: You can set the title again <t:${Math.ceil(
+						titleSetAllowedAfter / 1000,
+					)}:R>`,
+				);
+			}
+
+			const owner = await msg.guild!.members.fetch(threadData.ownerId);
+			const username = owner.nickname ?? owner.user.username;
+			await Promise.all([
+				HelpThread.update(thread.id, {
+					titleSetTimestamp: Date.now() + '',
+				}),
+				// Truncate if longer than 100, the max thread title length
+				thread.setName(`${username} - ${title}`.slice(0, 100)),
+			]);
+			if (thread !== msg.channel) {
+				await msg.react('✅');
+			}
+		},
+	});
+
+	bot.registerAdminCommand({
+		aliases: ['htgh'],
+		async listener(msg) {
+			if (
+				msg.channel.id !== howToGetHelpChannel &&
+				msg.channel.id !== howToGiveHelpChannel
+			) {
+				return;
+			}
+			(await msg.channel.messages.fetch()).forEach(x => x.delete());
+			const embeds =
+				msg.channel.id === howToGetHelpChannel
+					? howToGetHelpEmbeds()
+					: howToGiveHelpEmbeds();
+			msg.channel.send({ embeds });
+		},
+	});
+
+	async function onThreadExpire(thread: ThreadChannel) {
+		const threadData = (await HelpThread.findOneBy({
+			threadId: thread.id,
+		}))!;
 		console.log(`Help thread expired:`, thread);
 		await thread.send({
 			content: `<@${threadData.ownerId}>`,
 			embeds: [threadExpireEmbed],
 		});
-		this.manuallyArchivedThreads.add(thread.id);
-		await this.archiveThread(thread);
+		manuallyArchivedThreads.add(thread.id);
+		await archiveThread(thread);
 	}
 
-	@command({
-		aliases: ['closed', 'resolved', 'resolve', 'done', 'solved'],
-		description: 'Help System: Close an active help thread',
-	})
-	async close(msg: Message) {
-		if (!isHelpThread(msg.channel))
-			return await sendWithMessageOwnership(
-				msg,
-				':warning: This can only be run in a help thread',
-			);
-
-		let thread: ThreadChannel = msg.channel;
-		const threadData = (await HelpThread.findOne(thread.id))!;
-
-		const isOwner = threadData.ownerId === msg.author.id;
-
-		if (
-			isOwner ||
-			msg.member?.roles.cache.has(trustedRoleId) ||
-			msg.member?.permissions.has('MANAGE_MESSAGES')
-		) {
-			console.log(`Closing help thread:`, thread);
-			await msg.react('✅');
-			if (!isOwner)
-				await msg.channel.send({
-					content: `<@${threadData.ownerId}>`,
-					embeds: [helperCloseEmbed(msg.member!)],
-				});
-			this.manuallyArchivedThreads.add(thread.id);
-			await this.archiveThread(thread);
-		} else {
-			return await sendWithMessageOwnership(
-				msg,
-				':warning: You have to be the asker to close the thread.',
-			);
-		}
+	function updateHelpInfo(channel: TextChannel) {
+		helpInfoLocks.set(
+			channel.id,
+			(helpInfoLocks.get(channel.id) ?? Promise.resolve()).then(
+				async () => {
+					await Promise.all([
+						...(
+							await channel.messages.fetchPinned()
+						).map(x => x.delete()),
+						channel
+							.send({ embeds: [helpInfo(channel)] })
+							.then(x => x.pin()),
+					]);
+				},
+			),
+		);
 	}
 
-	private async archiveThread(thread: ThreadChannel) {
+	async function archiveThread(thread: ThreadChannel) {
 		await thread.setArchived(true);
-		const threadData = (await HelpThread.findOne(thread.id))!;
+		const threadData = (await HelpThread.findOneBy({
+			threadId: thread.id,
+		}))!;
 		if (!threadData.origMessageId) return;
 		try {
 			const origMessage = await thread.parent!.messages.fetch(
@@ -295,157 +451,9 @@ export class HelpThreadModule extends Module {
 			// Asker deleted original message
 		}
 	}
-
-	private helpInfoLocks = new Map<string, Promise<void>>();
-	private updateHelpInfo(channel: TextChannel) {
-		this.helpInfoLocks.set(
-			channel.id,
-			(this.helpInfoLocks.get(channel.id) ?? Promise.resolve()).then(
-				async () => {
-					await Promise.all([
-						...(await channel.messages.fetchPinned()).map(x =>
-							x.delete(),
-						),
-						channel
-							.send({ embeds: [helpInfo(channel)] })
-							.then(x => x.pin()),
-					]);
-				},
-			),
-		);
-	}
-
-	@listener({ event: 'messageCreate' })
-	deletePinMessage(msg: Message) {
-		if (isHelpChannel(msg.channel) && msg.type === 'CHANNEL_PINNED_MESSAGE')
-			msg.delete();
-	}
-
-	@command({
-		description: 'Help System: Ping the @Helper role from a help thread',
-		aliases: ['helpers'],
-		single: true,
-	})
-	async helper(msg: Message, comment: string) {
-		if (!isHelpThread(msg.channel)) {
-			return sendWithMessageOwnership(
-				msg,
-				':warning: You may only ping helpers from a help thread',
-			);
-		}
-
-		const thread = msg.channel;
-		const threadData = (await HelpThread.findOne(thread.id))!;
-
-		// Ensure the user has permission to ping helpers
-		const isAsker = msg.author.id === threadData.ownerId;
-		const isTrusted =
-			(await isTrustedMember(msg, this.client)) === undefined; // No error if trusted
-
-		if (!isAsker && !isTrusted) {
-			return sendWithMessageOwnership(
-				msg,
-				':warning: Only the asker can ping helpers',
-			);
-		}
-
-		const askTime = thread.createdTimestamp;
-		const pingAllowedAfter =
-			+(threadData.helperTimestamp ?? askTime) + timeBeforeHelperPing;
-
-		// Ensure they've waited long enough
-		// Trusted members (who aren't the asker) are allowed to disregard the timeout
-		if (isAsker && Date.now() < pingAllowedAfter) {
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: Please wait a bit longer. You can ping helpers <t:${Math.ceil(
-					pingAllowedAfter / 1000,
-				)}:R>.`,
-			);
-		}
-
-		// The beacons are lit, Gondor calls for aid
-		await Promise.all([
-			thread.parent.send(
-				`<@&${trustedRoleId}> ${msg.channel} ${
-					isTrusted ? comment : ''
-				}`,
-			),
-			this.updateHelpInfo(thread.parent),
-			msg.react('✅'),
-			HelpThread.update(thread.id, {
-				helperTimestamp: Date.now().toString(),
-			}),
-		]);
-	}
-
-	@command({ single: true, description: 'Help System: Rename a help thread' })
-	async title(msg: Message, title: string) {
-		const m = /^<#(\d+)>\s*([^]*)/.exec(title);
-		let thread: Omit<Channel, 'partial'> | undefined = msg.channel;
-		if (m) {
-			thread = msg.guild?.channels.cache.get(m[1])!;
-			title = m[2];
-		}
-		if (!thread || !isHelpThread(thread))
-			return sendWithMessageOwnership(
-				msg,
-				':warning: This can only be run in a help thread',
-			);
-		if (!title)
-			return sendWithMessageOwnership(msg, ':warning: Missing title');
-		const threadData = (await HelpThread.findOne(thread.id))!;
-		if (
-			msg.author.id !== threadData.ownerId &&
-			!msg.member!.roles.cache.has(trustedRoleId)
-		)
-			return sendWithMessageOwnership(
-				msg,
-				':warning: Only the asker and helpers can set the title',
-			);
-		const titleSetAllowedAfter =
-			+(threadData.titleSetTimestamp ?? 0) + titleSetCooldown;
-		if (threadData.titleSetTimestamp && Date.now() < titleSetAllowedAfter)
-			return sendWithMessageOwnership(
-				msg,
-				`:warning: You can set the title again <t:${Math.ceil(
-					titleSetAllowedAfter / 1000,
-				)}:R>`,
-			);
-		const owner = await msg.guild!.members.fetch(threadData.ownerId);
-		const username = owner.nickname ?? owner.user.username;
-		await Promise.all([
-			HelpThread.update(thread.id, {
-				titleSetTimestamp: Date.now() + '',
-			}),
-			// Truncate if longer than 100, the max thread title length
-			thread.setName(`${username} - ${title}`.slice(0, 100)),
-		]);
-		if (thread !== msg.channel) {
-			await msg.react('✅');
-		}
-	}
-
-	@command()
-	async htgh(msg: Message) {
-		if (!msg.member?.permissions.has('MANAGE_MESSAGES')) return;
-		if (
-			msg.channel.id !== howToGetHelpChannel &&
-			msg.channel.id !== howToGiveHelpChannel
-		)
-			return;
-		(await msg.channel.messages.fetch()).forEach(x => x.delete());
-		const embeds =
-			msg.channel.id === howToGetHelpChannel
-				? howToGetHelpEmbeds()
-				: howToGiveHelpEmbeds();
-		msg.channel.send({ embeds });
-	}
 }
 
-export function isHelpChannel(
-	channel: Omit<Channel, 'partial'>,
-): channel is TextChannel {
+export function isHelpChannel(channel: unknown): channel is TextChannel {
 	return (
 		channel instanceof TextChannel &&
 		channel.parentId == helpCategory &&
@@ -455,7 +463,7 @@ export function isHelpChannel(
 }
 
 export function isHelpThread(
-	channel: Omit<Channel, 'partial'>,
+	channel: unknown,
 ): channel is ThreadChannel & { parent: TextChannel } {
 	return channel instanceof ThreadChannel && isHelpChannel(channel.parent!);
 }

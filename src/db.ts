@@ -1,10 +1,10 @@
-import { Connection, createConnection } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { dbUrl } from './env';
 import { Rep } from './entities/Rep';
 import { HelpThread } from './entities/HelpThread';
 import { Snippet } from './entities/Snippet';
 
-let db: Connection | undefined;
+let db: DataSource | undefined;
 export async function getDB() {
 	if (db) return db;
 
@@ -21,7 +21,7 @@ export async function getDB() {
 			  }
 			: {};
 
-	db = await createConnection({
+	db = new DataSource({
 		type: 'postgres',
 		url: dbUrl,
 		synchronize: true,
@@ -29,6 +29,7 @@ export async function getDB() {
 		entities: [Rep, HelpThread, Snippet],
 		...extraOpts,
 	});
+	await db.initialize();
 	console.log('Connected to DB');
 	return db;
 }

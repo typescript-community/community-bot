@@ -1,63 +1,69 @@
-import { token, botAdmins, prefixes } from './env';
-import CookiecordClient from 'cookiecord';
-import { Intents } from 'discord.js';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import { Bot } from './bot';
 import { getDB } from './db';
+import { token } from './env';
 import { hookLog } from './log';
 
-import { AutoroleModule } from './modules/autorole';
-import { EtcModule } from './modules/etc';
-import { HelpThreadModule } from './modules/helpthread';
-import { PlaygroundModule } from './modules/playground';
-import { RepModule } from './modules/rep';
-import { TwoslashModule } from './modules/twoslash';
-import { HelpModule } from './modules/help';
-import { SnippetModule } from './modules/snippet';
-import { HandbookModule } from './modules/handbook';
-import { ModModule } from './modules/mod';
+import { autoroleModule } from './modules/autorole';
+import { etcModule } from './modules/etc';
+import { handbookModule } from './modules/handbook';
+import { helpModule } from './modules/help';
+import { modModule } from './modules/mod';
+import { playgroundModule } from './modules/playground';
+import { repModule } from './modules/rep';
+import { twoslashModule } from './modules/twoslash';
+import { snippetModule } from './modules/snippet';
+import { helpThreadModule } from './modules/helpthread';
 
-const client = new CookiecordClient(
-	{
-		botAdmins,
-		prefix: prefixes,
+const client = new Client({
+	partials: [
+		Partials.Reaction,
+		Partials.Message,
+		Partials.User,
+		Partials.Channel,
+	],
+	allowedMentions: {
+		parse: ['users', 'roles'],
 	},
-	{
-		partials: ['REACTION', 'MESSAGE', 'USER', 'CHANNEL'],
-		allowedMentions: {
-			parse: ['users', 'roles'],
-		},
-		intents: new Intents([
-			'GUILDS',
-			'GUILD_MESSAGES',
-			'GUILD_MEMBERS',
-			'GUILD_MESSAGE_REACTIONS',
-			'DIRECT_MESSAGES',
-		]),
-	},
-).setMaxListeners(Infinity);
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildMessageReactions,
+		GatewayIntentBits.DirectMessages,
+		GatewayIntentBits.MessageContent,
+	],
+}).setMaxListeners(Infinity);
 
-for (const mod of [
-	AutoroleModule,
-	EtcModule,
-	HelpThreadModule,
-	PlaygroundModule,
-	RepModule,
-	TwoslashModule,
-	HelpModule,
-	SnippetModule,
-	HandbookModule,
-	ModModule,
-]) {
-	client.registerModule(mod);
-}
+getDB().then(() => client.login(token));
 
-getDB(); // prepare the db for later
-
-client.login(token);
-client.on('ready', () => {
+client.on('ready', async () => {
+	const bot = new Bot(client);
 	console.log(`Logged in as ${client.user?.tag}`);
-	hookLog(client);
+	await hookLog(client);
+
+	for (const mod of [
+		autoroleModule,
+		etcModule,
+		helpThreadModule,
+		playgroundModule,
+		repModule,
+		twoslashModule,
+		helpModule,
+		snippetModule,
+		handbookModule,
+		modModule,
+	]) {
+		await mod(bot);
+	}
 });
 
-process.on('unhandledRejection', e => {
-	console.error('Unhandled rejection', e);
+client.on('error', error => {
+	console.error(error);
 });
+
+if (process.env.NODE_ENV === 'production') {
+	process.on('unhandledRejection', e => {
+		console.error('Unhandled rejection', e);
+	});
+}

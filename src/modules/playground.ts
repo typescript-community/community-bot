@@ -1,11 +1,4 @@
-import {
-	command,
-	default as CookiecordClient,
-	listener,
-	Module,
-	optional,
-} from 'cookiecord';
-import { Message, MessageEmbed, TextChannel, User } from 'discord.js';
+import { EmbedBuilder, Message, User } from 'discord.js';
 import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
@@ -25,45 +18,43 @@ import {
 	getResponseChannel,
 	sendWithMessageOwnership,
 } from '../util/send';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import { isHelpChannel } from './helpthread';
+import { Bot } from '../bot';
 
+const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
 const LINK_SHORTENER_ENDPOINT = 'https://tsplay.dev/api/short';
 const MAX_EMBED_LENGTH = 512;
 const DEFAULT_EMBED_LENGTH = 256;
 
-export class PlaygroundModule extends Module {
-	constructor(client: CookiecordClient) {
-		super(client);
-	}
+export async function playgroundModule(bot: Bot) {
+	const editedLongLink = new LimitedSizeMap<string, Message>(1000);
 
-	private editedLongLink = new LimitedSizeMap<string, Message>(1000);
-
-	@command({
-		aliases: ['pg', 'playg'],
-		single: true,
+	bot.registerCommand({
+		aliases: ['playground', 'pg', 'playg'],
 		description: 'Shorten a TypeScript playground link',
-	})
-	async playground(msg: Message, @optional code?: string) {
-		const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
+		async listener(msg, content) {
+			console.log('Playground', msg.content);
 
-		if (!code) {
-			code = await findCode(msg, true);
-			if (!code)
-				return sendWithMessageOwnership(
-					msg,
-					":warning: couldn't find a codeblock!",
-				);
-		}
-		const embed = new MessageEmbed()
-			.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
-			.setTitle('View in Playground')
-			.setColor(TS_BLUE);
-		await sendWithMessageOwnership(msg, { embeds: [embed] });
-	}
+			let code: string | undefined = content;
 
-	@listener({ event: 'messageCreate' })
-	async onPlaygroundLinkMessage(msg: Message) {
+			if (!code) {
+				code = await findCode(msg, true);
+				if (!code)
+					return sendWithMessageOwnership(
+						msg,
+						":warning: couldn't find a codeblock!",
+					);
+			}
+			const embed = new EmbedBuilder()
+				.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
+				.setTitle('View in Playground')
+				.setColor(TS_BLUE);
+			await sendWithMessageOwnership(msg, { embeds: [embed] });
+		},
+	});
+
+	bot.client.on('messageCreate', async msg => {
 		if (msg.author.bot) return;
 		if (msg.content[0] === '!') return;
 		const exec = matchPlaygroundLink(msg.content);
@@ -82,13 +73,12 @@ export class PlaygroundModule extends Module {
 				embeds: [embed],
 				content: `${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
 			});
-			this.editedLongLink.set(msg.id, botMsg);
+			editedLongLink.set(msg.id, botMsg);
 			await addMessageOwnership(botMsg, msg.author);
 		}
-	}
+	});
 
-	@listener({ event: 'messageCreate' })
-	async onPlaygroundLinkAttachment(msg: Message) {
+	bot.client.on('messageCreate', async msg => {
 		const attachment = msg.attachments.find(a => a.name === 'message.txt');
 		if (msg.author.bot || !attachment) return;
 		const content = await fetch(attachment.url).then(r => r.text());
@@ -103,21 +93,20 @@ export class PlaygroundModule extends Module {
 			embeds: [embed],
 		});
 		if (!msg.content) await msg.delete();
-	}
+	});
 
-	@listener({ event: 'messageUpdate' })
-	async onLongFix(_oldMsg: Message, msg: Message) {
-		if (msg.partial) await msg.fetch();
+	bot.client.on('messageUpdate', async (_oldMsg, msg) => {
+		if (msg.partial) msg = await msg.fetch();
 		const exec = matchPlaygroundLink(msg.content);
-		if (msg.author.bot || !this.editedLongLink.has(msg.id) || exec) return;
-		const botMsg = this.editedLongLink.get(msg.id);
+		if (msg.author.bot || !editedLongLink.has(msg.id) || exec) return;
+		const botMsg = editedLongLink.get(msg.id);
 		// Edit the message to only have the embed and not the "please edit your message" message
 		await botMsg?.edit({
 			content: '',
 			embeds: [botMsg.embeds[0]],
 		});
-		this.editedLongLink.delete(msg.id);
-	}
+		editedLongLink.delete(msg.id);
+	});
 }
 
 // Take care when messing with the truncation, it's extremely finnicky
@@ -126,10 +115,10 @@ function createPlaygroundEmbed(
 	{ url: _url, query, code, isEscaped }: PlaygroundLinkMatch,
 	url: string = _url,
 ) {
-	const embed = new MessageEmbed()
+	const embed = new EmbedBuilder()
 		.setColor(TS_BLUE)
 		.setTitle('Playground Link')
-		.setAuthor(author.tag, author.displayAvatarURL())
+		.setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
 		.setURL(url);
 
 	const unzipped = decompressFromEncodedURIComponent(code);
@@ -186,9 +175,9 @@ function createPlaygroundEmbed(
 	if (!isEscaped) {
 		embed.setDescription('**Preview:**' + makeCodeBlock(content));
 		if (!startLine && !endLine) {
-			embed.setFooter(
-				'You can choose specific lines to embed by selecting them before copying the link.',
-			);
+			embed.setFooter({
+				text: 'You can choose specific lines to embed by selecting them before copying the link.',
+			});
 		}
 	}
 
@@ -203,7 +192,7 @@ async function shortenPlaygroundLink(url: string) {
 			'Content-Type': 'application/json',
 		},
 	});
-	const { shortened } = await response.json();
+	const { shortened } = (await response.json()) as any;
 	if (typeof shortened !== 'string')
 		throw new Error('Received invalid api response from link shortener');
 	return shortened;

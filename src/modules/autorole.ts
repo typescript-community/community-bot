@@ -1,15 +1,25 @@
-import { default as CookiecordClient, listener, Module } from 'cookiecord';
-import { MessageReaction, User } from 'discord.js';
-import { autorole } from '../env';
+import { Bot } from '../bot';
+import { autorole, rolesChannelId } from '../env';
 
-export class AutoroleModule extends Module {
-	constructor(client: CookiecordClient) {
-		super(client);
+export async function autoroleModule({ client }: Bot) {
+	const channel = await client.channels.fetch(rolesChannelId);
+	if (!channel?.isTextBased()) {
+		console.error(
+			`Roles channel (${rolesChannelId}) does not exist or is not text based.`,
+		);
+		return;
 	}
 
-	@listener({ event: 'messageReactionAdd' })
-	async onReactionAdd(reaction: MessageReaction, user: User) {
-		if (user.id == this.client.user!.id) return;
+	for (const ar of autorole) {
+		const msg = await channel.messages.fetch(ar.msgID);
+		if (!msg) {
+			console.error(`Role message does not exist for ${ar.msgID}`);
+		}
+		await msg?.react(ar.emoji);
+	}
+
+	client.on('messageReactionAdd', async (reaction, user) => {
+		if (user.id == client.user.id) return;
 		if (reaction.partial) await reaction.fetch();
 		for (const ar of autorole) {
 			const msg = reaction.message;
@@ -19,21 +29,18 @@ export class AutoroleModule extends Module {
 				!msg.guild
 			)
 				continue;
-			if (ar.autoRemove) reaction.users.remove(user);
-			const member = await msg.guild.members.fetch({
-				user,
-			});
+			if (ar.autoRemove) await reaction.users.remove(user.id);
+			const member = await msg.guild.members.fetch(user.id);
 			await member.roles.add(ar.roleID);
 			console.log('Gave role', ar.roleID, 'to', member);
-			if (!reaction.users.cache.has(this.client.user!.id)) {
+			if (!reaction.users.cache.has(client.user.id)) {
 				await msg.react(reaction.emoji);
 			}
 		}
-	}
+	});
 
-	@listener({ event: 'messageReactionRemove' })
-	async onReactionRemove(reaction: MessageReaction, user: User) {
-		if (user.id == this.client.user!.id) return;
+	client.on('messageReactionRemove', async (reaction, user) => {
+		if (user.id == client.user.id) return;
 		if (reaction.partial) await reaction.fetch();
 		for (const ar of autorole) {
 			const msg = reaction.message;
@@ -44,11 +51,9 @@ export class AutoroleModule extends Module {
 				!msg.guild
 			)
 				continue;
-			const member = await msg.guild.members.fetch({
-				user,
-			});
+			const member = await msg.guild.members.fetch(user.id);
 			await member.roles.remove(ar.roleID);
 			console.log('Removed role', ar.roleID, 'from', member);
 		}
-	}
+	});
 }

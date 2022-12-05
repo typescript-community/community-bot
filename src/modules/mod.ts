@@ -1,5 +1,5 @@
-import { default as CookiecordClient, Module, listener } from 'cookiecord';
 import { Message, Snowflake, User } from 'discord.js';
+import { Bot } from '../bot';
 import { rulesChannelId } from '../env';
 
 // Most job posts are in this format:
@@ -19,24 +19,18 @@ interface RecentMessageInfo {
 const recentMessages = new Map<string, RecentMessageInfo>();
 const CLEANUP_RECENT_MESSAGES_MAP_INTERVAL = 10000;
 
-export class ModModule extends Module {
-	constructor(client: CookiecordClient) {
-		super(client);
-	}
-
-	@listener({ event: 'messageCreate' })
-	async onJobMessage(msg: Message) {
+export function modModule({ client }: Bot) {
+	client.on('messageCreate', async msg => {
 		if (msg.author.bot || !jobPostRegex.test(msg.content)) return;
 		await msg.delete();
 		await msg.channel.send(
 			`${msg.author} We don't do job posts here; see <#${rulesChannelId}>`,
 		);
 		console.log('Deleted job post message from', msg.author);
-	}
+	});
 
-	@listener({ event: 'messageCreate' })
-	async onRepeatedMessage(msg: Message) {
-		if (!msg.guild || msg.author.id === this.client.user!.id) return;
+	client.on('messageCreate', async msg => {
+		if (!msg.guild || msg.author.id === client.user.id) return;
 		const messageIdentifier = msg.content.trim().toLowerCase();
 		if (!messageIdentifier) return;
 		let recentMessageInfo = recentMessages.get(messageIdentifier);
@@ -70,7 +64,7 @@ export class ModModule extends Module {
 				messages: [msg],
 			});
 		}
-	}
+	});
 }
 
 setInterval(() => {

@@ -1,12 +1,18 @@
-import CookiecordClient from 'cookiecord';
-import { Channel, GuildMember, TextChannel, User } from 'discord.js';
+import {
+	Channel,
+	Client,
+	GuildChannel,
+	GuildMember,
+	TextChannel,
+	User,
+} from 'discord.js';
 import { inspect } from 'util';
 import { logChannelId } from './env';
 
 const logDebounceTime = 5000;
 const logMaxLength = 2000;
 
-export async function hookLog(client: CookiecordClient) {
+export async function hookLog(client: Client<true>) {
 	const guild = client.guilds.cache.get(
 		(await client.guilds.fetch()).first()!.id,
 	)!;
@@ -47,12 +53,12 @@ export async function hookLog(client: CookiecordClient) {
 			}, logDebounceTime);
 	}
 	async function postCodeblock(content: string) {
-		channel.send(`\`\`\`ts\n${content}\n\`\`\``);
+		channel.send(`\`\`\`accesslog\n${content}\n\`\`\``);
 	}
 }
 
 function defineCustomUtilInspect<T>(
-	Cls: { new (...args: any): T; prototype: T },
+	Cls: { prototype: T },
 	cb: (value: T) => string,
 ) {
 	// @ts-ignore
@@ -66,8 +72,7 @@ const inspectUser = (user: User) =>
 defineCustomUtilInspect(User, inspectUser);
 defineCustomUtilInspect(GuildMember, member => inspectUser(member.user));
 
-defineCustomUtilInspect(Channel, channel =>
-	'name' in channel
-		? `#${(channel as any).name}/${(channel as Channel).id}`
-		: `#${channel.id}`,
+defineCustomUtilInspect(
+	GuildChannel,
+	channel => `#${channel.name}/${(channel as Channel).id}`,
 );

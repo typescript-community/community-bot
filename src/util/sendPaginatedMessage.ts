@@ -1,8 +1,8 @@
 import {
 	GuildMember,
-	MessageEmbed,
+	EmbedBuilder,
 	MessageReaction,
-	TextBasedChannels,
+	TextBasedChannel,
 	User,
 } from 'discord.js';
 
@@ -15,10 +15,10 @@ const emojis = {
 };
 
 export async function sendPaginatedMessage(
-	embed: MessageEmbed,
+	embed: EmbedBuilder,
 	pages: string[],
 	member: GuildMember,
-	channel: TextBasedChannels,
+	channel: TextBasedChannel,
 	timeout: number = 100000,
 ) {
 	let curPage = 0;
@@ -26,7 +26,7 @@ export async function sendPaginatedMessage(
 		embeds: [
 			embed
 				.setDescription(pages[curPage])
-				.setFooter(`Page ${curPage + 1} of ${pages.length}`),
+				.setFooter({ text: `Page ${curPage + 1} of ${pages.length}` }),
 		],
 	});
 	if (pages.length === 1) return;
@@ -38,7 +38,7 @@ export async function sendPaginatedMessage(
 	await message.react(emojis.last);
 
 	const collector = message.createReactionCollector({
-		filter: (reaction, user) =>
+		filter: (_reaction, user) =>
 			user.id === member.id && user.id !== message.author.id,
 		time: timeout,
 	});
@@ -68,9 +68,9 @@ export async function sendPaginatedMessage(
 
 		await message.edit({
 			embeds: [
-				embed
-					.setDescription(pages[curPage])
-					.setFooter(`Page ${curPage + 1} of ${pages.length}`),
+				embed.setDescription(pages[curPage]).setFooter({
+					text: `Page ${curPage + 1} of ${pages.length}`,
+				}),
 			],
 		});
 	});

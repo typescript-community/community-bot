@@ -1,21 +1,11 @@
 import {
-	command,
-	default as CookiecordClient,
-	Module,
-	listener,
-	CommonInhibitors,
-} from 'cookiecord';
-import { ThreadAutoArchiveDuration } from 'discord-api-types';
-import {
+	ThreadAutoArchiveDuration,
 	Message,
 	MessageReaction,
-	GuildMember,
 	User,
-	ReactionEmoji,
-	TextChannel,
 	ThreadChannel,
 } from 'discord.js';
-import { MessageChannel, threadId } from 'worker_threads';
+import { Bot } from '../bot';
 import { suggestionsChannelId } from '../env';
 import {
 	clearMessageOwnership,
@@ -27,18 +17,16 @@ const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
 
 const defaultPollEmojis = ['✅', '❌', '🤷'];
 
-export class EtcModule extends Module {
-	constructor(client: CookiecordClient) {
-		super(client);
-	}
+export function etcModule(bot: Bot) {
+	bot.registerCommand({
+		aliases: ['ping'],
+		description: 'See if the bot is alive',
+		async listener(msg) {
+			await msg.channel.send('pong. :ping_pong:');
+		},
+	});
 
-	@command({ description: 'See if the bot is alive' })
-	async ping(msg: Message) {
-		await msg.channel.send('pong. :ping_pong:');
-	}
-
-	@listener({ event: 'messageCreate' })
-	async onPoll(msg: Message) {
+	bot.client.on('messageCreate', async msg => {
 		if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
 			return;
 		let emojis = [
@@ -48,10 +36,9 @@ export class EtcModule extends Module {
 		];
 		if (!emojis.length) emojis = defaultPollEmojis;
 		for (const emoji of emojis) await msg.react(emoji);
-	}
+	});
 
-	@listener({ event: 'messageCreate' })
-	async onSuggestion(msg: Message) {
+	bot.client.on('messageCreate', async msg => {
 		if (msg.author.bot || msg.channelId !== suggestionsChannelId) return;
 		// First 50 characters of the first line of the content (without cutting off a word)
 		const title =
@@ -64,10 +51,9 @@ export class EtcModule extends Module {
 			autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
 		});
 		for (let emoji of defaultPollEmojis) await msg.react(emoji);
-	}
+	});
 
-	@listener({ event: 'threadUpdate' })
-	async onSuggestionClose(thread: ThreadChannel) {
+	bot.client.on('threadUpdate', async thread => {
 		if (
 			thread.parentId !== suggestionsChannelId ||
 			!((await thread.fetch()) as ThreadChannel).archived
@@ -92,21 +78,20 @@ export class EtcModule extends Module {
 		});
 		const pollingResultStr = pollingResults
 			.sort((a, b) => b[1] - a[1])
-			.map(([emoji, count], i) => `${count}  ${emoji}`)
+			.map(([emoji, count]) => `${count}  ${emoji}`)
 			.join('   ');
 		await suggestion.reply({
-			content: `Polling finished; result:  ${pollingResultStr}`,
+			content: `Polling finished; result: ${pollingResultStr}`,
 		});
-	}
+	});
 
-	@listener({ event: 'messageReactionAdd' })
-	async onReact(reaction: MessageReaction, member: GuildMember) {
+	bot.client.on('messageReactionAdd', async (reaction, member) => {
 		if (reaction.partial) return;
 
-		if ((await reaction.message.fetch()).author.id !== this.client.user?.id)
+		if ((await reaction.message.fetch()).author.id !== bot.client.user.id)
 			return;
 		if (reaction.emoji.name !== DELETE_EMOJI) return;
-		if (member.id === this.client.user?.id) return;
+		if (member.id === bot.client.user.id) return;
 
 		if (ownsBotMessage(reaction.message, member.id)) {
 			clearMessageOwnership(reaction.message);
@@ -114,30 +99,29 @@ export class EtcModule extends Module {
 		} else {
 			await reaction.users.remove(member.id);
 		}
-	}
+	});
 
-	@command({
-		inhibitors: [CommonInhibitors.botAdminsOnly],
-	})
-	async kill(msg: Message) {
-		const confirm = '✅';
-		const confirmationMessage = await msg.channel.send('Confirm?');
-		confirmationMessage.react(confirm);
-		const reactionFilter = (reaction: MessageReaction, user: User) =>
-			reaction.emoji.name === confirm && user.id === msg.author.id;
-		const proceed = await confirmationMessage
-			.awaitReactions({
-				filter: reactionFilter,
-				max: 1,
-				time: 10 * 1000,
-				errors: ['time'],
-			})
-			.then(() => true)
-			.catch(() => false);
-		await confirmationMessage.delete();
-		if (!proceed) return;
-		await msg.react('☠️');
-		process.stdout.write(`
+	bot.registerAdminCommand({
+		aliases: ['kill'],
+		async listener(msg) {
+			const confirm = '✅';
+			const confirmationMessage = await msg.channel.send('Confirm?');
+			confirmationMessage.react(confirm);
+			const reactionFilter = (reaction: MessageReaction, user: User) =>
+				reaction.emoji.name === confirm && user.id === msg.author.id;
+			const proceed = await confirmationMessage
+				.awaitReactions({
+					filter: reactionFilter,
+					max: 1,
+					time: 10 * 1000,
+					errors: ['time'],
+				})
+				.then(() => true)
+				.catch(() => false);
+			await confirmationMessage.delete();
+			if (!proceed) return;
+			await msg.react('☠️');
+			process.stdout.write(`
                             ,--.
                            {    }
                            K,   }
@@ -156,7 +140,7 @@ export class EtcModule extends Module {
  |       ',                   )
  |        |   ,..__      __. Y
  |    .,_./  Y ' / ^Y   J   )|
- \           |' /   |   |   ||      Killed by @${msg.author.username}#${msg.author.discriminator}/${msg.author.id}
+ \           |' /   |   |   ||      Killed by @${msg.author.tag}/${msg.author.id}
   \          L_/    . _ (_,.'(
    \,   ,      ^^""' / |      )
      \_  \          /,L]     /
@@ -164,6 +148,7 @@ export class EtcModule extends Module {
           \`'{_            )
               ^^\..___,.--\`
 		`);
-		process.exit(1);
-	}
+			process.exit(1);
+		},
+	});
 }
