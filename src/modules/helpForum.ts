@@ -1,17 +1,7 @@
-import {
-	ChannelType,
-	User,
-	GuildMember,
-	EmbedBuilder,
-	ThreadChannel,
-	TextChannel,
-	Channel,
-	ThreadAutoArchiveDuration,
-} from 'discord.js';
+import { ChannelType, ThreadChannel, TextChannel, Channel } from 'discord.js';
 import { Bot } from '../bot';
 import { HelpThread } from '../entities/HelpThread';
 import {
-	BLOCKQUOTE_GREY,
 	helpForumChannel,
 	helpRequestsChannel,
 	howToGetHelpChannel,
@@ -22,16 +12,12 @@ import {
 } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 
-const threadExpireHours = ThreadAutoArchiveDuration.OneDay;
-const threadCheckInterval = 60 * 60 * 1000;
-
 // Use a non-breaking space to force Discord to leave empty lines alone
 const postGuidelines = listify(`
 How To Get Help
-- Create a new post here with your question
-	- It's always ok to just ask your question; you don't need permission.
+- Create a new post here with your question.
+- It's always ok to just ask your question; you don't need permission.
 - Someone will (hopefully!) come along and help you.
-- When your question is resolved, type !close.
 \u200b
 How To Get Better Help
 - Explain what you want to happen and why…
@@ -54,40 +40,13 @@ How To Give Help
 How To Give *Better* Help
 - Get yourself the <@&${trustedRoleId}> role at <#${rolesChannelId}>
 	- (If you don't like the pings, you can disable role mentions for the server.)
-- As a <@&${trustedRoleId}>, if a thread appears to be resolved, run \`!close\` to close it.
-	- *Only do this if the asker has indicated that their question has been resolved.*
 
 Useful Snippets
 - \`!screenshot\` — for if an asker posts a screenshot of code
 - \`!ask\` — for if an asker only posts "can I get help?"
 `);
 
-const threadExpireEmbed = new EmbedBuilder()
-	.setColor(BLOCKQUOTE_GREY)
-	.setTitle('This help thread expired.').setDescription(`
-If your question was not resolved, you can make a new thread by simply asking your question again. \
-Consider rephrasing the question to maximize your chance of getting a good answer. \
-If you're not sure how, have a look through [StackOverflow's guide on asking a good question](https://stackoverflow.com/help/how-to-ask).
-`);
-
-const helperCloseEmbed = (member: GuildMember) =>
-	new EmbedBuilder().setColor(BLOCKQUOTE_GREY).setDescription(`
-Because your issue seemed to be resolved, this thread was closed by ${member}.
-
-If your issue is not resolved, **you can post another message here and the thread will automatically re-open**.
-
-*If you have a different question, create a new post in <#${helpForumChannel}>.*
-`);
-
-const helpPostWelcomeMessage = (owner: User) => `
-${owner} this thread is for your question. \
-When it's resolved, please type \`!close\`. \
-See <#${howToGetHelpChannel}> for info on how to get better help.
-`;
-
 export async function helpForumModule(bot: Bot) {
-	const manuallyArchivedThreads = new Set<string>();
-
 	const channel = await bot.client.guilds.cache
 		.first()
 		?.channels.fetch(helpForumChannel)!;
@@ -116,7 +75,6 @@ export async function helpForumModule(bot: Bot) {
 			'in thread',
 			thread.id,
 		);
-		thread.send(helpPostWelcomeMessage(owner.user));
 
 		await HelpThread.create({
 			threadId: thread.id,
@@ -124,63 +82,11 @@ export async function helpForumModule(bot: Bot) {
 		}).save();
 	});
 
-	bot.client.on('threadUpdate', async thread => {
-		if (
-			!isHelpThread(thread) ||
-			!(await thread.fetch()).archived ||
-			manuallyArchivedThreads.delete(thread.id)
-		) {
-			return;
-		}
-		await onThreadExpire(thread);
-	});
-
 	bot.client.on('threadDelete', async thread => {
 		if (!isHelpThread(thread)) return;
 		await HelpThread.delete({
 			threadId: thread.id,
 		});
-	});
-
-	bot.registerCommand({
-		aliases: ['close', 'closed', 'resolved', 'resolve', 'done', 'solved'],
-		description: 'Help System: Close an active help thread',
-		async listener(msg) {
-			if (
-				msg.channel.type !== ChannelType.PublicThread ||
-				msg.channel.parentId !== forumChannel.id
-			) {
-				return await sendWithMessageOwnership(
-					msg,
-					':warning: This can only be run in a help thread',
-				);
-			}
-
-			const threadData = await getHelpThread(msg.channel.id);
-
-			const isOwner = threadData.ownerId === msg.author.id;
-
-			if (
-				isOwner ||
-				msg.member?.roles.cache.has(trustedRoleId) ||
-				bot.isMod(msg.member)
-			) {
-				console.log(`Closing help thread:`, msg.channel);
-				await msg.react('✅');
-				if (!isOwner)
-					await msg.channel.send({
-						content: `<@${threadData.ownerId}>`,
-						embeds: [helperCloseEmbed(msg.member!)],
-					});
-				manuallyArchivedThreads.add(msg.channelId);
-				await msg.channel?.setArchived(true);
-			} else {
-				return await sendWithMessageOwnership(
-					msg,
-					':warning: You have to be the asker to close the thread.',
-				);
-			}
-		},
 	});
 
 	bot.registerCommand({
@@ -224,10 +130,22 @@ export async function helpForumModule(bot: Bot) {
 				);
 			}
 
+			const tagStrings = thread.appliedTags.flatMap(t => {
+				const tag = forumChannel.availableTags.find(at => at.id === t);
+				if (!tag) return [];
+				if (!tag.emoji) return tag.name;
+
+				const emoji = tag.emoji.id
+					? `<:${tag.emoji.name}:${tag.emoji.id}>`
+					: tag.emoji.name;
+				return `${emoji} ${tag.name}`;
+			});
+			const tags = tagStrings ? `(${tagStrings.join(', ')})` : '';
+
 			// The beacons are lit, Gondor calls for aid
 			await Promise.all([
 				helpRequestChannel.send(
-					`<@&${trustedRoleId}> ${msg.channel} ${
+					`<@&${trustedRoleId}> ${msg.channel} ${tags} ${
 						isTrusted ? comment : ''
 					}`,
 				),
@@ -257,32 +175,6 @@ export async function helpForumModule(bot: Bot) {
 			msg.channel.send(message);
 		},
 	});
-
-	setInterval(async () => {
-		const threads = await forumChannel.threads.fetchActive();
-		for (const thread of threads.threads.values()) {
-			const time =
-				Date.now() -
-				(await thread.messages.fetch({ limit: 1 })).first()!
-					.createdTimestamp;
-			if (time >= threadExpireHours * 60 * 1000) {
-				onThreadExpire(thread).catch(console.error);
-			}
-		}
-	}, threadCheckInterval);
-
-	async function onThreadExpire(thread: ThreadChannel) {
-		const threadData = (await HelpThread.findOneBy({
-			threadId: thread.id,
-		}))!;
-		console.log(`Help thread expired:`, thread);
-		await thread.send({
-			content: `<@${threadData.ownerId}>`,
-			embeds: [threadExpireEmbed],
-		});
-		manuallyArchivedThreads.add(thread.id);
-		await thread.setArchived(true);
-	}
 
 	async function getHelpThread(threadId: string) {
 		const threadData = await HelpThread.findOneBy({ threadId });

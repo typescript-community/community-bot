@@ -1,3 +1,7 @@
+# 2022-12-16
+
+-   Remove `!close`, update `!helper` to include thread tags.
+
 # 2022-11-19
 
 -   Removed `HELP_CATEGORY`, `GENERAL_HELP_CHANNEL` environment variables.
