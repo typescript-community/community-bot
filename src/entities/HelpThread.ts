@@ -12,11 +12,17 @@ export class HelpThread extends BaseEntity {
 	@Column({ nullable: true })
 	helperTimestamp?: string;
 
-	// When the title was last set
+	/**
+	 * When the title was last set, exists only for backwards compat
+	 * @deprecated
+	 */
 	@Column({ nullable: true })
 	titleSetTimestamp?: string;
 
-	// The id of the original message; nullable for backwards compat
+	/**
+	 * The id of the original message, exists only for backwards compat
+	 * @deprecated
+	 */
 	@Column({ nullable: true })
 	origMessageId?: string;
 }

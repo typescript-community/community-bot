@@ -1,9 +1,9 @@
 import {
-	Channel,
+	BaseGuildTextChannel,
 	Client,
-	GuildChannel,
 	GuildMember,
 	TextChannel,
+	ThreadChannel,
 	User,
 } from 'discord.js';
 import { inspect } from 'util';
@@ -72,7 +72,11 @@ const inspectUser = (user: User) =>
 defineCustomUtilInspect(User, inspectUser);
 defineCustomUtilInspect(GuildMember, member => inspectUser(member.user));
 
-defineCustomUtilInspect(
-	GuildChannel,
-	channel => `#${channel.name}/${(channel as Channel).id}`,
-);
+const channels: Array<{ prototype: { name: string; id: string } }> = [
+	BaseGuildTextChannel,
+	ThreadChannel,
+];
+
+for (const ctor of channels) {
+	defineCustomUtilInspect(ctor, channel => `#${channel.name}/${channel.id}`);
+}

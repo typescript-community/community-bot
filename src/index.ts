@@ -13,7 +13,7 @@ import { playgroundModule } from './modules/playground';
 import { repModule } from './modules/rep';
 import { twoslashModule } from './modules/twoslash';
 import { snippetModule } from './modules/snippet';
-import { helpThreadModule } from './modules/helpthread';
+import { helpForumModule } from './modules/helpForum';
 
 const client = new Client({
 	partials: [
@@ -45,7 +45,7 @@ client.on('ready', async () => {
 	for (const mod of [
 		autoroleModule,
 		etcModule,
-		helpThreadModule,
+		helpForumModule,
 		playgroundModule,
 		repModule,
 		twoslashModule,
