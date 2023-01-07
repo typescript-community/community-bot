@@ -74,17 +74,19 @@ export class Bot {
 		return botAdmins.includes(user.id);
 	}
 
-	getTrustedMemberError(msg: Message) {
+	isTrusted(msg: Message) {
 		if (!msg.guild || !msg.member || !msg.channel.isTextBased()) {
-			return ":warning: you can't use that command here.";
+			return false;
 		}
 
 		if (
 			!msg.member.roles.cache.has(trustedRoleId) &&
 			!msg.member.permissions.has('ManageMessages')
 		) {
-			return ":warning: you don't have permission to use that command.";
+			return false;
 		}
+
+		return true;
 	}
 
 	async getTargetUser(msg: Message): Promise<User | undefined> {

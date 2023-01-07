@@ -1,8 +1,17 @@
-import { ChannelType, ThreadChannel, TextChannel, Channel } from 'discord.js';
+import {
+	ChannelType,
+	ThreadChannel,
+	TextChannel,
+	Channel,
+	ForumChannel,
+	Message,
+} from 'discord.js';
 import { Bot } from '../bot';
 import { HelpThread } from '../entities/HelpThread';
 import {
 	helpForumChannel,
+	helpForumOpenTagName,
+	helpForumResolvedTagName,
 	helpRequestsChannel,
 	howToGetHelpChannel,
 	howToGiveHelpChannel,
@@ -11,6 +20,8 @@ import {
 	trustedRoleId,
 } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
+
+const MAX_TAG_COUNT = 5;
 
 // Use a non-breaking space to force Discord to leave empty lines alone
 const postGuidelines = (here = true) =>
@@ -49,6 +60,13 @@ const howToGiveHelp = listify(`
 - \`!ask\` — for if an asker only posts "can I get help?"
 `);
 
+const helperResolve = (owner: string, helper: string) => `
+<@${owner}>
+Because your issue seemed to be resolved, this post was marked as resolved by <@${helper}>.
+If your issue is not resolved, **you can reopen this post by running \`!reopen\`**.
+*If you have a different question, make a new post in <#${helpForumChannel}>.*
+`;
+
 export async function helpForumModule(bot: Bot) {
 	const channel = await bot.client.guilds.cache
 		.first()
@@ -58,6 +76,8 @@ export async function helpForumModule(bot: Bot) {
 		return;
 	}
 	const forumChannel = channel;
+	const openTag = getTag(forumChannel, helpForumOpenTagName);
+	const resolvedTag = getTag(forumChannel, helpForumResolvedTagName);
 
 	const helpRequestChannel = await bot.client.guilds.cache
 		.first()
@@ -83,6 +103,8 @@ export async function helpForumModule(bot: Bot) {
 			threadId: thread.id,
 			ownerId: owner.user.id,
 		}).save();
+
+		await setStatus(thread, openTag);
 	});
 
 	bot.client.on('threadDelete', async thread => {
@@ -108,7 +130,7 @@ export async function helpForumModule(bot: Bot) {
 
 			// Ensure the user has permission to ping helpers
 			const isAsker = msg.author.id === threadData.ownerId;
-			const isTrusted = bot.getTrustedMemberError(msg) === undefined; // No error if trusted
+			const isTrusted = bot.isTrusted(msg);
 
 			if (!isAsker && !isTrusted) {
 				return sendWithMessageOwnership(
@@ -160,6 +182,50 @@ export async function helpForumModule(bot: Bot) {
 		},
 	});
 
+	bot.registerCommand({
+		aliases: ['resolved', 'resolve', 'close', 'closed', 'done'],
+		description: 'Help System: Mark a post as resolved',
+		async listener(msg) {
+			changeStatus(msg, true);
+		},
+	});
+
+	bot.registerCommand({
+		aliases: ['reopen', 'open', 'unresolved', 'unresolve'],
+		description: 'Help System: Reopen a resolved post',
+		async listener(msg) {
+			changeStatus(msg, false);
+		},
+	});
+
+	async function changeStatus(msg: Message, resolved: boolean) {
+		const thread = msg.channel;
+		if (thread?.type !== ChannelType.PublicThread) {
+			return sendWithMessageOwnership(
+				msg,
+				':warning: Can only be run in a help post',
+			);
+		}
+
+		const threadData = await getHelpThread(thread.id);
+		const isAsker = msg.author.id === threadData.ownerId;
+		const isTrusted = bot.isTrusted(msg);
+
+		if (!isAsker && !isTrusted) {
+			return sendWithMessageOwnership(
+				msg,
+				':warning: Only the asker can change the status of a help post',
+			);
+		}
+
+		await setStatus(thread, resolved ? resolvedTag : openTag);
+		await msg.react('✅');
+
+		if (resolved && !isAsker) {
+			await thread.send(helperResolve(thread.ownerId!, msg.author.id));
+		}
+	}
+
 	bot.registerAdminCommand({
 		aliases: ['htgh'],
 		async listener(msg) {
@@ -204,6 +270,22 @@ export async function helpForumModule(bot: Bot) {
 			channel instanceof ThreadChannel &&
 			channel.parent?.id === forumChannel.id
 		);
+	}
+
+	function getTag(channel: ForumChannel, name: string) {
+		const tag = channel.availableTags.find(x => x.name === name);
+		if (!tag) throw new Error(`Could not find tag ${name}`);
+		return tag.id;
+	}
+
+	async function setStatus(thread: ThreadChannel, tag: string) {
+		let tags = thread.appliedTags.filter(
+			x => x !== openTag && x !== resolvedTag,
+		);
+		if (tags.length === MAX_TAG_COUNT) {
+			tags = tags.slice(0, -1);
+		}
+		await thread.setAppliedTags([tag, ...tags]);
 	}
 }
 
