@@ -55,8 +55,10 @@ const howToGiveHelp = listify(`
 **How To Give *Better* Help**
 - Get yourself the <@&${trustedRoleId}> role at <#${rolesChannelId}>
 	- (If you don't like the pings, you can disable role mentions for the server.)
-- As a <@&${trustedRoleId}>, if a thread appears to be resolved, run \`!resolved\` to mark it as such.
-	- *Only do this if the asker has indicated that their question has been resolved.*
+- As a <@&${trustedRoleId}>, you can:
+	- React to a help post to add tags.
+	- If a post appears to be resolved, run \`!resolved\` to mark it as such.
+		- *Only do this if the asker has indicated that their question has been resolved.*
 	- Conversely, you can run \`!reopen\` if the asker has follow-up questions.
 
 **Useful Snippets**
@@ -200,6 +202,28 @@ export async function helpForumModule(bot: Bot) {
 		async listener(msg) {
 			changeStatus(msg, false);
 		},
+	});
+
+	bot.client.on('messageReactionAdd', async reaction => {
+		const message = reaction.message;
+		const thread = await message.channel.fetch();
+		if (!isHelpThread(thread)) {
+			return;
+		}
+		const initial = await thread.fetchStarterMessage();
+		if (initial?.id !== message.id) return;
+		const tag = forumChannel.availableTags.find(
+			t =>
+				t.emoji &&
+				!t.moderated &&
+				t.emoji.id === reaction.emoji.id &&
+				t.emoji.name === reaction.emoji.name,
+		);
+		if (!tag) return;
+		if (thread.appliedTags.length < MAX_TAG_COUNT) {
+			await thread.setAppliedTags([...thread.appliedTags, tag.id]);
+		}
+		await reaction.remove();
 	});
 
 	async function changeStatus(msg: Message, resolved: boolean) {
