@@ -48,7 +48,7 @@ Usually someone will try to answer and help solve the issue within a few hours. 
 
 const howToGiveHelp = listify(`
 **How To Give Help**
-- The channel sidebar on the left will list threads you have joined.
+- The channel sidebar on the left will list posts you have joined.
 - You can scroll through the channel to see all recent questions.
 
 **How To Give *Better* Help**
