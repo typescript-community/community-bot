@@ -21,6 +21,9 @@ export const howToGiveHelpChannel = process.env.HOW_TO_GIVE_HELP_CHANNEL!;
 export const helpForumChannel = process.env.HELP_FORUM_CHANNEL!;
 export const helpRequestsChannel = process.env.HELP_REQUESTS_CHANNEL!;
 
+export const helpForumOpenTagName = process.env.HELP_FORUM_OPEN_TAG!;
+export const helpForumResolvedTagName = process.env.HELP_FORUM_RESOLVED_TAG!;
+
 export const trustedRoleId = process.env.TRUSTED_ROLE_ID!;
 
 export const rulesChannelId = process.env.RULES_CHANNEL!;
