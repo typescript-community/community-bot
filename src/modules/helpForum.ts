@@ -228,7 +228,7 @@ export async function helpForumModule(bot: Bot) {
 
 	async function changeStatus(msg: Message, resolved: boolean) {
 		const thread = msg.channel;
-		if (thread?.type !== ChannelType.PublicThread) {
+		if (!isHelpThread(thread)) {
 			return sendWithMessageOwnership(
 				msg,
 				':warning: Can only be run in a help post',
