@@ -32,6 +32,7 @@ const postGuidelines = (here = true) =>
 	} with your question.
 - It's always ok to just ask your question; you don't need permission.
 - Someone will (hopefully!) come along and help you.
+- When your question is resolved, type \`!resolved\`.
 \u200b
 **How To Get Better Help**
 - Explain what you want to happen and why…
@@ -54,6 +55,9 @@ const howToGiveHelp = listify(`
 **How To Give *Better* Help**
 - Get yourself the <@&${trustedRoleId}> role at <#${rolesChannelId}>
 	- (If you don't like the pings, you can disable role mentions for the server.)
+- As a <@&${trustedRoleId}>, if a thread appears to be resolved, run \`!resolved\` to mark it as such.
+	- *Only do this if the asker has indicated that their question has been resolved.*
+	- Conversely, you can run \`!reopen\` if the asker has follow-up questions.
 
 **Useful Snippets**
 - \`!screenshot\` — for if an asker posts a screenshot of code
@@ -116,12 +120,12 @@ export async function helpForumModule(bot: Bot) {
 
 	bot.registerCommand({
 		aliases: ['helper', 'helpers'],
-		description: 'Help System: Ping the @Helper role from a help thread',
+		description: 'Help System: Ping the @Helper role from a help post',
 		async listener(msg, comment) {
 			if (!isHelpThread(msg.channel)) {
 				return sendWithMessageOwnership(
 					msg,
-					':warning: You may only ping helpers from a help thread',
+					':warning: You may only ping helpers from a help post',
 				);
 			}
 
