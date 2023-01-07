@@ -13,13 +13,16 @@ import {
 import { sendWithMessageOwnership } from '../util/send';
 
 // Use a non-breaking space to force Discord to leave empty lines alone
-const postGuidelines = listify(`
-How To Get Help
-- Create a new post here with your question.
+const postGuidelines = (here = true) =>
+	listify(`
+**How To Get Help**
+- Create a new post ${
+		here ? 'here' : `in <#${helpForumChannel}>`
+	} with your question.
 - It's always ok to just ask your question; you don't need permission.
 - Someone will (hopefully!) come along and help you.
 \u200b
-How To Get Better Help
+**How To Get Better Help**
 - Explain what you want to happen and why…
 	- …and what actually happens, and your best guess at why.
 	- Include a short code sample and any error messages you got.
@@ -28,20 +31,20 @@ How To Get Better Help
 	- Send the full link in its own message; do not use a link shortener.
 - For more tips, check out StackOverflow's guide on asking good questions: <https://stackoverflow.com/help/how-to-ask>
 \u200b
-If You Haven't Gotten Help
+**If You Haven't Gotten Help**
 Usually someone will try to answer and help solve the issue within a few hours. If not, and if you have followed the bullets above, you can ping helpers by running !helper.
 `);
 
 const howToGiveHelp = listify(`
-How To Give Help
+**How To Give Help**
 - The channel sidebar on the left will list threads you have joined.
 - You can scroll through the channel to see all recent questions.
 
-How To Give *Better* Help
+**How To Give *Better* Help**
 - Get yourself the <@&${trustedRoleId}> role at <#${rolesChannelId}>
 	- (If you don't like the pings, you can disable role mentions for the server.)
 
-Useful Snippets
+**Useful Snippets**
 - \`!screenshot\` — for if an asker posts a screenshot of code
 - \`!ask\` — for if an asker only posts "can I get help?"
 `);
@@ -64,7 +67,7 @@ export async function helpForumModule(bot: Bot) {
 		return;
 	}
 
-	await forumChannel.setTopic(postGuidelines);
+	await forumChannel.setTopic(postGuidelines());
 
 	bot.client.on('threadCreate', async thread => {
 		const owner = await thread.fetchOwner();
@@ -160,7 +163,6 @@ export async function helpForumModule(bot: Bot) {
 	bot.registerAdminCommand({
 		aliases: ['htgh'],
 		async listener(msg) {
-			if (!bot.isMod(msg.member)) return;
 			if (
 				msg.channel.id !== howToGetHelpChannel &&
 				msg.channel.id !== howToGiveHelpChannel
@@ -170,9 +172,10 @@ export async function helpForumModule(bot: Bot) {
 			(await msg.channel.messages.fetch()).forEach(x => x.delete());
 			const message =
 				msg.channel.id === howToGetHelpChannel
-					? postGuidelines
+					? postGuidelines(false)
 					: howToGiveHelp;
-			msg.channel.send(message);
+			// Force a blank line at the beginning of the message for compact-mode users
+			msg.channel.send(`** **\n` + message.trim());
 		},
 	});
 
