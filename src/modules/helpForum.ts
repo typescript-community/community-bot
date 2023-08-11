@@ -189,7 +189,7 @@ export async function helpForumModule(bot: Bot) {
 	});
 
 	bot.registerCommand({
-		aliases: ['resolved', 'resolve', 'close', 'closed', 'done'],
+		aliases: ['resolved', 'resolve', 'close', 'closed', 'done', 'solved'],
 		description: 'Help System: Mark a post as resolved',
 		async listener(msg) {
 			changeStatus(msg, true);
