@@ -1,7 +1,7 @@
-import { EmbedBuilder } from 'discord.js';
 import { Bot, CommandRegistration } from '../bot';
 import { Snippet } from '../entities/Snippet';
 import { sendWithMessageOwnership } from '../util/send';
+import { MessageBuilder } from '../util/messageBuilder';
 
 function getCategoryHelp(cat: string, commands: Iterable<CommandRegistration>) {
 	const out: string[] = [];
@@ -44,31 +44,25 @@ export function helpModule(bot: Bot) {
 			if (!msg.guild) return;
 
 			if (!cmdTrigger) {
-				const embed = new EmbedBuilder()
-					.setAuthor({
-						name: msg.guild.name,
-						iconURL: msg.guild.iconURL() || undefined,
-					})
+				const response = new MessageBuilder()
 					.setTitle('Bot Usage')
 					.setDescription(
 						`Hello ${msg.author.username}! Here is a list of all commands in me! To get detailed description on any specific command, do \`help <command>\``,
 					);
 
 				for (const cat of getCommandCategories(bot.commands.values())) {
-					embed.addFields({
-						name: `**${cat} Commands:**`,
+					response.addFields({
+						name: `${cat} Commands:`,
 						value: getCategoryHelp(cat, bot.commands.values()),
 					});
 				}
 
-				embed
-					.setFooter({
-						text: bot.client.user.username,
-						iconURL: bot.client.user.displayAvatarURL(),
-					})
-					.setTimestamp();
+				response.addFields({
+					name: 'Playground Links:',
+					value: 'I will shorten any [TypeScript Playground](<https://www.typescriptlang.org/play>) links in a message or attachment and display a preview of the code. You can choose specific lines to embed by selecting them before copying the link.',
+				});
 
-				return await sendWithMessageOwnership(msg, { embeds: [embed] });
+				return await sendWithMessageOwnership(msg, response.build());
 			}
 
 			let cmd: { description?: string; aliases?: string[] } =
@@ -95,25 +89,25 @@ export function helpModule(bot: Bot) {
 					`:x: Command not found`,
 				);
 
-			const embed = new EmbedBuilder().setTitle(
+			const builder = new MessageBuilder().setTitle(
 				`\`${cmdTrigger}\` Usage`,
 			);
 			// Get rid of duplicates, this can happen if someone adds the method name as an alias
 			const triggers = new Set(cmd.aliases ?? [cmdTrigger]);
 			if (triggers.size > 1) {
-				embed.addFields({
+				builder.addFields({
 					name: 'Aliases',
 					value: Array.from(triggers, t => `\`${t}\``).join(', '),
 				});
 			}
-			embed.addFields({
+			builder.addFields({
 				name: 'Description',
 				value: `*${
 					splitCategoryDescription(cmd.description ?? '')[1]
 				}*`,
 			});
 
-			await sendWithMessageOwnership(msg, { embeds: [embed] });
+			await sendWithMessageOwnership(msg, builder.build());
 		},
 	});
 }

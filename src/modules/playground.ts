@@ -1,11 +1,10 @@
-import { EmbedBuilder, Message, User } from 'discord.js';
+import { Message, User } from 'discord.js';
 import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
 } from 'lz-string';
 import { format } from 'prettier';
 import { URLSearchParams } from 'url';
-import { TS_BLUE } from '../env';
 import {
 	makeCodeBlock,
 	findCode,
@@ -16,14 +15,18 @@ import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 import { fetch } from 'undici';
 import { Bot } from '../bot';
+import { MessageBuilder } from '../util/messageBuilder';
 
 const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
 const LINK_SHORTENER_ENDPOINT = 'https://tsplay.dev/api/short';
-const MAX_EMBED_LENGTH = 512;
-const DEFAULT_EMBED_LENGTH = 256;
+const MAX_PREVIEW_LENGTH = 512;
+const DEFAULT_PREVIEW_LENGTH = 256;
 
 export async function playgroundModule(bot: Bot) {
-	const editedLongLink = new LimitedSizeMap<string, Message>(1000);
+	const editedLongLink = new LimitedSizeMap<
+		string,
+		[Message, MessageBuilder]
+	>(1000);
 
 	bot.registerCommand({
 		aliases: ['playground', 'pg', 'playg'],
@@ -41,11 +44,10 @@ export async function playgroundModule(bot: Bot) {
 						":warning: couldn't find a codeblock!",
 					);
 			}
-			const embed = new EmbedBuilder()
-				.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
+			const builder = new MessageBuilder()
 				.setTitle('View in Playground')
-				.setColor(TS_BLUE);
-			await sendWithMessageOwnership(msg, { embeds: [embed] });
+				.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code));
+			await sendWithMessageOwnership(msg, builder.build());
 		},
 	});
 
@@ -54,20 +56,19 @@ export async function playgroundModule(bot: Bot) {
 		if (msg.content[0] === '!') return;
 		const exec = matchPlaygroundLink(msg.content);
 		if (!exec) return;
-		const embed = createPlaygroundEmbed(msg.author, exec);
+		const builder = createPlaygroundMessage(msg.author, exec);
 		if (exec.isWholeMatch) {
 			// Message only contained the link
-			await sendWithMessageOwnership(msg, {
-				embeds: [embed],
-			});
+			await sendWithMessageOwnership(msg, builder.build());
 			await msg.delete();
 		} else {
 			// Message also contained other characters
-			const botMsg = await msg.channel.send({
-				embeds: [embed],
-				content: `${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
-			});
-			editedLongLink.set(msg.id, botMsg);
+			builder.setFooter(
+				`${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
+			);
+			builder.setAllowMentions('users');
+			const botMsg = await msg.channel.send(builder.build());
+			editedLongLink.set(msg.id, [botMsg, builder]);
 			await addMessageOwnership(botMsg, msg.author);
 		}
 	});
@@ -82,10 +83,8 @@ export async function playgroundModule(bot: Bot) {
 		// put the rest of the message in msg.content
 		if (!exec?.isWholeMatch) return;
 		const shortenedUrl = await shortenPlaygroundLink(exec.url);
-		const embed = createPlaygroundEmbed(msg.author, exec, shortenedUrl);
-		await sendWithMessageOwnership(msg, {
-			embeds: [embed],
-		});
+		const builder = createPlaygroundMessage(msg.author, exec, shortenedUrl);
+		await sendWithMessageOwnership(msg, builder.build());
 		if (!msg.content) await msg.delete();
 	});
 
@@ -93,30 +92,25 @@ export async function playgroundModule(bot: Bot) {
 		if (msg.partial) msg = await msg.fetch();
 		const exec = matchPlaygroundLink(msg.content);
 		if (msg.author.bot || !editedLongLink.has(msg.id) || exec) return;
-		const botMsg = editedLongLink.get(msg.id);
-		// Edit the message to only have the embed and not the "please edit your message" message
-		await botMsg?.edit({
-			content: '',
-			embeds: [botMsg.embeds[0]],
-		});
+		const [botMsg, builder] = editedLongLink.get(msg.id)!;
+		// Edit the message to only have the preview and not the "please edit your message" message
+		await botMsg?.edit(builder.setFooter('').setAllowMentions().build());
 		editedLongLink.delete(msg.id);
 	});
 }
 
 // Take care when messing with the truncation, it's extremely finnicky
-function createPlaygroundEmbed(
+function createPlaygroundMessage(
 	author: User,
 	{ url: _url, query, code, isEscaped }: PlaygroundLinkMatch,
 	url: string = _url,
 ) {
-	const embed = new EmbedBuilder()
-		.setColor(TS_BLUE)
-		.setTitle('Playground Link')
-		.setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
-		.setURL(url);
+	const builder = new MessageBuilder().setAuthor(
+		`From ${author}: [View in Playground](<${url}>)`,
+	);
 
 	const unzipped = decompressFromEncodedURIComponent(code);
-	if (!unzipped) return embed;
+	if (!unzipped) return builder;
 
 	// Without 'normalized' you can't get consistent lengths across platforms
 	// Matters because the playground uses the line breaks of whoever created it
@@ -135,19 +129,19 @@ function createPlaygroundEmbed(
 
 	const startChar = startLine ? lineIndices[startLine - 1] : 0;
 	const cutoff = endLine
-		? Math.min(lineIndices[endLine], startChar + MAX_EMBED_LENGTH)
-		: startChar + DEFAULT_EMBED_LENGTH;
+		? Math.min(lineIndices[endLine], startChar + MAX_PREVIEW_LENGTH)
+		: startChar + DEFAULT_PREVIEW_LENGTH;
 	// End of the line containing the cutoff
 	const endChar = lineIndices.find(len => len >= cutoff) ?? normalized.length;
 
 	let pretty;
 	try {
-		// Make lines as short as reasonably possible, so they fit in the embed.
+		// Make lines as short as reasonably possible, so they fit in the preview.
 		// We pass prettier the full string, but only format part of it, so we can
 		// calculate where the endChar is post-formatting.
 		pretty = format(normalized, {
 			parser: 'typescript',
-			printWidth: 55,
+			printWidth: 72,
 			tabWidth: 2,
 			semi: false,
 			bracketSpacing: false,
@@ -167,15 +161,10 @@ function createPlaygroundEmbed(
 		(prettyEndChar === pretty.length ? '' : '\n...');
 
 	if (!isEscaped) {
-		embed.setDescription('**Preview:**' + makeCodeBlock(content));
-		if (!startLine && !endLine) {
-			embed.setFooter({
-				text: 'You can choose specific lines to embed by selecting them before copying the link.',
-			});
-		}
+		builder.addFields({ name: 'Preview:', value: makeCodeBlock(content) });
 	}
 
-	return embed;
+	return builder;
 }
 
 async function shortenPlaygroundLink(url: string) {
