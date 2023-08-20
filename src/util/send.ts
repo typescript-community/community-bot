@@ -5,7 +5,6 @@ import {
 	PartialMessage,
 	User,
 } from 'discord.js';
-import { isHelpChannel } from '../modules/helpthread';
 import { LimitedSizeMap } from './limitedSizeMap';
 
 const messageToUserId = new LimitedSizeMap<
@@ -15,22 +14,12 @@ const messageToUserId = new LimitedSizeMap<
 
 export const DELETE_EMOJI = '🗑️';
 
-export async function getResponseChannel(message: Message) {
-	const channel = message.channel;
-	if (!isHelpChannel(channel)) return channel;
-	while (!message.thread) {
-		message = await message.fetch();
-	}
-	return message.thread;
-}
-
 export async function sendWithMessageOwnership(
 	message: Message,
 	toSend: string | MessagePayload | MessageCreateOptions,
 	onDelete?: () => void,
 ) {
-	const channel = await getResponseChannel(message);
-	const sent = await channel.send(toSend);
+	const sent = await message.channel.send(toSend);
 	await addMessageOwnership(sent, message.author, onDelete);
 }
 

@@ -13,13 +13,8 @@ import {
 	PlaygroundLinkMatch,
 } from '../util/codeBlocks';
 import { LimitedSizeMap } from '../util/limitedSizeMap';
-import {
-	addMessageOwnership,
-	getResponseChannel,
-	sendWithMessageOwnership,
-} from '../util/send';
+import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 import { fetch } from 'undici';
-import { isHelpChannel } from './helpthread';
 import { Bot } from '../bot';
 
 const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
@@ -60,7 +55,7 @@ export async function playgroundModule(bot: Bot) {
 		const exec = matchPlaygroundLink(msg.content);
 		if (!exec) return;
 		const embed = createPlaygroundEmbed(msg.author, exec);
-		if (exec.isWholeMatch && !isHelpChannel(msg.channel)) {
+		if (exec.isWholeMatch) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, {
 				embeds: [embed],
@@ -68,8 +63,7 @@ export async function playgroundModule(bot: Bot) {
 			await msg.delete();
 		} else {
 			// Message also contained other characters
-			const channel = await getResponseChannel(msg);
-			const botMsg = await channel.send({
+			const botMsg = await msg.channel.send({
 				embeds: [embed],
 				content: `${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
 			});
