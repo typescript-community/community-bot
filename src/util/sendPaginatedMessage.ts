@@ -1,10 +1,10 @@
 import {
 	GuildMember,
-	EmbedBuilder,
 	MessageReaction,
 	TextBasedChannel,
 	User,
 } from 'discord.js';
+import { MessageBuilder } from './messageBuilder';
 
 const emojis = {
 	back: '◀',
@@ -15,20 +15,19 @@ const emojis = {
 };
 
 export async function sendPaginatedMessage(
-	embed: EmbedBuilder,
+	builder: MessageBuilder,
 	pages: string[],
 	member: GuildMember,
 	channel: TextBasedChannel,
 	timeout: number = 100000,
 ) {
 	let curPage = 0;
-	const message = await channel.send({
-		embeds: [
-			embed
-				.setDescription(pages[curPage])
-				.setFooter({ text: `Page ${curPage + 1} of ${pages.length}` }),
-		],
-	});
+	const message = await channel.send(
+		builder
+			.setDescription(pages[curPage])
+			.setFooter(`Page ${curPage + 1} of ${pages.length}`)
+			.build(),
+	);
 	if (pages.length === 1) return;
 
 	await message.react(emojis.first);
@@ -66,13 +65,12 @@ export async function sendPaginatedMessage(
 				break;
 		}
 
-		await message.edit({
-			embeds: [
-				embed.setDescription(pages[curPage]).setFooter({
-					text: `Page ${curPage + 1} of ${pages.length}`,
-				}),
-			],
-		});
+		await message.edit(
+			builder
+				.setDescription(pages[curPage])
+				.setFooter(`Page ${curPage + 1} of ${pages.length}`)
+				.build(),
+		);
 	});
 
 	collector.on('end', () => {
