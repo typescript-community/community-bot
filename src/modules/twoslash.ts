@@ -1,10 +1,15 @@
 import { Message } from 'discord.js';
 import { twoslasher, TwoSlashReturn } from '@typescript/twoslash';
+import { ScriptTarget, type CompilerOptions } from 'typescript';
 import { makeCodeBlock, findCode } from '../util/codeBlocks';
 import { sendWithMessageOwnership } from '../util/send';
 import { getTypeScriptModule, TypeScript } from '../util/getTypeScriptModule';
 import { splitCustomCommand } from '../util/customCommand';
 import { Bot } from '../bot';
+
+const defaultCompilerOptions: CompilerOptions = {
+	target: ScriptTarget.ESNext,
+};
 
 // Preload typescript@latest
 getTypeScriptModule('latest');
@@ -81,6 +86,7 @@ async function twoslash(msg: Message, version: string, content: string) {
 	try {
 		ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
 			tsModule,
+			defaultCompilerOptions,
 			defaultOptions: { noErrorValidation: true },
 		});
 	} catch (e) {
@@ -119,6 +125,7 @@ async function twoslashBlock(msg: Message, code: string, tsModule: TypeScript) {
 	try {
 		ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
 			tsModule,
+			defaultCompilerOptions,
 			defaultOptions: {
 				noErrorValidation: true,
 				noStaticSemanticInfo: false,
