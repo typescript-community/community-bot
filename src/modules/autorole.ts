@@ -11,7 +11,7 @@ export async function autoroleModule({ client }: Bot) {
 	}
 
 	for (const ar of autorole) {
-		const msg = await channel.messages.fetch(ar.msgID);
+		const msg = await channel.messages.fetch(ar.msgID).catch(() => null);
 		if (!msg) {
 			console.error(`Role message does not exist for ${ar.msgID}`);
 		}
