@@ -1,6 +1,7 @@
 import { Message, Snowflake, User } from 'discord.js';
 import { Bot } from '../bot';
 import { rulesChannelId } from '../env';
+import { LOCALIZATION } from '../index';
 
 // Most job posts are in this format:
 // > [FOR HIRE][REMOTE][SOMETHING ELSE]
@@ -24,9 +25,16 @@ export function modModule({ client }: Bot) {
 		if (msg.author.bot || !jobPostRegex.test(msg.content)) return;
 		await msg.delete();
 		await msg.channel.send(
-			`${msg.author} We don't do job posts here; see <#${rulesChannelId}>`,
+			LOCALIZATION.getLocalizedText('mod_module.job_discord_message', {
+				author: msg.author,
+				rules: `<#${rulesChannelId}>`,
+			}),
 		);
-		console.log('Deleted job post message from', msg.author);
+		console.log(
+			LOCALIZATION.getLocalizedText('mod_module.job_console_message', {
+				author: msg.author,
+			}),
+		);
 	});
 
 	client.on('messageCreate', async msg => {
@@ -49,11 +57,10 @@ export function modModule({ client }: Bot) {
 					...recentMessageInfo.messages.map(msg => void msg.delete()),
 				]);
 				console.log(
-					'Kicked',
-					msg.author,
-					'for spam and deleted',
-					recentMessageInfo.messages.length,
-					'identical messages',
+					LOCALIZATION.getLocalizedText('mod_module.spam_messages', {
+						author: msg.author,
+						messages: recentMessageInfo.messages.length,
+					}),
 				);
 			}
 		} else {

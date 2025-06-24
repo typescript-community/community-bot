@@ -1,0 +1,201 @@
+# Console errors
+
+roles_channel_doesnt_exists: Roles channel ($(rolesChannelId)) does not exist or is not text based.
+roles_message_doesnt_exists: Role message does not exist for $(id)
+to_be_forum_channel: Expected $(channel) to be a forum channel.
+to_be_text_channel: Expected $(channel) to be a text channel.
+
+# Console info
+
+role_gave: Gave role $(role) to $(member)
+role_removed: Removed role $(role) from $(member)
+searching_algolia: Searching algolia for $(content)
+algolia_response: 'Algolia response: $(data)'
+new_request: |
+    Received new question from
+    $(owner)
+    in thread
+    $(thread)
+creating_rep: Creating a Rep with recipient $(recipient)
+received_rep: Received rep reaction on $(message)
+querying_for_rep: Querying database for existing Rep
+rep_exist_found: Found existing rep $(rep)
+user_is_recipient: User is recipient; removing reaction
+existing_amount_is: Existing amount is $(count)
+incremented_amount: Incremented amount to $(amount)
+recipient_is_bot: Recipient is bot; checking for message ownership
+no_message_owner: No message owner recorded; removing reaction
+message_owner_is: Message owner is $(owner)
+decremented_rep: |
+    Decremented rep amount to
+    $(amount)
+    for message
+    $(id)
+
+# Commands
+
+command_ping:
+    description: See if the bot is alive
+    listener_message: 'pong. :ping_pong:'
+
+handbook_command:
+    description: Search the TypeScript Handbook
+    listener:
+        no_results_found: ':x: No results found for that query'
+
+help_command:
+    description: Sends what you're looking at right now
+    listener:
+        snippet_created: A custom snippet created by $(owner)
+        snippet_not_created: Run the first snippet that matches that pattern
+        command_not_found: ':x: Command not found'
+
+helpers_command:
+    description: 'Help System: Ping the @Helper role from a help post'
+    listener:
+        not_help_channel: ':warning: You may only ping helpers from a help post'
+        only_asker: ':warning: Only the asker can ping helpers'
+        pls_wait: ':warning: Please wait a bit longer. You can ping helpers $(time)'
+
+playground_command:
+    description: Shorten a TypeScript playground link
+    listener:
+        log: Playground $(content)
+        not_code: ":warning: couldn't find a codeblock!"
+
+resolved_command:
+    description: 'Help System: Mark a post as resolved'
+
+reopen_command:
+    description: 'Help System: Reopen a resolved post'
+
+reputation_command:
+    description: 'Reputation: Give a different user some reputation points'
+
+history_command:
+    description: "Reputation: View a user's reputation history"
+    listener:
+        cannot_find: Unable to find user to give rep
+
+leaderboard_command:
+    description: 'Reputation: See who has the most reputation'
+    listener:
+        invalid_period: ':x: Invalid period (expected one of $(of))'
+
+snippets_command:
+    description: 'Snippet: List snippets matching an optional filter'
+
+snippet_command:
+    description: 'Snippet: Create or edit a snippet'
+    listener:
+        not_name: ':x: You have to supply a name for the command'
+        dont_have_permissions: ":x: You don't have permission to create a global snippet"
+        cannot_edit: ":x: Cannot edit another user's snippet"
+        second_arg: ':x: Second argument must be a valid discord message link or snippet id'
+        have_reply: ':x: You have to reply or link to a comment to make it a snippet'
+        cannot_generate: ':x: Cannot generate a snippet from that message'
+
+delete_snippet_command:
+    description: 'Snippet: Delete a snippet you own'
+    listener:
+        not_found: ':x: No snippet found with that id'
+        cannot_delete: ":x: Cannot delete another user's snippet"
+        snippet_deleted_log: Deleted snippet $(id) for $(author)
+        snippet_deleted_msg: ':white_check_mark: Deleted snippet'
+
+twoslash_command:
+    description: 'Twoslash: Run twoslash on the latest codeblock, optionally returning the quick infos of specified symbols. You can use ts@4.8.3 or ts@next to run a specific version.'
+    listener:
+        cannot_find: ':x: Could not find that version of TypeScript'
+        not_codeblocks: ':warning: could not find any TypeScript codeblocks in the past 10 messages'
+        invalid_symbol: You need to give me a valid symbol name to look for!
+
+# Events
+
+polling_finished: 'Polling finished; result: $(pollingResultStr)'
+
+# Embeds
+
+handbook_embed:
+    title: The TypeScript Handbook
+    url: https://www.typescriptlang.org/docs/handbook/intro.html
+    footer:
+        text: You can search with `!handbook <query>`
+
+help_command_embed:
+    title: Bot Usage
+    description: Hello $(username)! Here is a list of all commands in me! To get detailed description on any specific command, do `help <command>`
+
+playground_command_embed:
+    title: View in Playground
+
+playground_link_embed:
+    title: Playground Link
+
+# Messages
+
+forum_how_to_get_help: |
+    **How To Get Help**
+    - Create a new post $(post) with your question.
+    - It's always ok to just ask your question; you don't need permission.
+    - Someone will (hopefully!) come along and help you.
+    - When your question is resolved, type `!resolved`.
+    \u200b
+    **How To Get Better Help**
+    - Explain what you want to happen and why…
+    	- …and what actually happens, and your best guess at why.
+    	- Include a short code sample and any error messages you got.
+    - Text is better than screenshots. Start code blocks with ```ts.
+    - If possible, create a minimal reproduction in the TypeScript Playground: <https://www.typescriptlang.org/play>.
+    	- Send the full link in its own message; do not use a link shortener.
+    - For more tips, check out StackOverflow's guide on asking good questions: <https://stackoverflow.com/help/how-to-ask>
+    \u200b
+    **If You Haven't Gotten Help**
+    Usually someone will try to answer and help solve the issue within a few hours. If not, and if you have followed the bullets above, you can ping helpers by running !helper.
+
+forum_how_to_give_help: |
+    **How To Give Help**
+    - The channel sidebar on the left will list posts you have joined.
+    - You can scroll through the channel to see all recent questions.
+
+    **How To Give *Better* Help**
+    - Get yourself the $(trusted) role at $(channel)
+    	- (If you don't like the pings, you can disable role mentions for the server.)
+    - As a $(trusted), you can:
+    	- React to a help post to add tags.
+    	- If a post appears to be resolved, run `!resolved` to mark it as such.
+    		- *Only do this if the asker has indicated that their question has been resolved.*
+    	- Conversely, you can run `!reopen` if the asker has follow-up questions.
+
+    **Useful Snippets**
+    - `!screenshot` — for if an asker posts a screenshot of code
+    - `!ask` — for if an asker only posts "can I get help?"
+
+helper_resolve: |
+    $(owner)
+    Because your issue seemed to be resolved, this post was marked as resolved by $(helper).
+    If your issue is not resolved, **you can reopen this post by running `!reopen`**.
+    *If you have a different question, make a new post in $(channel).*
+
+change_status:
+    not_help_thread: ':warning: Can only be run in a help post'
+    only_asker: ':warning: Only the asker can change the status of a help post'
+
+shortened_url_playground: "$(author) Here's a shortened URL of your playground link! You can remove the full link from your message."
+you_can_spec_lines: You can choose specific lines to embed by selecting them before copying the link.
+
+# Modules
+
+mod_module:
+    job_discord_message: "$(author) We don't do job posts here; see $(rules)"
+    job_console_message: Deleted job post message from $(author)
+    spam_message: |
+        Kicked
+        $(author)
+        for spam and deleted
+        $(messages)
+        identical messaged
+
+get_ts_module:
+    downloading: 'Downloading typescript@$(version)'
+    doesnt_exists: typescript@$(version) does not exist

@@ -5,6 +5,7 @@ import { Rep } from '../entities/Rep';
 import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
 import { getMessageOwner, sendWithMessageOwnership } from '../util/send';
 import { Bot } from '../bot';
+import { LOCALIZATION } from '../index';
 
 // The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
 
@@ -21,7 +22,9 @@ export function repModule(bot: Bot) {
 		msg: Pick<Message, 'id' | 'channelId'>,
 		{ recipient, initialGiver }: Pick<Rep, 'recipient' | 'initialGiver'>,
 	) {
-		console.log('Creating a Rep with recipient', recipient);
+		console.log(
+			LOCALIZATION.getLocalizedText('creating_rep', { recipient }),
+		);
 
 		return Rep.create({
 			messageId: msg.id,
@@ -67,39 +70,57 @@ export function repModule(bot: Bot) {
 		const msg = reaction.message;
 		const author = (await msg.fetch()).author;
 
-		console.log('Received rep reaction on', msg.id);
+		console.log(
+			LOCALIZATION.getLocalizedText('received_rep', { message: msg.id }),
+		);
 
 		if (user.id === author.id) {
 			return removeReaction();
 		}
 
-		console.log('Querying database for existing Rep');
+		console.log(LOCALIZATION.getLocalizedText('querying_for_rep'));
 
 		let existingRep = await Rep.findOne({ where: { messageId: msg.id } });
 
 		if (existingRep) {
-			console.log('Found existing Rep', existingRep);
+			console.log(
+				LOCALIZATION.getLocalizedText('rep_exist_found', {
+					rep: existingRep,
+				}),
+			);
 			if (user.id === existingRep.recipient) {
-				console.log('User is recipient; removing reaction');
+				console.log(LOCALIZATION.getLocalizedText('user_is_recipient'));
 				return removeReaction();
 			}
-			console.log('Existing amount is', existingRep.amount);
+			console.log(
+				LOCALIZATION.getLocalizedText('existing_amount_is', {
+					count: existingRep.amount,
+				}),
+			);
 			existingRep.amount++;
 			existingRep.save();
-			console.log('Incremented amount to', existingRep.amount);
+			console.log(
+				LOCALIZATION.getLocalizedText('incremented_amount', {
+					amount: existingRep.amount,
+				}),
+			);
 			return;
 		}
 
 		let recipient = author.id;
 
 		if (recipient == client.user.id) {
-			console.log('Recipient is bot; checking for message ownership');
+			console.log(LOCALIZATION.getLocalizedText('recipient_is_bot'));
 			let altRecipient = getMessageOwner(msg);
 			if (!altRecipient) {
-				console.log('No message owner recorded; removing reaction');
+				console.log(LOCALIZATION.getLocalizedText('no_message_owner'));
 				return removeReaction();
 			}
-			console.log('Message owner is', altRecipient);
+			console.log(
+				LOCALIZATION.getLocalizedText('message_owner_is', {
+					owner: altRecipient,
+				}),
+			);
 			recipient = altRecipient;
 		}
 
@@ -134,10 +155,10 @@ export function repModule(bot: Bot) {
 		await rep.save();
 
 		console.log(
-			'Decremented rep amount to',
-			rep.amount,
-			'for message',
-			rep.messageId,
+			LOCALIZATION.getLocalizedText('decremented_rep', {
+				amount: rep.amount,
+				id: rep.messageId,
+			}),
 		);
 	});
 
@@ -147,7 +168,9 @@ export function repModule(bot: Bot) {
 
 	bot.registerCommand({
 		aliases: ['rep'],
-		description: 'Reputation: Give a different user some reputation points',
+		description: LOCALIZATION.getLocalizedText(
+			'reputation_command.description',
+		),
 		async listener(msg) {
 			const targetMember = msg.content.split(/\s/)[1];
 
@@ -176,7 +199,9 @@ export function repModule(bot: Bot) {
 
 	bot.registerCommand({
 		aliases: ['history'],
-		description: "Reputation: View a user's reputation history",
+		description: LOCALIZATION.getLocalizedText(
+			'history_command.description',
+		),
 		async listener(msg) {
 			if (!msg.member) return;
 			let user = await bot.getTargetUser(msg);
@@ -184,7 +209,9 @@ export function repModule(bot: Bot) {
 			if (!user) {
 				await sendWithMessageOwnership(
 					msg,
-					'Unable to find user to give rep',
+					LOCALIZATION.getLocalizedText(
+						'history_command.listener.cannot_find',
+					),
 				);
 				return;
 			}
@@ -232,7 +259,9 @@ export function repModule(bot: Bot) {
 
 	bot.registerCommand({
 		aliases: ['leaderboard', 'lb'],
-		description: 'Reputation: See who has the most reputation',
+		description: LOCALIZATION.getLocalizedText(
+			'leaderboard_command.description',
+		),
 		async listener(msg) {
 			const periods = {
 				'rolling-hour': ['(past hour)', Date.now() - 60 * 60 * 1000],
@@ -266,9 +295,14 @@ export function repModule(bot: Bot) {
 			if (!(period in periods))
 				return await sendWithMessageOwnership(
 					msg,
-					`:x: Invalid period (expected one of ${Object.keys(periods)
-						.map(x => `\`${x}\``)
-						.join(', ')})`,
+					LOCALIZATION.getLocalizedText(
+						'leaderboard_command.listener.invalid_period',
+						{
+							of: `${Object.keys(periods)
+								.map(x => `\`${x}\``)
+								.join(', ')}`,
+						},
+					),
 				);
 			const [text, dateMin] = periods[period as keyof typeof periods];
 			const topEmojis = [

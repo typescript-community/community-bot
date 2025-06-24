@@ -5,6 +5,7 @@ import { sendWithMessageOwnership } from '../util/send';
 import { getReferencedMessage } from '../util/getReferencedMessage';
 import { splitCustomCommand } from '../util/customCommand';
 import { Bot } from '../bot';
+import { LOCALIZATION } from '../index';
 
 // https://stackoverflow.com/a/3809435
 const LINK_REGEX =
@@ -52,8 +53,10 @@ export function snippetModule(bot: Bot) {
 	});
 
 	bot.registerCommand({
-		description: 'Snippet: List snippets matching an optional filter',
 		aliases: ['listSnippets', 'snippets', 'snips'],
+		description: LOCALIZATION.getLocalizedText(
+			'snippets_command.description',
+		),
 		async listener(msg, specifier) {
 			const limit = 20;
 			const matches = await interpretSpecifier(
@@ -87,8 +90,10 @@ export function snippetModule(bot: Bot) {
 	});
 
 	bot.registerCommand({
-		description: 'Snippet: Create or edit a snippet',
 		aliases: ['snip', 'snippet', 'createSnippet'],
+		description: LOCALIZATION.getLocalizedText(
+			'snippet_command.description',
+		),
 		async listener(msg, content) {
 			if (!msg.member) return;
 
@@ -100,7 +105,9 @@ export function snippetModule(bot: Bot) {
 			if (!name) {
 				return await sendWithMessageOwnership(
 					msg,
-					':x: You have to supply a name for the command',
+					LOCALIZATION.getLocalizedText(
+						'snippet_command.listener.not_name',
+					),
 				);
 			}
 
@@ -114,7 +121,9 @@ export function snippetModule(bot: Bot) {
 			if (!id.includes(':') && !bot.isMod(msg.member))
 				return await sendWithMessageOwnership(
 					msg,
-					":x: You don't have permission to create a global snippet",
+					LOCALIZATION.getLocalizedText(
+						'snippet_command.listener.dont_have_permissions',
+					),
 				);
 
 			if (
@@ -124,7 +133,9 @@ export function snippetModule(bot: Bot) {
 			)
 				return await sendWithMessageOwnership(
 					msg,
-					":x: Cannot edit another user's snippet",
+					LOCALIZATION.getLocalizedText(
+						'snippet_command.listener.cannot_edit',
+					),
 				);
 
 			const title = `\`!${id}\`: `;
@@ -143,7 +154,9 @@ export function snippetModule(bot: Bot) {
 				if (!referencedSnippet)
 					return await sendWithMessageOwnership(
 						msg,
-						':x: Second argument must be a valid discord message link or snippet id',
+						LOCALIZATION.getLocalizedText(
+							'snippet_command.listener.second_arg',
+						),
 					);
 				data = {
 					...referencedSnippet,
@@ -161,7 +174,9 @@ export function snippetModule(bot: Bot) {
 				if (!sourceMessage)
 					return await sendWithMessageOwnership(
 						msg,
-						':x: You have to reply or link to a comment to make it a snippet',
+						LOCALIZATION.getLocalizedText(
+							'snippet_command.listener.have_reply',
+						),
 					);
 
 				const description = sourceMessage.content;
@@ -192,7 +207,9 @@ export function snippetModule(bot: Bot) {
 			if (!data) {
 				return await sendWithMessageOwnership(
 					msg,
-					':x: Cannot generate a snippet from that message',
+					LOCALIZATION.getLocalizedText(
+						'snippet_command.listener.cannot_generate',
+					),
 				);
 			}
 
@@ -208,24 +225,40 @@ export function snippetModule(bot: Bot) {
 	});
 
 	bot.registerCommand({
-		description: 'Snippet: Delete a snippet you own',
 		aliases: ['deleteSnip'],
+		description: LOCALIZATION.getLocalizedText(
+			'delete_snippet_command.description',
+		),
 		async listener(msg, id) {
 			if (!msg.member) return;
 			const snippet = await Snippet.findOneBy({ id });
 			if (!snippet)
 				return await sendWithMessageOwnership(
 					msg,
-					':x: No snippet found with that id',
+					LOCALIZATION.getLocalizedText(
+						'delete_snippet_command.listener.not_found',
+					),
 				);
 			if (!bot.isMod(msg.member) && snippet.owner !== msg.author.id)
 				return await sendWithMessageOwnership(
 					msg,
-					":x: Cannot delete another user's snippet",
+					LOCALIZATION.getLocalizedText(
+						'delete_snippet_command.listener.cannot_delete',
+					),
 				);
 			await snippet.remove();
-			console.log(`Deleted snippet ${id} for`, msg.author);
-			sendWithMessageOwnership(msg, ':white_check_mark: Deleted snippet');
+			console.log(
+				LOCALIZATION.getLocalizedText(
+					'delete_snippet_command.listener.snippet_deleted_log',
+					{ id, author: msg.author },
+				),
+			);
+			sendWithMessageOwnership(
+				msg,
+				LOCALIZATION.getLocalizedText(
+					'delete_snippet_command.listener.snippet_deleted_msg',
+				),
+			);
 		},
 	});
 

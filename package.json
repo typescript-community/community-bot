@@ -4,11 +4,13 @@
 	"description": "Typescript Community Bot",
 	"main": "dist/index.js",
 	"dependencies": {
+		"@types/js-yaml": "^4.0.9",
 		"@typescript/twoslash": "^3.2.1",
 		"algoliasearch": "^4.14.2",
 		"discord.js": "^14.6.0",
 		"dotenv-safe": "^8.2.0",
 		"html-entities": "^2.3.3",
+		"js-yaml": "^4.1.0",
 		"lz-string": "^1.4.4",
 		"npm-registry-fetch": "^14.0.2",
 		"parse-duration": "^1.0.2",

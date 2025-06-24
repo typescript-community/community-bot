@@ -4,6 +4,7 @@ import { sendWithMessageOwnership } from '../util/send';
 import { TS_BLUE } from '../env';
 import { decode } from 'html-entities';
 import { Bot } from '../bot';
+import { LOCALIZATION } from '../index';
 
 const ALGOLIA_APP_ID = 'BGCDYOIYZ5';
 const ALGOLIA_API_KEY = '37ee06fa68db6aef451a490df6df7c60';
@@ -18,14 +19,18 @@ type AlgoliaResult = {
 
 const HANDBOOK_EMBED = new EmbedBuilder()
 	.setColor(TS_BLUE)
-	.setTitle('The TypeScript Handbook')
-	.setURL('https://www.typescriptlang.org/docs/handbook/intro.html')
-	.setFooter({ text: 'You can search with `!handbook <query>`' });
+	.setTitle(LOCALIZATION.getLocalizedText('handbook_embed.title'))
+	.setURL(LOCALIZATION.getLocalizedText('handbook_embed.url'))
+	.setFooter({
+		text: LOCALIZATION.getLocalizedText('handbook_embed.footer.text'),
+	});
 
 export async function handbookModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['handbook', 'hb'],
-		description: 'Search the TypeScript Handbook',
+		description: LOCALIZATION.getLocalizedText(
+			'handbook_command.description',
+		),
 		async listener(msg, content) {
 			if (!content) {
 				return await sendWithMessageOwnership(msg, {
@@ -33,7 +38,9 @@ export async function handbookModule(bot: Bot) {
 				});
 			}
 
-			console.log('Searching algolia for', [content]);
+			console.log(
+				LOCALIZATION.getLocalizedText('searching_algolia', { content }),
+			);
 			const data = await algolia.search<AlgoliaResult>([
 				{
 					indexName: ALGOLIA_INDEX_NAME,
@@ -44,12 +51,16 @@ export async function handbookModule(bot: Bot) {
 					},
 				},
 			]);
-			console.log('Algolia response:', data);
+			console.log(
+				LOCALIZATION.getLocalizedText('algolia_response', { data }),
+			);
 			const hit = data.results[0].hits[0];
 			if (!hit)
 				return await sendWithMessageOwnership(
 					msg,
-					':x: No results found for that query',
+					LOCALIZATION.getLocalizedText(
+						'handbook_command.listener.no_results_found',
+					),
 				);
 			const hierarchyParts = [0, 1, 2, 3, 4, 5, 6]
 				.map(i => hit.hierarchy[`lvl${i}`])
