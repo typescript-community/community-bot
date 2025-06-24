@@ -12,6 +12,7 @@ import {
 	DELETE_EMOJI,
 	ownsBotMessage,
 } from '../util/send';
+import { LOCALIZATION } from '../index';
 
 const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
 
@@ -20,9 +21,11 @@ const defaultPollEmojis = ['✅', '❌', '🤷'];
 export function etcModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['ping'],
-		description: 'See if the bot is alive',
+		description: LOCALIZATION.getLocalizedText('command_ping.description'),
 		async listener(msg) {
-			await msg.channel.send('pong. :ping_pong:');
+			await msg.channel.send(
+				LOCALIZATION.getLocalizedText('command_ping.listener_message'),
+			);
 		},
 	});
 
@@ -81,7 +84,9 @@ export function etcModule(bot: Bot) {
 			.map(([emoji, count]) => `${count}  ${emoji}`)
 			.join('   ');
 		await suggestion.reply({
-			content: `Polling finished; result: ${pollingResultStr}`,
+			content: LOCALIZATION.getLocalizedText('polling_finished', {
+				pollingResultStr,
+			}),
 		});
 	});
 

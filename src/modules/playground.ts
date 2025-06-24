@@ -16,6 +16,7 @@ import { LimitedSizeMap } from '../util/limitedSizeMap';
 import { addMessageOwnership, sendWithMessageOwnership } from '../util/send';
 import { fetch } from 'undici';
 import { Bot } from '../bot';
+import { LOCALIZATION } from '../index';
 
 const PLAYGROUND_BASE = 'https://www.typescriptlang.org/play/#code/';
 const LINK_SHORTENER_ENDPOINT = 'https://tsplay.dev/api/short';
@@ -27,9 +28,16 @@ export async function playgroundModule(bot: Bot) {
 
 	bot.registerCommand({
 		aliases: ['playground', 'pg', 'playg'],
-		description: 'Shorten a TypeScript playground link',
+		description: LOCALIZATION.getLocalizedText(
+			'playground_command.description',
+		),
 		async listener(msg, content) {
-			console.log('Playground', msg.content);
+			console.log(
+				LOCALIZATION.getLocalizedText(
+					'playground_command.listener.log',
+					{ content: msg.content },
+				),
+			);
 
 			let code: string | undefined = content;
 
@@ -38,12 +46,18 @@ export async function playgroundModule(bot: Bot) {
 				if (!code)
 					return sendWithMessageOwnership(
 						msg,
-						":warning: couldn't find a codeblock!",
+						LOCALIZATION.getLocalizedText(
+							'playground_command.listener.not_code',
+						),
 					);
 			}
 			const embed = new EmbedBuilder()
 				.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
-				.setTitle('View in Playground')
+				.setTitle(
+					LOCALIZATION.getLocalizedText(
+						'playground_command_embed.title',
+					),
+				)
 				.setColor(TS_BLUE);
 			await sendWithMessageOwnership(msg, { embeds: [embed] });
 		},
@@ -65,7 +79,10 @@ export async function playgroundModule(bot: Bot) {
 			// Message also contained other characters
 			const botMsg = await msg.channel.send({
 				embeds: [embed],
-				content: `${msg.author} Here's a shortened URL of your playground link! You can remove the full link from your message.`,
+				content: LOCALIZATION.getLocalizedText(
+					'shortened_url_playground',
+					{ author: msg.author },
+				),
 			});
 			editedLongLink.set(msg.id, botMsg);
 			await addMessageOwnership(botMsg, msg.author);
@@ -111,7 +128,7 @@ function createPlaygroundEmbed(
 ) {
 	const embed = new EmbedBuilder()
 		.setColor(TS_BLUE)
-		.setTitle('Playground Link')
+		.setTitle(LOCALIZATION.getLocalizedText('playground_link_embed.title'))
 		.setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
 		.setURL(url);
 
@@ -170,7 +187,7 @@ function createPlaygroundEmbed(
 		embed.setDescription('**Preview:**' + makeCodeBlock(content));
 		if (!startLine && !endLine) {
 			embed.setFooter({
-				text: 'You can choose specific lines to embed by selecting them before copying the link.',
+				text: LOCALIZATION.getLocalizedText('you_can_spec_lines'),
 			});
 		}
 	}

@@ -6,6 +6,7 @@ import { sendWithMessageOwnership } from '../util/send';
 import { getTypeScriptModule, TypeScript } from '../util/getTypeScriptModule';
 import { splitCustomCommand } from '../util/customCommand';
 import { Bot } from '../bot';
+import { LOCALIZATION } from '../index';
 
 const defaultCompilerOptions: CompilerOptions = {
 	target: ScriptTarget.ESNext,
@@ -21,9 +22,10 @@ function redactNoErrorTruncation(code: string) {
 
 export function twoslashModule(bot: Bot) {
 	bot.registerCommand({
-		description:
-			'Twoslash: Run twoslash on the latest codeblock, optionally returning the quick infos of specified symbols. You can use ts@4.8.3 or ts@next to run a specific version.',
 		aliases: ['twoslash', 'ts'],
+		description: LOCALIZATION.getLocalizedText(
+			'twoslash_command.description',
+		),
 		async listener(msg, content) {
 			await twoslash(msg, 'latest', content);
 		},
@@ -60,7 +62,9 @@ async function twoslash(msg: Message, version: string, content: string) {
 	if (!tsModule)
 		return await sendWithMessageOwnership(
 			msg,
-			':x: Could not find that version of TypeScript',
+			LOCALIZATION.getLocalizedText(
+				'twoslash_command.listener.cannot_find',
+			),
 		);
 
 	const code = await findCode(msg);
@@ -68,7 +72,9 @@ async function twoslash(msg: Message, version: string, content: string) {
 	if (!code)
 		return await sendWithMessageOwnership(
 			msg,
-			`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
+			LOCALIZATION.getLocalizedText(
+				'twoslash_command.listener.not_codeblocks',
+			),
 		);
 
 	if (!content) return await twoslashBlock(msg, code, tsModule);
@@ -76,7 +82,9 @@ async function twoslash(msg: Message, version: string, content: string) {
 	if (!/^\s*([_$a-zA-Z][_$0-9a-zA-Z]*\b\s*)+/.test(content)) {
 		return sendWithMessageOwnership(
 			msg,
-			'You need to give me a valid symbol name to look for!',
+			LOCALIZATION.getLocalizedText(
+				'twoslash_command.listener.invalid_symbol',
+			),
 		);
 	}
 

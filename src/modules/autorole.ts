@@ -1,11 +1,14 @@
 import { Bot } from '../bot';
 import { autorole, rolesChannelId } from '../env';
+import { LOCALIZATION } from '../index';
 
 export async function autoroleModule({ client }: Bot) {
 	const channel = await client.channels.fetch(rolesChannelId);
 	if (!channel?.isTextBased()) {
 		console.error(
-			`Roles channel (${rolesChannelId}) does not exist or is not text based.`,
+			LOCALIZATION.getLocalizedText('roles_channel_doesnt_exists', {
+				rolesChannelId,
+			}),
 		);
 		return;
 	}
@@ -13,7 +16,11 @@ export async function autoroleModule({ client }: Bot) {
 	for (const ar of autorole) {
 		const msg = await channel.messages.fetch(ar.msgID);
 		if (!msg) {
-			console.error(`Role message does not exist for ${ar.msgID}`);
+			console.error(
+				LOCALIZATION.getLocalizedText('roles_message_doesnt_exists', {
+					id: ar.msgID,
+				}),
+			);
 		}
 		await msg?.react(ar.emoji);
 	}
@@ -32,7 +39,12 @@ export async function autoroleModule({ client }: Bot) {
 			if (ar.autoRemove) await reaction.users.remove(user.id);
 			const member = await msg.guild.members.fetch(user.id);
 			await member.roles.add(ar.roleID);
-			console.log('Gave role', ar.roleID, 'to', member);
+			console.log(
+				LOCALIZATION.getLocalizedText('gave_role', {
+					role: ar.roleID,
+					member,
+				}),
+			);
 			if (!reaction.users.cache.has(client.user.id)) {
 				await msg.react(reaction.emoji);
 			}
@@ -53,7 +65,12 @@ export async function autoroleModule({ client }: Bot) {
 				continue;
 			const member = await msg.guild.members.fetch(user.id);
 			await member.roles.remove(ar.roleID);
-			console.log('Removed role', ar.roleID, 'from', member);
+			console.log(
+				LOCALIZATION.getLocalizedText('role_removed', {
+					role: ar.roleID,
+					member,
+				}),
+			);
 		}
 	});
 }

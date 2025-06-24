@@ -4,6 +4,7 @@ import tar from 'tar';
 import path from 'path';
 import os from 'os';
 import { once } from 'events';
+import { LOCALIZATION } from '../index';
 
 export type TypeScript = typeof import('typescript');
 
@@ -29,12 +30,18 @@ let tsPackageData:
 export async function getTypeScriptModule(
 	version: string | null,
 ): Promise<TypeScript | null> {
-	console.log(`Downloading typescript@${version}`);
+	console.log(
+		LOCALIZATION.getLocalizedText('get_ts_module.downloading', { version }),
+	);
 
 	version = await resolveVersion(version);
 
 	if (!version) {
-		console.log(`typescript@${version} does not exist`);
+		console.log(
+			LOCALIZATION.getLocalizedText('get_ts_module.doesnt_exists', {
+				version,
+			}),
+		);
 		return null;
 	}
 

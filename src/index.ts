@@ -14,6 +14,8 @@ import { repModule } from './modules/rep';
 import { twoslashModule } from './modules/twoslash';
 import { snippetModule } from './modules/snippet';
 import { helpForumModule } from './modules/helpForum';
+import { Localization } from './modules/localization';
+import path from 'path';
 
 const client = new Client({
 	partials: [
@@ -36,6 +38,10 @@ const client = new Client({
 }).setMaxListeners(Infinity);
 
 getDB().then(() => client.login(token));
+
+export const LOCALIZATION = new Localization(
+	path.resolve(process.cwd(), 'localization.yml'),
+);
 
 client.on('ready', async () => {
 	const bot = new Bot(client);

@@ -2,6 +2,7 @@ import { EmbedBuilder } from 'discord.js';
 import { Bot, CommandRegistration } from '../bot';
 import { Snippet } from '../entities/Snippet';
 import { sendWithMessageOwnership } from '../util/send';
+import { LOCALIZATION } from '../index';
 
 function getCategoryHelp(cat: string, commands: Iterable<CommandRegistration>) {
 	const out: string[] = [];
@@ -37,7 +38,7 @@ function getCommandCategories(commands: Iterable<CommandRegistration>) {
 export function helpModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['help', 'commands', 'h'],
-		description: "Sends what you're looking at right now",
+		description: LOCALIZATION.getLocalizedText('help_command.description'),
 		async listener(msg) {
 			const cmdTrigger = msg.content.split(/\s/)[1];
 
@@ -49,9 +50,16 @@ export function helpModule(bot: Bot) {
 						name: msg.guild.name,
 						iconURL: msg.guild.iconURL() || undefined,
 					})
-					.setTitle('Bot Usage')
+					.setTitle(
+						LOCALIZATION.getLocalizedText(
+							'help_command_embed.title',
+						),
+					)
 					.setDescription(
-						`Hello ${msg.author.username}! Here is a list of all commands in me! To get detailed description on any specific command, do \`help <command>\``,
+						LOCALIZATION.getLocalizedText(
+							'help_command_embed.description',
+							{ username: msg.author.username },
+						),
 					);
 
 				for (const cat of getCommandCategories(bot.commands.values())) {
@@ -80,19 +88,25 @@ export function helpModule(bot: Bot) {
 				});
 				if (snippet)
 					cmd = {
-						description: `A custom snippet created by <@${snippet.owner}>`,
+						description: LOCALIZATION.getLocalizedText(
+							'help_command.listener.snippet_created',
+							{ owner: `<@${snippet.owner}>` },
+						),
 					};
 				else
 					cmd = {
-						description:
-							'Run the first snippet that matches that pattern',
+						description: LOCALIZATION.getLocalizedText(
+							'help_command.listener.snippet_not_created',
+						),
 					};
 			}
 
 			if (!cmd.description)
 				return await sendWithMessageOwnership(
 					msg,
-					`:x: Command not found`,
+					LOCALIZATION.getLocalizedText(
+						'help_command.listener.command_not_found',
+					),
 				);
 
 			const embed = new EmbedBuilder().setTitle(
