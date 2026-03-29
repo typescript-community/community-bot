@@ -1,6 +1,6 @@
 import { Message, MessageType } from 'discord.js';
-import { decompressFromEncodedURIComponent } from 'lz-string';
-import { getReferencedMessage } from './getReferencedMessage';
+import lzString from 'lz-string';
+import { getReferencedMessage } from './getReferencedMessage.js';
 
 const CODEBLOCK_REGEX = /```(?:ts|typescript|js|javascript)?\n([\s\S]+)```/;
 
@@ -68,7 +68,7 @@ async function findCodeInMessage(msg: Message, ignoreLinks = false) {
 	for (const code of codeSources) {
 		const match = code && matchPlaygroundLink(code);
 		if (match) {
-			return decompressFromEncodedURIComponent(match.code);
+			return lzString.decompressFromEncodedURIComponent(match.code);
 		}
 	}
 }

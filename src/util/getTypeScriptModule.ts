@@ -1,9 +1,10 @@
 import fetch from 'npm-registry-fetch';
 import { promises as fs } from 'fs';
-import tar from 'tar';
+import * as tar from 'tar';
 import path from 'path';
 import os from 'os';
 import { once } from 'events';
+import { createRequire } from 'module';
 
 export type TypeScript = typeof import('typescript');
 
@@ -25,6 +26,8 @@ let tsPackageData:
 			>;
 	  }
 	| undefined;
+
+const requireFn = createRequire(import.meta.filename);
 
 export async function getTypeScriptModule(
 	version: string | null,
@@ -53,7 +56,7 @@ export async function getTypeScriptModule(
 			'finish',
 		);
 
-		const ts: TypeScript = require(path.join(directory, 'package'));
+		const ts: TypeScript = requireFn(path.join(directory, 'package'));
 
 		return ts;
 	})();

@@ -5,13 +5,13 @@ import {
 	User,
 	ThreadChannel,
 } from 'discord.js';
-import { Bot } from '../bot';
-import { suggestionsChannelId } from '../env';
+import { Bot } from '../bot.js';
+import { suggestionsChannelId } from '../env.js';
 import {
 	clearMessageOwnership,
 	DELETE_EMOJI,
 	ownsBotMessage,
-} from '../util/send';
+} from '../util/send.js';
 
 const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
 
@@ -22,7 +22,7 @@ export function etcModule(bot: Bot) {
 		aliases: ['ping'],
 		description: 'See if the bot is alive',
 		async listener(msg) {
-			await msg.channel.send('pong. :ping_pong:');
+			await msg.reply('pong. :ping_pong:');
 		},
 	});
 
@@ -56,13 +56,16 @@ export function etcModule(bot: Bot) {
 	bot.client.on('threadUpdate', async thread => {
 		if (
 			thread.parentId !== suggestionsChannelId ||
-			!((await thread.fetch()) as ThreadChannel).archived
-		)
+			!((await thread.fetch()) as ThreadChannel).archived ||
+			!thread.parent?.isTextBased()
+		) {
 			return;
-		const channel = thread.parent!;
+		}
+
+		const channel = thread.parent;
 		let lastMessage = null;
-		let suggestion: Message;
-		while (!suggestion!) {
+		let suggestion: Message | undefined;
+		while (!suggestion) {
 			const msgs = await channel.messages.fetch({
 				before: lastMessage ?? undefined,
 				limit: 5,
@@ -105,7 +108,7 @@ export function etcModule(bot: Bot) {
 		aliases: ['kill'],
 		async listener(msg) {
 			const confirm = '✅';
-			const confirmationMessage = await msg.channel.send('Confirm?');
+			const confirmationMessage = await msg.reply('Confirm?');
 			confirmationMessage.react(confirm);
 			const reactionFilter = (reaction: MessageReaction, user: User) =>
 				reaction.emoji.name === confirm && user.id === msg.author.id;

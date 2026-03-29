@@ -1,10 +1,10 @@
 import { EmbedBuilder, TextChannel, User } from 'discord.js';
-import { Snippet } from '../entities/Snippet';
-import { BLOCKQUOTE_GREY } from '../env';
-import { sendWithMessageOwnership } from '../util/send';
-import { getReferencedMessage } from '../util/getReferencedMessage';
-import { splitCustomCommand } from '../util/customCommand';
-import { Bot } from '../bot';
+import { Snippet } from '../entities/Snippet.js';
+import { BLOCKQUOTE_GREY } from '../env.js';
+import { sendWithMessageOwnership } from '../util/send.js';
+import { getReferencedMessage } from '../util/getReferencedMessage.js';
+import { splitCustomCommand } from '../util/customCommand.js';
+import { Bot } from '../bot.js';
 
 // https://stackoverflow.com/a/3809435
 const LINK_REGEX =
@@ -108,7 +108,7 @@ export function snippetModule(bot: Bot) {
 				? `${sanitizeIdPart(name.slice(1))}`
 				: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(
 						name,
-				  )}`;
+					)}`;
 			const existingSnippet = await Snippet.findOneBy({ id });
 
 			if (!id.includes(':') && !bot.isMod(msg.member))

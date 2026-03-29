@@ -1,5 +1,5 @@
-import { Bot } from '../bot';
-import { autorole, rolesChannelId } from '../env';
+import { Bot } from '../bot.js';
+import { autorole, rolesChannelId } from '../env.js';
 
 export async function autoroleModule({ client }: Bot) {
 	const channel = await client.channels.fetch(rolesChannelId);

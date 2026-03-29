@@ -2,30 +2,30 @@ import { BaseEntity, Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Snippet extends BaseEntity {
-	@PrimaryColumn()
+	@PrimaryColumn({ type: String })
 	id!: string;
 
-	@Column()
+	@Column({ type: String })
 	owner!: string;
 
-	@Column()
+	@Column({ type: Number })
 	uses!: number;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, type: String })
 	content?: string;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, type: String })
 	title?: string;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, type: String })
 	description?: string;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, type: Number })
 	color?: number;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, type: String })
 	image?: string;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, type: String })
 	url?: string;
 }

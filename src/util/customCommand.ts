@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
-import { Bot } from '../bot';
-import { prefixes } from '../env';
+import { Bot } from '../bot.js';
+import { prefixes } from '../env.js';
 
 export async function splitCustomCommand(bot: Bot, msg: Message) {
 	const [commandPart, ...argParts] = msg.content.split(' ');

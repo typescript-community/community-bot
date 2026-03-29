@@ -6,8 +6,8 @@ import {
 	ForumChannel,
 	Message,
 } from 'discord.js';
-import { Bot } from '../bot';
-import { HelpThread } from '../entities/HelpThread';
+import { Bot } from '../bot.js';
+import { HelpThread } from '../entities/HelpThread.js';
 import {
 	helpForumChannel,
 	helpForumOpenTagName,
@@ -18,8 +18,8 @@ import {
 	rolesChannelId,
 	timeBeforeHelperPing,
 	trustedRoleId,
-} from '../env';
-import { sendWithMessageOwnership } from '../util/send';
+} from '../env.js';
+import { sendWithMessageOwnership } from '../util/send.js';
 
 const MAX_TAG_COUNT = 5;
 
@@ -258,8 +258,9 @@ export async function helpForumModule(bot: Bot) {
 		aliases: ['htgh'],
 		async listener(msg) {
 			if (
-				msg.channel.id !== howToGetHelpChannel &&
-				msg.channel.id !== howToGiveHelpChannel
+				(msg.channel.id !== howToGetHelpChannel &&
+					msg.channel.id !== howToGiveHelpChannel) ||
+				!msg.channel.isSendable()
 			) {
 				return;
 			}

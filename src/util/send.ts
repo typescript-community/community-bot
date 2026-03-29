@@ -5,7 +5,7 @@ import {
 	PartialMessage,
 	User,
 } from 'discord.js';
-import { LimitedSizeMap } from './limitedSizeMap';
+import { LimitedSizeMap } from './limitedSizeMap.js';
 
 const messageToUserId = new LimitedSizeMap<
 	string,
@@ -19,8 +19,10 @@ export async function sendWithMessageOwnership(
 	toSend: string | MessagePayload | MessageCreateOptions,
 	onDelete?: () => void,
 ) {
-	const sent = await message.channel.send(toSend);
-	await addMessageOwnership(sent, message.author, onDelete);
+	if (message.channel.isSendable()) {
+		const sent = await message.channel.send(toSend);
+		await addMessageOwnership(sent, message.author, onDelete);
+	}
 }
 
 export async function addMessageOwnership(

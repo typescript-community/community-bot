@@ -2,21 +2,21 @@ import { Entity, BaseEntity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity()
 export class Rep extends BaseEntity {
-	@PrimaryColumn()
+	@PrimaryColumn({ type: String })
 	messageId!: string;
 
-	@Column()
+	@Column({ type: String })
 	date!: string;
 
-	@Column()
+	@Column({ type: String })
 	channel!: string;
 
-	@Column()
+	@Column({ type: Number })
 	amount!: number;
 
-	@Column()
+	@Column({ type: String })
 	recipient!: string;
 
-	@Column()
+	@Column({ type: String })
 	initialGiver!: string;
 }

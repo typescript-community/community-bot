@@ -5,7 +5,7 @@
 		"lib": ["ES2020"],
 		"outDir": "./dist",
 		"rootDir": "./src",
-		"types": ["discord.js", "dotenv-safe"],
+		"types": ["node", "discord.js"],
 
 		"strict": true,
 		"esModuleInterop": true,
@@ -14,7 +14,8 @@
 		"noUnusedLocals": true,
 		"skipLibCheck": true,
 
-		"experimentalDecorators": true,
-		"emitDecoratorMetadata": true
+		// We're unfortunately stuck with the experimental version due to typeorm
+		// https://github.com/typeorm/typeorm/issues/9862
+		"experimentalDecorators": true
 	}
 }
