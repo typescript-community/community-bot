@@ -1,10 +1,16 @@
-import { EmbedBuilder, TextChannel, User } from 'discord.js';
+import {
+	EmbedBuilder,
+	MessageCreateOptions,
+	TextChannel,
+	User,
+} from 'discord.js';
 import { Snippet } from '../entities/Snippet';
 import { BLOCKQUOTE_GREY } from '../env';
 import { sendWithMessageOwnership } from '../util/send';
 import { getReferencedMessage } from '../util/getReferencedMessage';
 import { splitCustomCommand } from '../util/customCommand';
 import { Bot } from '../bot';
+import { MessageBuilder } from '../util/messageBuilder';
 
 // https://stackoverflow.com/a/3809435
 const LINK_REGEX =
@@ -37,18 +43,35 @@ export function snippetModule(bot: Bot) {
 		}
 
 		const owner = await bot.client.users.fetch(snippet.owner);
-		const embed = new EmbedBuilder({
-			...snippet,
-			// image is in an incompatible format, so we have to set it later
-			image: undefined,
-		});
-		if (match.id.includes(':'))
-			embed.setAuthor({
-				name: owner.tag,
-				iconURL: owner.displayAvatarURL(),
+
+		let toSend: MessageCreateOptions;
+		if (snippet.image) {
+			// This snippet originated from an embed, send it back as an embed.
+
+			const embed = new EmbedBuilder({
+				...snippet,
+				// image is in an incompatible format, so we have to set it later
+				image: undefined,
 			});
-		if (snippet.image) embed.setImage(snippet.image);
-		await sendWithMessageOwnership(msg, { embeds: [embed] }, onDelete);
+			if (match.id.includes(':'))
+				embed.setAuthor({
+					name: owner.tag,
+					iconURL: owner.displayAvatarURL(),
+				});
+			embed.setImage(snippet.image);
+
+			toSend = { embeds: [embed] };
+		} else {
+			// Don't need an embed, send as plain text
+
+			toSend = new MessageBuilder()
+				.setAuthor(`<@${snippet.owner}>`)
+				.setTitle(snippet.title)
+				.setDescription(snippet.description)
+				.build();
+		}
+
+		await sendWithMessageOwnership(msg, toSend, onDelete);
 	});
 
 	bot.registerCommand({
@@ -61,28 +84,24 @@ export function snippetModule(bot: Bot) {
 				specifier || '*',
 				limit + 1,
 			);
-			await sendWithMessageOwnership(msg, {
-				embeds: [
-					new EmbedBuilder()
-						.setColor(BLOCKQUOTE_GREY)
-						.setTitle(
-							`${
-								matches.length > limit
-									? `${limit}+`
-									: matches.length
-							} Matches Found`,
-						)
-						.setDescription(
-							matches
-								.slice(0, limit)
-								.map(
-									s =>
-										`- \`${s.id}\` with **${s.uses}** uses`,
-								)
-								.join('\n'),
-						),
-				],
-			});
+			await sendWithMessageOwnership(
+				msg,
+				new MessageBuilder()
+					.setTitle(
+						`${
+							matches.length > limit
+								? `${limit}+`
+								: matches.length
+						} Matches Found`,
+					)
+					.setDescription(
+						matches
+							.slice(0, limit)
+							.map(s => `- \`${s.id}\` with **${s.uses}** uses`)
+							.join('\n'),
+					)
+					.build(),
+			);
 		},
 	});
 

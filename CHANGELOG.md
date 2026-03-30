@@ -1,3 +1,8 @@
+# 2023-08-20
+
+-   Reworked modules to avoid sending messages in embeds.
+-   Show up to 5 search results from `!hb`.
+
 # 2022-12-16
 
 -   Remove `!close`, update `!helper` to include thread tags.

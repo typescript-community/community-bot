@@ -1,9 +1,8 @@
-import { EmbedBuilder } from 'discord.js';
 import algoliasearch from 'algoliasearch/lite';
 import { sendWithMessageOwnership } from '../util/send';
-import { TS_BLUE } from '../env';
 import { decode } from 'html-entities';
 import { Bot } from '../bot';
+import { MessageBuilder } from '../util/messageBuilder';
 
 const ALGOLIA_APP_ID = 'BGCDYOIYZ5';
 const ALGOLIA_API_KEY = '37ee06fa68db6aef451a490df6df7c60';
@@ -16,11 +15,11 @@ type AlgoliaResult = {
 	url: string;
 };
 
-const HANDBOOK_EMBED = new EmbedBuilder()
-	.setColor(TS_BLUE)
+const HANDBOOK_HELP = new MessageBuilder()
 	.setTitle('The TypeScript Handbook')
 	.setURL('https://www.typescriptlang.org/docs/handbook/intro.html')
-	.setFooter({ text: 'You can search with `!handbook <query>`' });
+	.setDescription('You can search with `!handbook <query>`')
+	.build();
 
 export async function handbookModule(bot: Bot) {
 	bot.registerCommand({
@@ -28,40 +27,50 @@ export async function handbookModule(bot: Bot) {
 		description: 'Search the TypeScript Handbook',
 		async listener(msg, content) {
 			if (!content) {
-				return await sendWithMessageOwnership(msg, {
-					embeds: [HANDBOOK_EMBED],
-				});
+				return await sendWithMessageOwnership(msg, HANDBOOK_HELP);
 			}
 
-			console.log('Searching algolia for', [content]);
 			const data = await algolia.search<AlgoliaResult>([
 				{
 					indexName: ALGOLIA_INDEX_NAME,
 					query: content,
 					params: {
 						offset: 0,
-						length: 1,
+						length: 5,
 					},
 				},
 			]);
-			console.log('Algolia response:', data);
-			const hit = data.results[0].hits[0];
-			if (!hit)
+
+			if (!data.results[0].hits.length) {
 				return await sendWithMessageOwnership(
 					msg,
 					':x: No results found for that query',
 				);
-			const hierarchyParts = [0, 1, 2, 3, 4, 5, 6]
-				.map(i => hit.hierarchy[`lvl${i}`])
-				.filter(x => x);
-			const embed = new EmbedBuilder()
-				.setColor(TS_BLUE)
-				.setTitle(decode(hierarchyParts[hierarchyParts.length - 1]))
-				.setAuthor({
-					name: decode(hierarchyParts.slice(0, -1).join(' / ')),
-				})
-				.setURL(hit.url);
-			await sendWithMessageOwnership(msg, { embeds: [embed] });
+			}
+
+			const response = new MessageBuilder();
+
+			const pages = {} as Record<string, string[]>;
+
+			for (const hit of data.results[0].hits) {
+				const hierarchyParts = [0, 1, 2, 3, 4, 5, 6]
+					.map(i => hit.hierarchy[`lvl${i}`])
+					.filter(x => x);
+
+				const page = hierarchyParts[0]!;
+				const path = decode(hierarchyParts.slice(1).join(' / '));
+				pages[page] ??= [];
+				pages[page].push(`[${path}](<${hit.url}>)`);
+			}
+
+			for (const [page, entries] of Object.entries(pages)) {
+				response.addFields({
+					name: page,
+					value: `- ${entries.join('\n- ')}`,
+				});
+			}
+
+			await sendWithMessageOwnership(msg, response.build());
 		},
 	});
 }

@@ -1,10 +1,11 @@
-import { Message, EmbedBuilder } from 'discord.js';
-import { repEmoji, TS_BLUE } from '../env';
+import { Message } from 'discord.js';
+import { repEmoji } from '../env';
 
 import { Rep } from '../entities/Rep';
 import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
 import { getMessageOwner, sendWithMessageOwnership } from '../util/send';
 import { Bot } from '../bot';
+import { MessageBuilder } from '../util/messageBuilder';
 
 // The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
 
@@ -184,7 +185,7 @@ export function repModule(bot: Bot) {
 			if (!user) {
 				await sendWithMessageOwnership(
 					msg,
-					'Unable to find user to give rep',
+					'User has no reputation history.',
 				);
 				return;
 			}
@@ -216,12 +217,9 @@ export function repModule(bot: Bot) {
 					return acc;
 				}, [])
 				.map(page => page.join('\n'));
-			const embed = new EmbedBuilder().setColor(TS_BLUE).setAuthor({
-				name: user.tag,
-				iconURL: user.displayAvatarURL(),
-			});
+			const builder = new MessageBuilder().setAuthor(user.tag);
 			await sendPaginatedMessage(
-				embed,
+				builder,
 				pages,
 				msg.member,
 				msg.channel,
@@ -286,8 +284,7 @@ export function repModule(bot: Bot) {
 				recipient: string;
 				sum: number;
 			}[];
-			const embed = new EmbedBuilder()
-				.setColor(TS_BLUE)
+			const builder = new MessageBuilder()
 				.setTitle(`Top 10 Reputation ${text}`)
 				.setDescription(
 					data
@@ -301,7 +298,7 @@ export function repModule(bot: Bot) {
 						)
 						.join('\n'),
 				);
-			await msg.channel.send({ embeds: [embed] });
+			await msg.channel.send(builder.build());
 		},
 	});
 }
