@@ -1,15 +1,15 @@
 import { EmbedBuilder } from 'discord.js';
-import algoliasearch from 'algoliasearch/lite';
-import { sendWithMessageOwnership } from '../util/send';
-import { TS_BLUE } from '../env';
+import { liteClient } from 'algoliasearch/lite';
 import { decode } from 'html-entities';
-import { Bot } from '../bot';
+import { sendWithMessageOwnership } from '../util/send.js';
+import { TS_BLUE } from '../env.js';
+import { Bot } from '../bot.js';
 
 const ALGOLIA_APP_ID = 'BGCDYOIYZ5';
 const ALGOLIA_API_KEY = '37ee06fa68db6aef451a490df6df7c60';
 const ALGOLIA_INDEX_NAME = 'typescriptlang';
 
-const algolia = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY, {});
+const algolia = liteClient(ALGOLIA_APP_ID, ALGOLIA_API_KEY, {});
 
 type AlgoliaResult = {
 	hierarchy: Record<string, string | null>;
@@ -34,16 +34,16 @@ export async function handbookModule(bot: Bot) {
 			}
 
 			console.log('Searching algolia for', [content]);
-			const data = await algolia.search<AlgoliaResult>([
-				{
-					indexName: ALGOLIA_INDEX_NAME,
-					query: content,
-					params: {
+			const data = await algolia.searchForHits<AlgoliaResult>({
+				requests: [
+					{
+						indexName: ALGOLIA_INDEX_NAME,
+						query: content,
 						offset: 0,
 						length: 1,
 					},
-				},
-			]);
+				],
+			});
 			console.log('Algolia response:', data);
 			const hit = data.results[0].hits[0];
 			if (!hit)

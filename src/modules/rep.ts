@@ -1,10 +1,10 @@
 import { Message, EmbedBuilder } from 'discord.js';
-import { repEmoji, TS_BLUE } from '../env';
+import { repEmoji, TS_BLUE } from '../env.js';
 
-import { Rep } from '../entities/Rep';
-import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
-import { getMessageOwner, sendWithMessageOwnership } from '../util/send';
-import { Bot } from '../bot';
+import { Rep } from '../entities/Rep.js';
+import { sendPaginatedMessage } from '../util/sendPaginatedMessage.js';
+import { getMessageOwner, sendWithMessageOwnership } from '../util/send.js';
+import { Bot } from '../bot.js';
 
 // The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
 
@@ -178,7 +178,7 @@ export function repModule(bot: Bot) {
 		aliases: ['history'],
 		description: "Reputation: View a user's reputation history",
 		async listener(msg) {
-			if (!msg.member) return;
+			if (!msg.member || !msg.channel.isSendable()) return;
 			let user = await bot.getTargetUser(msg);
 
 			if (!user) {
@@ -234,6 +234,8 @@ export function repModule(bot: Bot) {
 		aliases: ['leaderboard', 'lb'],
 		description: 'Reputation: See who has the most reputation',
 		async listener(msg) {
+			if (!msg.channel.isSendable()) return;
+
 			const periods = {
 				'rolling-hour': ['(past hour)', Date.now() - 60 * 60 * 1000],
 				'rolling-day': ['(past day)', Date.now() - 24 * 60 * 60 * 1000],

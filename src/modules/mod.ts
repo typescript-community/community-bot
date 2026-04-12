@@ -1,6 +1,6 @@
 import { Message, Snowflake, User } from 'discord.js';
-import { Bot } from '../bot';
-import { rulesChannelId } from '../env';
+import { Bot } from '../bot.js';
+import { rulesChannelId } from '../env.js';
 
 // Most job posts are in this format:
 // > [FOR HIRE][REMOTE][SOMETHING ELSE]

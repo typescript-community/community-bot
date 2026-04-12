@@ -1,11 +1,14 @@
 import { Message } from 'discord.js';
 import { twoslasher, TwoSlashReturn } from '@typescript/twoslash';
 import type { CompilerOptions } from 'typescript';
-import { makeCodeBlock, findCode } from '../util/codeBlocks';
-import { sendWithMessageOwnership } from '../util/send';
-import { getTypeScriptModule, TypeScript } from '../util/getTypeScriptModule';
-import { splitCustomCommand } from '../util/customCommand';
-import { Bot } from '../bot';
+import { makeCodeBlock, findCode } from '../util/codeBlocks.js';
+import { sendWithMessageOwnership } from '../util/send.js';
+import {
+	getTypeScriptModule,
+	TypeScript,
+} from '../util/getTypeScriptModule.js';
+import { splitCustomCommand } from '../util/customCommand.js';
+import { Bot } from '../bot.js';
 
 // Preload typescript@latest
 getTypeScriptModule('latest');

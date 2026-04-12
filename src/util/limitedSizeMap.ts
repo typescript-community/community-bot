@@ -14,7 +14,8 @@ export class LimitedSizeMap<K, V> extends Map<K, V> implements Map<K, V> {
 
 		if (this.size > this._maxSize) {
 			// Keys returns an iterable in insertion order, so this removes the oldest entry from the map.
-			this.delete(this.keys().next().value);
+			// Non-null assertion is safe as we know at least one element is in the map since we just added one.
+			this.delete(this.keys().next().value!);
 		}
 
 		return this;

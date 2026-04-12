@@ -1,9 +1,7 @@
 # Development compose file
-version: '3'
-
 services:
     bot:
-        image: node:16
+        image: node:24.14.1-alpine
         command: yarn start
         depends_on:
             - postgres

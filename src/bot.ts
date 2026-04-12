@@ -1,5 +1,5 @@
 import { Message, Client, User, GuildMember } from 'discord.js';
-import { botAdmins, prefixes, trustedRoleId } from './env';
+import { botAdmins, prefixes, trustedRoleId } from './env.js';
 
 export interface CommandRegistration {
 	aliases: string[];

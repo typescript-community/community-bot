@@ -2,8 +2,8 @@ import {
 	GuildMember,
 	EmbedBuilder,
 	MessageReaction,
-	TextBasedChannel,
 	User,
+	SendableChannels,
 } from 'discord.js';
 
 const emojis = {
@@ -18,7 +18,7 @@ export async function sendPaginatedMessage(
 	embed: EmbedBuilder,
 	pages: string[],
 	member: GuildMember,
-	channel: TextBasedChannel,
+	channel: SendableChannels,
 	timeout: number = 100000,
 ) {
 	let curPage = 0;

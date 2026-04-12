@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
-import { Bot, CommandRegistration } from '../bot';
-import { Snippet } from '../entities/Snippet';
-import { sendWithMessageOwnership } from '../util/send';
+import { Bot, CommandRegistration } from '../bot.js';
+import { Snippet } from '../entities/Snippet.js';
+import { sendWithMessageOwnership } from '../util/send.js';
 
 function getCategoryHelp(cat: string, commands: Iterable<CommandRegistration>) {
 	const out: string[] = [];

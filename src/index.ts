@@ -1,19 +1,19 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
-import { Bot } from './bot';
-import { getDB } from './db';
-import { token } from './env';
-import { hookLog } from './log';
+import { Bot } from './bot.js';
+import { getDB } from './db.js';
+import { token } from './env.js';
+import { hookLog } from './log.js';
 
-import { autoroleModule } from './modules/autorole';
-import { etcModule } from './modules/etc';
-import { handbookModule } from './modules/handbook';
-import { helpModule } from './modules/help';
-import { modModule } from './modules/mod';
-import { playgroundModule } from './modules/playground';
-import { repModule } from './modules/rep';
-import { twoslashModule } from './modules/twoslash';
-import { snippetModule } from './modules/snippet';
-import { helpForumModule } from './modules/helpForum';
+import { autoroleModule } from './modules/autorole.js';
+import { etcModule } from './modules/etc.js';
+import { handbookModule } from './modules/handbook.js';
+import { helpModule } from './modules/help.js';
+import { modModule } from './modules/mod.js';
+import { playgroundModule } from './modules/playground.js';
+import { repModule } from './modules/rep.js';
+import { twoslashModule } from './modules/twoslash.js';
+import { snippetModule } from './modules/snippet.js';
+import { helpForumModule } from './modules/helpForum.js';
 
 const client = new Client({
 	partials: [
@@ -37,7 +37,7 @@ const client = new Client({
 
 getDB().then(() => client.login(token));
 
-client.on('ready', async () => {
+client.on('clientReady', async client => {
 	const bot = new Bot(client);
 	console.log(`Logged in as ${client.user?.tag}`);
 	await hookLog(client);

@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
-import { dbUrl } from './env';
-import { Rep } from './entities/Rep';
-import { HelpThread } from './entities/HelpThread';
-import { Snippet } from './entities/Snippet';
+import { dbUrl } from './env.js';
+import { Rep } from './entities/Rep.js';
+import { HelpThread } from './entities/HelpThread.js';
+import { Snippet } from './entities/Snippet.js';
 
 let db: DataSource | undefined;
 export async function getDB() {
@@ -18,7 +18,7 @@ export async function getDB() {
 							rejectUnauthorized: false,
 						},
 					},
-			  }
+				}
 			: {};
 
 	db = new DataSource({

@@ -7,7 +7,7 @@ import {
 	User,
 } from 'discord.js';
 import { inspect } from 'util';
-import { logChannelId } from './env';
+import { logChannelId } from './env.js';
 
 const logDebounceTime = 5000;
 const logMaxLength = 2000;
