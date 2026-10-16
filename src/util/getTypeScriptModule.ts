@@ -49,7 +49,9 @@ export async function getTypeScriptModule(
 		const tarballResponse = await fetch(tarballUrl);
 
 		await once(
-			tarballResponse.body.pipe(tar.extract({ cwd: directory })),
+			tarballResponse.body.pipe(
+				tar.extract({ cwd: directory }) as NodeJS.WritableStream,
+			),
 			'finish',
 		);
 

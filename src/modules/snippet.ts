@@ -108,7 +108,7 @@ export function snippetModule(bot: Bot) {
 				? `${sanitizeIdPart(name.slice(1))}`
 				: `${sanitizeIdPart(msg.author.username)}:${sanitizeIdPart(
 						name,
-				  )}`;
+					)}`;
 			const existingSnippet = await Snippet.findOneBy({ id });
 
 			if (!id.includes(':') && !bot.isMod(msg.member))

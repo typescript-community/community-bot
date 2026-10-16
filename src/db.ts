@@ -18,7 +18,7 @@ export async function getDB() {
 							rejectUnauthorized: false,
 						},
 					},
-			  }
+				}
 			: {};
 
 	db = new DataSource({

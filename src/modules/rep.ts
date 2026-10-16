@@ -1,9 +1,14 @@
-import { Message, EmbedBuilder } from 'discord.js';
+import {
+	Message,
+	EmbedBuilder,
+	ApplicationCommandOptionType,
+	MessageFlags,
+	ThumbnailBuilder,
+} from 'discord.js';
 import { repEmoji, TS_BLUE } from '../env';
 
 import { Rep } from '../entities/Rep';
 import { sendPaginatedMessage } from '../util/sendPaginatedMessage';
-import { getMessageOwner, sendWithMessageOwnership } from '../util/send';
 import { Bot } from '../bot';
 
 // The Chinese is outside the group on purpose, because CJK languages don't have word bounds. Therefore we only look for key characters
@@ -94,7 +99,7 @@ export function repModule(bot: Bot) {
 
 		if (recipient == client.user.id) {
 			console.log('Recipient is bot; checking for message ownership');
-			let altRecipient = getMessageOwner(msg);
+			let altRecipient = msg.interactionMetadata?.user.id;
 			if (!altRecipient) {
 				console.log('No message owner recorded; removing reaction');
 				return removeReaction();
@@ -148,44 +153,53 @@ export function repModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['rep'],
 		description: 'Reputation: Give a different user some reputation points',
-		async listener(msg) {
-			const targetMember = msg.content.split(/\s/)[1];
+		options: [
+			{
+				name: 'user',
+				description: 'The user to give some reputation points to',
+				type: ApplicationCommandOptionType.User,
+				required: true,
+			},
+		],
+		async listener(interaction) {
+			const targetMember = interaction.options.getUser('user', true);
 
-			if (targetMember.match(/\d+/)) {
-				const user = await client.users
-					.fetch(targetMember)
-					.catch(() => null);
+			await interaction.deferReply({
+				flags: MessageFlags.Ephemeral,
+			});
 
-				if (user) {
-					if (user.id === msg.author.id) {
-						await msg.react('🤡');
-						return;
-					}
-					await giveRep(msg, {
-						recipient: targetMember,
-						initialGiver: msg.author.id,
-					});
-					await msg.react(repEmoji);
-					return;
-				}
+			if (targetMember.id === interaction.user.id) {
+				await interaction.editReply('🤡');
+				return;
 			}
 
-			await onThank(msg, true);
+			const response = await interaction.editReply(repEmoji);
+			await giveRep(response, {
+				recipient: targetMember.id,
+				initialGiver: interaction.user.id,
+			});
 		},
 	});
 
 	bot.registerCommand({
 		aliases: ['history'],
 		description: "Reputation: View a user's reputation history",
-		async listener(msg) {
-			if (!msg.member) return;
-			let user = await bot.getTargetUser(msg);
+		options: [
+			{
+				name: 'user',
+				description: 'Whose reputation history to view',
+				type: ApplicationCommandOptionType.User,
+				required: true,
+			},
+		],
+		async listener(interaction) {
+			if (!interaction.inCachedGuild()) return;
+			let user = interaction.options.getUser('user');
+
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 			if (!user) {
-				await sendWithMessageOwnership(
-					msg,
-					'Unable to find user to give rep',
-				);
+				await interaction.editReply('Unable to find user to give rep');
 				return;
 			}
 
@@ -194,9 +208,9 @@ export function repModule(bot: Bot) {
 				.filter(x => x.amount > 0)
 				.map(rg => {
 					const emoji =
-						msg.guild!.emojis.resolve(repEmoji) ?? repEmoji;
+						interaction.guild.emojis.resolve(repEmoji) ?? repEmoji;
 					const messageLink = `https://discord.com/channels/${
-						msg.guild!.id
+						interaction.guild!.id
 					}/${rg.channel}/${rg.messageId}`;
 					return `**${
 						rg.amount
@@ -216,24 +230,35 @@ export function repModule(bot: Bot) {
 					return acc;
 				}, [])
 				.map(page => page.join('\n'));
-			const embed = new EmbedBuilder().setColor(TS_BLUE).setAuthor({
-				name: user.tag,
-				iconURL: user.displayAvatarURL(),
-			});
-			await sendPaginatedMessage(
-				embed,
-				pages,
-				msg.member,
-				msg.channel,
-				300000,
-			);
+			const thumnbail = new ThumbnailBuilder()
+				.setURL(user.displayAvatarURL())
+				.setDescription(user.tag);
+			await sendPaginatedMessage(thumnbail, pages, interaction, 300000);
 		},
 	});
 
 	bot.registerCommand({
 		aliases: ['leaderboard', 'lb'],
 		description: 'Reputation: See who has the most reputation',
-		async listener(msg) {
+		options: [
+			{
+				name: 'period',
+				description: 'The period to show the most reputation for',
+				type: ApplicationCommandOptionType.String,
+				choices: [
+					{ name: 'past hour', value: 'rolling-hour' },
+					{ name: 'past day', value: 'rolling-day' },
+					{ name: 'past 30 days', value: 'rolling-month' },
+					{ name: 'past year', value: 'rolling-year' },
+					{ name: 'today', value: 'day' },
+					{ name: 'this month', value: 'month' },
+					{ name: 'this year', value: 'year' },
+					{ name: 'all time', value: 'all' },
+				],
+				required: true,
+			},
+		],
+		async listener(interaction) {
 			const periods = {
 				'rolling-hour': ['(past hour)', Date.now() - 60 * 60 * 1000],
 				'rolling-day': ['(past day)', Date.now() - 24 * 60 * 60 * 1000],
@@ -261,15 +286,16 @@ export function repModule(bot: Bot) {
 				all: ['(all time)', 0],
 			} as const;
 
-			const period = msg.content.split(/\s/)[1] || 'rolling-month';
+			const period = interaction.options.getString('period', true);
+
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 			if (!(period in periods))
-				return await sendWithMessageOwnership(
-					msg,
+				return void (await interaction.editReply(
 					`:x: Invalid period (expected one of ${Object.keys(periods)
 						.map(x => `\`${x}\``)
 						.join(', ')})`,
-				);
+				));
 			const [text, dateMin] = periods[period as keyof typeof periods];
 			const topEmojis = [
 				':first_place:',
@@ -301,7 +327,7 @@ export function repModule(bot: Bot) {
 						)
 						.join('\n'),
 				);
-			await msg.channel.send({ embeds: [embed] });
+			await interaction.editReply({ embeds: [embed] });
 		},
 	});
 }

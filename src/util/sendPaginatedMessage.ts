@@ -1,10 +1,14 @@
 import {
-	GuildMember,
-	EmbedBuilder,
-	MessageReaction,
-	TextBasedChannel,
-	User,
+	RepliableInteraction,
+	ThumbnailBuilder,
+	ContainerBuilder,
+	SectionBuilder,
+	ActionRowBuilder,
+	ButtonBuilder,
+	TextDisplayBuilder,
+	resolveColor,
 } from 'discord.js';
+import { TS_BLUE } from '../env';
 
 const emojis = {
 	back: '◀',
@@ -15,38 +19,48 @@ const emojis = {
 };
 
 export async function sendPaginatedMessage(
-	embed: EmbedBuilder,
+	thumbnail: ThumbnailBuilder,
 	pages: string[],
-	member: GuildMember,
-	channel: TextBasedChannel,
+	interaction: RepliableInteraction,
 	timeout: number = 100000,
 ) {
+	const section = new SectionBuilder().setThumbnailAccessory(thumbnail);
+	const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+		new ButtonBuilder().setCustomId(emojis.first).setEmoji(emojis.first),
+		new ButtonBuilder().setCustomId(emojis.back).setEmoji(emojis.back),
+		new ButtonBuilder().setCustomId(emojis.stop).setEmoji(emojis.stop),
+		new ButtonBuilder().setCustomId(emojis.next).setEmoji(emojis.next),
+		new ButtonBuilder().setCustomId(emojis.last).setEmoji(emojis.last),
+	);
 	let curPage = 0;
-	const message = await channel.send({
-		embeds: [
-			embed
-				.setDescription(pages[curPage])
-				.setFooter({ text: `Page ${curPage + 1} of ${pages.length}` }),
-		],
+	const container = new ContainerBuilder()
+		.setAccentColor(resolveColor(TS_BLUE))
+		.addSectionComponents(
+			section.addTextDisplayComponents(text =>
+				text.setContent(pages[curPage]),
+			),
+		);
+
+	if (pages.length > 1) {
+		container.addActionRowComponents(row);
+		container.addTextDisplayComponents(text =>
+			text.setContent(`-# Page ${curPage + 1} of ${pages.length}`),
+		);
+	}
+
+	const message = await interaction.editReply({
+		components: [container],
 	});
-	if (pages.length === 1) return;
 
-	await message.react(emojis.first);
-	await message.react(emojis.back);
-	await message.react(emojis.stop);
-	await message.react(emojis.next);
-	await message.react(emojis.last);
-
-	const collector = message.createReactionCollector({
-		filter: (_reaction, user) =>
-			user.id === member.id && user.id !== message.author.id,
+	const collector = message.createMessageComponentCollector({
+		filter: int =>
+			int.user.id === interaction.user.id &&
+			int.user.id !== message.author.id,
 		time: timeout,
 	});
 
-	collector.on('collect', async (reaction: MessageReaction, user: User) => {
-		await reaction.users.remove(user);
-
-		switch (reaction.emoji.toString()) {
+	collector.on('collect', async int => {
+		switch (int.customId) {
 			case emojis.first:
 				curPage = 0;
 				break;
@@ -66,16 +80,31 @@ export async function sendPaginatedMessage(
 				break;
 		}
 
-		await message.edit({
-			embeds: [
-				embed.setDescription(pages[curPage]).setFooter({
-					text: `Page ${curPage + 1} of ${pages.length}`,
-				}),
-			],
+		container
+			.spliceComponents(
+				0,
+				1,
+				section.spliceTextDisplayComponents(0, 1, text =>
+					text.setContent(pages[curPage]),
+				),
+			)
+			.spliceComponents(
+				2,
+				1,
+				new TextDisplayBuilder().setContent(
+					`-# Page ${curPage + 1} of ${pages.length}`,
+				),
+			);
+
+		await int.update({
+			components: [container],
 		});
 	});
 
 	collector.on('end', () => {
-		message.reactions.removeAll();
+		container.spliceComponents(1, 2);
+		interaction.editReply({
+			components: [container],
+		});
 	});
 }

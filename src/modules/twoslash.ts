@@ -1,25 +1,28 @@
-import { Message } from 'discord.js';
+import {
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	ChatInputCommandInteraction,
+	Message,
+	MessageContextMenuCommandInteraction,
+	MessageFlags,
+} from 'discord.js';
 import { twoslasher, TwoSlashReturn } from '@typescript/twoslash';
-import type { CompilerOptions } from 'typescript';
 import { makeCodeBlock, findCode } from '../util/codeBlocks';
 import { sendWithMessageOwnership } from '../util/send';
 import { getTypeScriptModule, TypeScript } from '../util/getTypeScriptModule';
-import { splitCustomCommand } from '../util/customCommand';
 import { Bot } from '../bot';
 
 // Preload typescript@latest
 getTypeScriptModule('latest');
 
-function getDefaultCompilerOptions(
-	tsModule: typeof import('typescript'),
-): CompilerOptions {
+function getDefaultCompilerOptions(tsModule: typeof import('typescript')) {
 	// TypeScript as of 6.0 has sane defaults for everything
 	if (parseFloat(tsModule.versionMajorMinor) >= 6.0) {
 		return {};
 	}
 
 	return {
-		target: tsModule.ScriptTarget.ESNext,
+		target: 'esnext',
 	};
 }
 
@@ -33,19 +36,36 @@ export function twoslashModule(bot: Bot) {
 		description:
 			'Twoslash: Run twoslash on the latest codeblock, optionally returning the quick infos of specified symbols. You can use ts@4.8.3 or ts@next to run a specific version.',
 		aliases: ['twoslash', 'ts'],
-		async listener(msg, content) {
-			await twoslash(msg, 'latest', content);
+		options: [
+			{
+				name: 'version',
+				description: 'Typescript version to use',
+				type: ApplicationCommandOptionType.String,
+				required: false,
+			},
+			{
+				name: 'symbol',
+				description: 'The symbol to look for',
+				type: ApplicationCommandOptionType.String,
+				required: false,
+			},
+		],
+		async listener(interaction) {
+			await twoslash(
+				interaction,
+				interaction.options.getString('version') ?? 'latest',
+				interaction.options.getString('symbol'),
+			);
 		},
 	});
 
-	bot.client.on('messageCreate', async msg => {
-		const commandData = await splitCustomCommand(bot, msg);
-		if (!commandData) return;
-		const { command, args } = commandData;
-		if (!command.startsWith('ts@') && !command.startsWith('twoslash@'))
-			return;
-		const version = command.split('@').slice(1).join('@');
-		await twoslash(msg, version, args);
+	bot.registerCommand({
+		aliases: ['Twoslash'],
+		description: '',
+		type: ApplicationCommandType.Message,
+		async listener(interaction) {
+			await twoslash(interaction, 'latest');
+		},
 	});
 
 	bot.client.on('messageCreate', async msg => {
@@ -63,33 +83,42 @@ export function twoslashModule(bot: Bot) {
 	});
 }
 
-async function twoslash(msg: Message, version: string, content: string) {
+async function twoslash(
+	interaction:
+		ChatInputCommandInteraction | MessageContextMenuCommandInteraction,
+	version: string,
+	symbol?: string | null,
+) {
 	const tsModule = await getTypeScriptModule(version);
 
 	if (!tsModule)
-		return await sendWithMessageOwnership(
-			msg,
-			':x: Could not find that version of TypeScript',
-		);
+		return await interaction.reply({
+			content: ':x: Could not find that version of TypeScript',
+			flags: MessageFlags.Ephemeral,
+		});
 
-	const code = await findCode(msg);
+	const code = interaction.isChatInputCommand()
+		? interaction.options.getString('code', true)
+		: await findCode(interaction.targetMessage);
 
 	if (!code)
-		return await sendWithMessageOwnership(
-			msg,
-			`:warning: could not find any TypeScript codeblocks in the past 10 messages`,
-		);
+		return await interaction.reply({
+			content: `:warning: could not find any TypeScript codeblocks in the past 10 messages`,
+			flags: MessageFlags.Ephemeral,
+		});
 
-	if (!content) return await twoslashBlock(msg, code, tsModule);
+	if (!symbol) return await twoslashBlock(interaction, code, tsModule);
 
-	if (!/^\s*([_$a-zA-Z][_$0-9a-zA-Z]*\b\s*)+/.test(content)) {
-		return sendWithMessageOwnership(
-			msg,
-			'You need to give me a valid symbol name to look for!',
-		);
+	if (!/^\s*([_$a-zA-Z][_$0-9a-zA-Z]*\b\s*)+/.test(symbol)) {
+		return await interaction.reply({
+			content: 'You need to give me a valid symbol name to look for!',
+			flags: MessageFlags.Ephemeral,
+		});
 	}
 
-	const symbols = [...new Set(content.trim().split(/\s+/g))];
+	await interaction.deferReply();
+
+	const symbols = [...new Set(symbol.trim().split(/\s+/g))];
 
 	let ret: TwoSlashReturn;
 	try {
@@ -100,7 +129,7 @@ async function twoslash(msg: Message, version: string, content: string) {
 		});
 	} catch (e) {
 		if (!(e instanceof Error)) throw e;
-		return await sendWithMessageOwnership(msg, `:x: ${e.message}`);
+		return await interaction.editReply(`:x: ${e.message}`);
 	}
 
 	const blocks = [];
@@ -123,13 +152,19 @@ async function twoslash(msg: Message, version: string, content: string) {
 		blocks.push(block);
 	}
 
-	await sendWithMessageOwnership(
-		msg,
+	await interaction.editReply(
 		blocks.map(block => makeCodeBlock(block.join('\n'))).join(''),
 	);
 }
 
-async function twoslashBlock(msg: Message, code: string, tsModule: TypeScript) {
+async function twoslashBlock(
+	msgOrInt:
+		| Message
+		| ChatInputCommandInteraction
+		| MessageContextMenuCommandInteraction,
+	code: string,
+	tsModule: TypeScript,
+) {
 	let ret: TwoSlashReturn;
 	try {
 		ret = twoslasher(redactNoErrorTruncation(code), 'ts', {
@@ -142,7 +177,9 @@ async function twoslashBlock(msg: Message, code: string, tsModule: TypeScript) {
 		});
 	} catch (e) {
 		if (!(e instanceof Error)) throw e;
-		return await sendWithMessageOwnership(msg, `:x: ${e.message}`);
+		if (msgOrInt instanceof Message)
+			return await sendWithMessageOwnership(msgOrInt, `:x: ${e.message}`);
+		return await msgOrInt.editReply(`:x: ${e.message}`);
 	}
 
 	const resultLines: string[] = [];
@@ -220,5 +257,7 @@ async function twoslashBlock(msg: Message, code: string, tsModule: TypeScript) {
 	});
 
 	const output = resultLines.join('\n');
-	return sendWithMessageOwnership(msg, makeCodeBlock(output) + '\n');
+	if (msgOrInt instanceof Message)
+		return sendWithMessageOwnership(msgOrInt, makeCodeBlock(output) + '\n');
+	return await msgOrInt.editReply(makeCodeBlock(output) + '\n');
 }

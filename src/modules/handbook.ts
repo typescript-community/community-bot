@@ -1,6 +1,9 @@
-import { EmbedBuilder } from 'discord.js';
-import algoliasearch from 'algoliasearch/lite';
-import { sendWithMessageOwnership } from '../util/send';
+import {
+	ApplicationCommandOptionType,
+	EmbedBuilder,
+	MessageFlags,
+} from 'discord.js';
+import { liteClient as algoliasearch } from 'algoliasearch/lite';
 import { TS_BLUE } from '../env';
 import { decode } from 'html-entities';
 import { Bot } from '../bot';
@@ -19,38 +22,46 @@ type AlgoliaResult = {
 const HANDBOOK_EMBED = new EmbedBuilder()
 	.setColor(TS_BLUE)
 	.setTitle('The TypeScript Handbook')
-	.setURL('https://www.typescriptlang.org/docs/handbook/intro.html')
-	.setFooter({ text: 'You can search with `!handbook <query>`' });
+	.setURL('https://www.typescriptlang.org/docs/handbook/intro.html');
 
 export async function handbookModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['handbook', 'hb'],
 		description: 'Search the TypeScript Handbook',
-		async listener(msg, content) {
-			if (!content) {
-				return await sendWithMessageOwnership(msg, {
+		options: [
+			{
+				name: 'query',
+				description: 'The term to search for',
+				type: ApplicationCommandOptionType.String,
+			},
+		],
+		async listener(interaction) {
+			const query = interaction.options.getString('query');
+			if (!query) {
+				return void (await interaction.reply({
 					embeds: [HANDBOOK_EMBED],
-				});
+					flags: MessageFlags.Ephemeral,
+				}));
 			}
 
-			console.log('Searching algolia for', [content]);
-			const data = await algolia.search<AlgoliaResult>([
-				{
-					indexName: ALGOLIA_INDEX_NAME,
-					query: content,
-					params: {
+			console.log('Searching algolia for', [query]);
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+			const data = await algolia.searchForHits<AlgoliaResult>({
+				requests: [
+					{
+						indexName: ALGOLIA_INDEX_NAME,
+						query,
 						offset: 0,
 						length: 1,
 					},
-				},
-			]);
+				],
+			});
 			console.log('Algolia response:', data);
 			const hit = data.results[0].hits[0];
 			if (!hit)
-				return await sendWithMessageOwnership(
-					msg,
-					':x: No results found for that query',
-				);
+				return void (await interaction.editReply({
+					content: ':x: No results found for that query',
+				}));
 			const hierarchyParts = [0, 1, 2, 3, 4, 5, 6]
 				.map(i => hit.hierarchy[`lvl${i}`])
 				.filter(x => x);
@@ -61,7 +72,7 @@ export async function handbookModule(bot: Bot) {
 					name: decode(hierarchyParts.slice(0, -1).join(' / ')),
 				})
 				.setURL(hit.url);
-			await sendWithMessageOwnership(msg, { embeds: [embed] });
+			await interaction.editReply({ embeds: [embed] });
 		},
 	});
 }

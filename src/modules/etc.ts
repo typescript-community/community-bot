@@ -1,19 +1,17 @@
 import {
 	ThreadAutoArchiveDuration,
 	Message,
-	MessageReaction,
-	User,
 	ThreadChannel,
+	SectionBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	ButtonInteraction,
+	ComponentType,
+	MessageFlags,
+	TextChannel,
 } from 'discord.js';
 import { Bot } from '../bot';
 import { suggestionsChannelId } from '../env';
-import {
-	clearMessageOwnership,
-	DELETE_EMOJI,
-	ownsBotMessage,
-} from '../util/send';
-
-const emojiRegex = /<:\w+?:(\d+?)>|(\p{Emoji_Presentation})/gu;
 
 const defaultPollEmojis = ['✅', '❌', '🤷'];
 
@@ -21,21 +19,9 @@ export function etcModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['ping'],
 		description: 'See if the bot is alive',
-		async listener(msg) {
-			await msg.channel.send('pong. :ping_pong:');
+		async listener(interaction) {
+			await interaction.reply('pong. :ping_pong:');
 		},
-	});
-
-	bot.client.on('messageCreate', async msg => {
-		if (msg.author.bot || !msg.content.toLowerCase().startsWith('poll:'))
-			return;
-		let emojis = [
-			...new Set(
-				[...msg.content.matchAll(emojiRegex)].map(x => x[1] ?? x[2]),
-			),
-		];
-		if (!emojis.length) emojis = defaultPollEmojis;
-		for (const emoji of emojis) await msg.react(emoji);
 	});
 
 	bot.client.on('messageCreate', async msg => {
@@ -59,7 +45,7 @@ export function etcModule(bot: Bot) {
 			!((await thread.fetch()) as ThreadChannel).archived
 		)
 			return;
-		const channel = thread.parent!;
+		const channel = thread.parent as TextChannel;
 		let lastMessage = null;
 		let suggestion: Message;
 		while (!suggestion!) {
@@ -85,42 +71,42 @@ export function etcModule(bot: Bot) {
 		});
 	});
 
-	bot.client.on('messageReactionAdd', async (reaction, member) => {
-		if (reaction.partial) return;
-
-		if ((await reaction.message.fetch()).author.id !== bot.client.user.id)
-			return;
-		if (reaction.emoji.name !== DELETE_EMOJI) return;
-		if (member.id === bot.client.user.id) return;
-
-		if (ownsBotMessage(reaction.message, member.id)) {
-			clearMessageOwnership(reaction.message);
-			await reaction.message.delete();
-		} else {
-			await reaction.users.remove(member.id);
-		}
-	});
-
 	bot.registerAdminCommand({
 		aliases: ['kill'],
-		async listener(msg) {
+		description: 'Kill the bot',
+		async listener(interaction) {
 			const confirm = '✅';
-			const confirmationMessage = await msg.channel.send('Confirm?');
-			confirmationMessage.react(confirm);
-			const reactionFilter = (reaction: MessageReaction, user: User) =>
-				reaction.emoji.name === confirm && user.id === msg.author.id;
+			const confirmationMessage = await interaction.reply({
+				components: [
+					new SectionBuilder()
+						.addTextDisplayComponents(text =>
+							text.setContent('Confirm?'),
+						)
+						.setButtonAccessory(
+							new ButtonBuilder()
+								.setCustomId('confirm')
+								.setEmoji(confirm)
+								.setStyle(ButtonStyle.Danger),
+						),
+				],
+				flags: MessageFlags.Ephemeral,
+			});
+			const buttonFilter = (int: ButtonInteraction) =>
+				int.customId === 'confirm' &&
+				int.user.id === interaction.user.id;
 			const proceed = await confirmationMessage
-				.awaitReactions({
-					filter: reactionFilter,
-					max: 1,
+				.awaitMessageComponent({
+					filter: buttonFilter,
 					time: 10 * 1000,
-					errors: ['time'],
+					componentType: ComponentType.Button,
 				})
 				.then(() => true)
 				.catch(() => false);
-			await confirmationMessage.delete();
-			if (!proceed) return;
-			await msg.react('☠️');
+			if (!proceed) {
+				await interaction.deleteReply();
+				return;
+			}
+			await interaction.editReply('☠️');
 			process.stdout.write(`
                             ,--.
                            {    }
@@ -140,7 +126,7 @@ export function etcModule(bot: Bot) {
  |       ',                   )
  |        |   ,..__      __. Y
  |    .,_./  Y ' / ^Y   J   )|
- \           |' /   |   |   ||      Killed by @${msg.author.tag}/${msg.author.id}
+ \           |' /   |   |   ||      Killed by @${interaction.user.tag}/${interaction.user.id}
   \          L_/    . _ (_,.'(
    \,   ,      ^^""' / |      )
      \_  \          /,L]     /

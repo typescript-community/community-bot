@@ -1,4 +1,9 @@
-import { EmbedBuilder, Message, User } from 'discord.js';
+import {
+	ApplicationCommandOptionType,
+	EmbedBuilder,
+	Message,
+	User,
+} from 'discord.js';
 import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
@@ -8,7 +13,6 @@ import { URLSearchParams } from 'url';
 import { TS_BLUE } from '../env';
 import {
 	makeCodeBlock,
-	findCode,
 	matchPlaygroundLink,
 	PlaygroundLinkMatch,
 } from '../util/codeBlocks';
@@ -28,24 +32,23 @@ export async function playgroundModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['playground', 'pg', 'playg'],
 		description: 'Shorten a TypeScript playground link',
-		async listener(msg, content) {
-			console.log('Playground', msg.content);
+		options: [
+			{
+				name: 'code',
+				description: 'The typescript code for the playground link',
+				type: ApplicationCommandOptionType.String,
+				required: true,
+			},
+		],
+		async listener(interaction) {
+			const code = interaction.options.getString('code', true);
+			console.log('Playground', code);
 
-			let code: string | undefined = content;
-
-			if (!code) {
-				code = await findCode(msg, true);
-				if (!code)
-					return sendWithMessageOwnership(
-						msg,
-						":warning: couldn't find a codeblock!",
-					);
-			}
 			const embed = new EmbedBuilder()
 				.setURL(PLAYGROUND_BASE + compressToEncodedURIComponent(code))
 				.setTitle('View in Playground')
 				.setColor(TS_BLUE);
-			await sendWithMessageOwnership(msg, { embeds: [embed] });
+			await interaction.reply({ embeds: [embed] });
 		},
 	});
 
@@ -54,7 +57,7 @@ export async function playgroundModule(bot: Bot) {
 		if (msg.content[0] === '!') return;
 		const exec = matchPlaygroundLink(msg.content);
 		if (!exec) return;
-		const embed = createPlaygroundEmbed(msg.author, exec);
+		const embed = await createPlaygroundEmbed(msg.author, exec);
 		if (exec.isWholeMatch) {
 			// Message only contained the link
 			await sendWithMessageOwnership(msg, {
@@ -82,7 +85,11 @@ export async function playgroundModule(bot: Bot) {
 		// put the rest of the message in msg.content
 		if (!exec?.isWholeMatch) return;
 		const shortenedUrl = await shortenPlaygroundLink(exec.url);
-		const embed = createPlaygroundEmbed(msg.author, exec, shortenedUrl);
+		const embed = await createPlaygroundEmbed(
+			msg.author,
+			exec,
+			shortenedUrl,
+		);
 		await sendWithMessageOwnership(msg, {
 			embeds: [embed],
 		});
@@ -104,7 +111,7 @@ export async function playgroundModule(bot: Bot) {
 }
 
 // Take care when messing with the truncation, it's extremely finnicky
-function createPlaygroundEmbed(
+async function createPlaygroundEmbed(
 	author: User,
 	{ url: _url, query, code, isEscaped }: PlaygroundLinkMatch,
 	url: string = _url,
@@ -124,10 +131,13 @@ function createPlaygroundEmbed(
 	const normalized = lines.join('\n');
 
 	const lengths = lines.map(l => l.length);
-	const cum = lengths.slice(1).reduce((acc, len, i) => {
-		acc.push(len + acc[i] + '\n'.length);
-		return acc;
-	}, lengths.slice(0, 1));
+	const cum = lengths.slice(1).reduce(
+		(acc, len, i) => {
+			acc.push(len + acc[i] + '\n'.length);
+			return acc;
+		},
+		lengths.slice(0, 1),
+	);
 	const lineIndices = [0].concat(cum);
 
 	// Note: lines are 1-indexed
@@ -145,7 +155,7 @@ function createPlaygroundEmbed(
 		// Make lines as short as reasonably possible, so they fit in the embed.
 		// We pass prettier the full string, but only format part of it, so we can
 		// calculate where the endChar is post-formatting.
-		pretty = format(normalized, {
+		pretty = await format(normalized, {
 			parser: 'typescript',
 			printWidth: 55,
 			tabWidth: 2,

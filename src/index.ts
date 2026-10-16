@@ -28,19 +28,17 @@ const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
-		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessageReactions,
 		GatewayIntentBits.DirectMessages,
-		GatewayIntentBits.MessageContent,
 	],
 }).setMaxListeners(Infinity);
 
 getDB().then(() => client.login(token));
 
-client.on('ready', async () => {
-	const bot = new Bot(client);
-	console.log(`Logged in as ${client.user?.tag}`);
-	await hookLog(client);
+client.on('ready', async c => {
+	const bot = new Bot(c);
+	console.log(`Logged in as ${c.user.tag}`);
+	await hookLog(c);
 
 	for (const mod of [
 		autoroleModule,
@@ -56,6 +54,7 @@ client.on('ready', async () => {
 	]) {
 		await mod(bot);
 	}
+	await bot.deployCommands();
 });
 
 client.on('error', error => {

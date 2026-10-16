@@ -4,7 +4,9 @@ import {
 	TextChannel,
 	Channel,
 	ForumChannel,
-	Message,
+	ChatInputCommandInteraction,
+	MessageFlags,
+	ApplicationCommandOptionType,
 } from 'discord.js';
 import { Bot } from '../bot';
 import { HelpThread } from '../entities/HelpThread';
@@ -19,7 +21,6 @@ import {
 	timeBeforeHelperPing,
 	trustedRoleId,
 } from '../env';
-import { sendWithMessageOwnership } from '../util/send';
 
 const MAX_TAG_COUNT = 5;
 
@@ -57,9 +58,9 @@ const howToGiveHelp = listify(`
 	- (If you don't like the pings, you can disable role mentions for the server.)
 - As a <@&${trustedRoleId}>, you can:
 	- React to a help post to add tags.
-	- If a post appears to be resolved, run \`!resolved\` to mark it as such.
+	- If a post appears to be resolved, run \`/resolved\` to mark it as such.
 		- *Only do this if the asker has indicated that their question has been resolved.*
-	- Conversely, you can run \`!reopen\` if the asker has follow-up questions.
+	- Conversely, you can run \`/reopen\` if the asker has follow-up questions.
 
 **Useful Snippets**
 - \`!screenshot\` — for if an asker posts a screenshot of code
@@ -69,7 +70,7 @@ const howToGiveHelp = listify(`
 const helperResolve = (owner: string, helper: string) => `
 <@${owner}>
 Because your issue seemed to be resolved, this post was marked as resolved by <@${helper}>.
-If your issue is not resolved, **you can reopen this post by running \`!reopen\`**.
+If your issue is not resolved, **you can reopen this post by running \`/reopen\`**.
 *If you have a different question, make a new post in <#${helpForumChannel}>.*
 `;
 
@@ -123,26 +124,37 @@ export async function helpForumModule(bot: Bot) {
 	bot.registerCommand({
 		aliases: ['helper', 'helpers'],
 		description: 'Help System: Ping the @Helper role from a help post',
-		async listener(msg, comment) {
-			if (!isHelpThread(msg.channel)) {
-				return sendWithMessageOwnership(
-					msg,
-					':warning: You may only ping helpers from a help post',
-				);
+		options: [
+			{
+				name: 'comment',
+				description:
+					'Optional comment (only usable by trusted helpers)',
+				type: ApplicationCommandOptionType.String,
+				required: false,
+			},
+		],
+		async listener(interaction) {
+			if (!isHelpThread(interaction.channel)) {
+				return void interaction.reply({
+					content:
+						':warning: You may only ping helpers from a help post',
+					flags: MessageFlags.Ephemeral,
+				});
 			}
 
-			const thread = msg.channel;
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+			const thread = interaction.channel;
 			const threadData = await getHelpThread(thread.id);
 
 			// Ensure the user has permission to ping helpers
-			const isAsker = msg.author.id === threadData.ownerId;
-			const isTrusted = bot.isTrusted(msg);
+			const isAsker = interaction.user.id === threadData.ownerId;
+			const isTrusted = bot.isTrusted(interaction);
 
 			if (!isAsker && !isTrusted) {
-				return sendWithMessageOwnership(
-					msg,
-					':warning: Only the asker can ping helpers',
-				);
+				return void interaction.editReply({
+					content: ':warning: Only the asker can ping helpers',
+				});
 			}
 
 			const askTime = thread.createdTimestamp;
@@ -153,12 +165,11 @@ export async function helpForumModule(bot: Bot) {
 			// Ensure they've waited long enough
 			// Trusted members (who aren't the asker) are allowed to disregard the timeout
 			if (isAsker && Date.now() < pingAllowedAfter) {
-				return sendWithMessageOwnership(
-					msg,
-					`:warning: Please wait a bit longer. You can ping helpers <t:${Math.ceil(
+				return void interaction.editReply({
+					content: `:warning: Please wait a bit longer. You can ping helpers <t:${Math.ceil(
 						pingAllowedAfter / 1000,
 					)}:R>.`,
-				);
+				});
 			}
 
 			const tagStrings = thread.appliedTags.flatMap(t => {
@@ -176,11 +187,13 @@ export async function helpForumModule(bot: Bot) {
 			// The beacons are lit, Gondor calls for aid
 			await Promise.all([
 				helpRequestChannel.send(
-					`<@&${trustedRoleId}> ${msg.channel} ${tags} ${
-						isTrusted ? comment : ''
+					`<@&${trustedRoleId}> ${interaction.channel} ${tags} ${
+						isTrusted
+							? (interaction.options.getString('comment') ?? '')
+							: ''
 					}`,
 				),
-				msg.react('✅'),
+				interaction.editReply('✅'),
 				HelpThread.update(thread.id, {
 					helperTimestamp: Date.now().toString(),
 				}),
@@ -226,50 +239,67 @@ export async function helpForumModule(bot: Bot) {
 		await reaction.remove();
 	});
 
-	async function changeStatus(msg: Message, resolved: boolean) {
-		const thread = msg.channel;
+	async function changeStatus(
+		interaction: ChatInputCommandInteraction,
+		resolved: boolean,
+	) {
+		const thread = interaction.channel;
 		if (!isHelpThread(thread)) {
-			return sendWithMessageOwnership(
-				msg,
-				':warning: Can only be run in a help post',
-			);
+			return interaction.reply({
+				content: ':warning: Can only be run in a help post',
+				flags: MessageFlags.Ephemeral,
+			});
 		}
 
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
 		const threadData = await getHelpThread(thread.id);
-		const isAsker = msg.author.id === threadData.ownerId;
-		const isTrusted = bot.isTrusted(msg);
+		const isAsker = interaction.user.id === threadData.ownerId;
+		const isTrusted = bot.isTrusted(interaction);
 
 		if (!isAsker && !isTrusted) {
-			return sendWithMessageOwnership(
-				msg,
-				':warning: Only the asker can change the status of a help post',
-			);
+			return interaction.editReply({
+				content:
+					':warning: Only the asker can change the status of a help post',
+			});
 		}
 
 		await setStatus(thread, resolved ? resolvedTag : openTag);
-		await msg.react('✅');
 
 		if (resolved && !isAsker) {
-			await thread.send(helperResolve(thread.ownerId!, msg.author.id));
+			await thread.send(
+				helperResolve(thread.ownerId!, interaction.user.id),
+			);
 		}
+
+		await interaction.editReply('✅');
 	}
 
 	bot.registerAdminCommand({
 		aliases: ['htgh'],
-		async listener(msg) {
+		description:
+			'Refresh guidelines in howToGetHelp and howToGiveHelp channel',
+		async listener(interaction) {
 			if (
-				msg.channel.id !== howToGetHelpChannel &&
-				msg.channel.id !== howToGiveHelpChannel
+				!interaction.channel?.isSendable() ||
+				(interaction.channel?.id !== howToGetHelpChannel &&
+					interaction.channel?.id !== howToGiveHelpChannel)
 			) {
 				return;
 			}
-			(await msg.channel.messages.fetch()).forEach(x => x.delete());
+			await interaction.reply({
+				content: 'Refreshing guidelines...',
+				flags: MessageFlags.Ephemeral,
+			});
+			(await interaction.channel.messages.fetch()).forEach(x =>
+				x.delete(),
+			);
 			const message =
-				msg.channel.id === howToGetHelpChannel
+				interaction.channel.id === howToGetHelpChannel
 					? postGuidelines(false)
 					: howToGiveHelp;
 			// Force a blank line at the beginning of the message for compact-mode users
-			msg.channel.send(`** **\n` + message.trim());
+			interaction.channel.send(`** **\n` + message.trim());
 		},
 	});
 
@@ -292,7 +322,7 @@ export async function helpForumModule(bot: Bot) {
 	}
 
 	function isHelpThread(
-		channel: ThreadChannel | Channel,
+		channel: ThreadChannel | Channel | null,
 	): channel is ThreadChannel & { parent: TextChannel } {
 		return (
 			channel instanceof ThreadChannel &&

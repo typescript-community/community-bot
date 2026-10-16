@@ -1,48 +1,62 @@
-import { Message, Client, User, GuildMember } from 'discord.js';
-import { botAdmins, prefixes, trustedRoleId } from './env';
+import {
+	Client,
+	User,
+	GuildMember,
+	ChatInputCommandInteraction,
+	ApplicationCommandOptionData,
+	Interaction,
+	Collection,
+	ApplicationCommandType,
+	PermissionFlagsBits,
+} from 'discord.js';
+import { botAdmins, trustedRoleId } from './env';
 
-export interface CommandRegistration {
+export interface CommandRegistration<Type extends ApplicationCommandType> {
 	aliases: string[];
-	description?: string;
-	listener: (msg: Message, content: string) => Promise<void>;
+	description: string;
+	options?: Type extends ApplicationCommandType.ChatInput
+		? ApplicationCommandOptionData[]
+		: never;
+	type?: Type;
+	listener: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
-interface Command {
+interface InternalCommand<
+	Type extends ApplicationCommandType,
+> extends CommandRegistration<Type> {
 	admin: boolean;
-	aliases: string[];
-	description?: string;
-	listener: (msg: Message, content: string) => Promise<void>;
 }
+
+type Command =
+	| InternalCommand<ApplicationCommandType.ChatInput>
+	| InternalCommand<ApplicationCommandType.Message>;
 
 export class Bot {
-	commands = new Map<string, Command>();
+	commands = new Collection<string, Command>();
 
 	constructor(public client: Client<true>) {
-		client.on('messageCreate', msg => {
-			const triggerWithPrefix = msg.content.split(/\s/)[0];
-			const matchingPrefix = prefixes.find(p =>
-				triggerWithPrefix.startsWith(p),
-			);
-			if (matchingPrefix) {
-				const content = msg.content
-					.substring(triggerWithPrefix.length + 1)
-					.trim();
+		client.on('interactionCreate', interaction => {
+			if (interaction.isChatInputCommand()) {
+				const command = this.getByTrigger(interaction.commandName);
 
-				const command = this.getByTrigger(
-					triggerWithPrefix.substring(matchingPrefix.length),
-				);
-
-				if (!command || (command.admin && !this.isAdmin(msg.author))) {
+				if (
+					!command ||
+					(command.admin && !this.isAdmin(interaction.user))
+				) {
 					return;
 				}
-				command.listener(msg, content).catch(err => {
+				command.listener(interaction).catch(err => {
 					this.client.emit('error', err);
 				});
 			}
 		});
 	}
 
-	registerCommand(registration: CommandRegistration) {
+	registerCommand(
+		registration:
+			| CommandRegistration<ApplicationCommandType.ChatInput>
+			| CommandRegistration<ApplicationCommandType.Message>,
+	) {
 		const command: Command = {
 			...registration,
 			admin: false,
@@ -52,7 +66,9 @@ export class Bot {
 		}
 	}
 
-	registerAdminCommand(registration: CommandRegistration) {
+	registerAdminCommand(
+		registration: CommandRegistration<ApplicationCommandType.ChatInput>,
+	) {
 		const command: Command = {
 			...registration,
 			admin: true,
@@ -60,6 +76,26 @@ export class Bot {
 		for (const a of command.aliases) {
 			this.commands.set(a, command);
 		}
+	}
+
+	async deployCommands() {
+		await this.client.application.commands.set(
+			this.commands
+				.filter(cmd => !cmd.admin)
+				.map(cmd => ({ name: cmd.aliases[0], ...cmd })),
+		);
+		await this.client.guilds.cache
+			.first()
+			?.commands.set(
+				this.commands
+					.filter(cmd => cmd.admin)
+					.map(cmd => ({
+						name: cmd.aliases[0],
+						...cmd,
+						defaultMemberPermissions:
+							PermissionFlagsBits.Administrator,
+					})),
+			);
 	}
 
 	getByTrigger(trigger: string): Command | undefined {
@@ -74,40 +110,21 @@ export class Bot {
 		return botAdmins.includes(user.id);
 	}
 
-	isTrusted(msg: Message) {
-		if (!msg.guild || !msg.member || !msg.channel.isTextBased()) {
+	isTrusted(interaction: Interaction) {
+		if (
+			!interaction.inCachedGuild() ||
+			!interaction.channel?.isTextBased()
+		) {
 			return false;
 		}
 
 		if (
-			!msg.member.roles.cache.has(trustedRoleId) &&
-			!msg.member.permissions.has('ManageMessages')
+			!interaction.member.roles.cache.has(trustedRoleId) &&
+			!interaction.member.permissions.has('ManageMessages')
 		) {
 			return false;
 		}
 
 		return true;
-	}
-
-	async getTargetUser(msg: Message): Promise<User | undefined> {
-		const query = msg.content.split(/\s/)[1];
-
-		const mentioned = msg.mentions.members?.first()?.user;
-		if (mentioned) return mentioned;
-
-		if (!query) return;
-
-		// Search by ID
-		const queriedUser = await this.client.users
-			.fetch(query)
-			.catch(() => undefined);
-		if (queriedUser) return queriedUser;
-
-		// Search by name, likely a better way to do this...
-		for (const user of this.client.users.cache.values()) {
-			if (user.tag === query || user.username === query) {
-				return user;
-			}
-		}
 	}
 }
